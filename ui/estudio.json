@@ -1,6 +1,6 @@
 {
   "origem": "A:\\Claude\\00-empresa\\corpos\\sara\\interface\\estudio-local",
-  "sincronizadoEm": "2026-11-06T02:40:23.142Z",
+  "sincronizadoEm": "2026-11-06T04:18:57.725Z",
   "remendos": [
     {
       "arquivo": "Main.dc.html",
@@ -171,13 +171,18 @@
     },
     {
       "arquivo": "Carregando.dc.html",
-      "bytes": 19191,
-      "sha1": "1ff9969c524e"
+      "bytes": 19638,
+      "sha1": "3eaa7f815667"
     },
     {
       "arquivo": "carregando.html",
-      "bytes": 17838,
-      "sha1": "6fabd2f80271"
+      "bytes": 18285,
+      "sha1": "2a994e8c6e97"
+    },
+    {
+      "arquivo": "Estilos.dc.html",
+      "bytes": 20080,
+      "sha1": "0eb7aca79a1a"
     },
     {
       "arquivo": "Fluxo.dc.html",
@@ -186,8 +191,8 @@
     },
     {
       "arquivo": "Main.dc.html",
-      "bytes": 114376,
-      "sha1": "b9c351c6f1f2"
+      "bytes": 139614,
+      "sha1": "0e010a6d26c9"
     },
     {
       "arquivo": "Mini.dc.html",
@@ -198,6 +203,11 @@
       "arquivo": "support.js",
       "bytes": 46105,
       "sha1": "a40c333009ea"
+    },
+    {
+      "arquivo": "Terminal.dc.html",
+      "bytes": 17565,
+      "sha1": "89d0cbcf824d"
     },
     {
       "arquivo": "vendor/react-dom.js",

@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Ponte de Comando — terminal de fósforo</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&amp;family=Rajdhani:wght@700&amp;family=JetBrains+Mono:wght@400&amp;display=swap">
+<style>
+
+body{margin:0;background:#07090A}
+.prancha{position:relative;width:1040px;height:880px;background:#07090A;font-family:'VT323',monospace}
+.rotulo{position:absolute;left:40px;top:26px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;letter-spacing:.24em;color:#FFB33D}
+.rotulo span{color:#7F9AA3}
+.dica{position:absolute;left:40px;top:50px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#7F9AA3}
+/* monitor */
+.monitor{position:absolute;left:40px;top:84px;width:960px;height:760px;box-sizing:border-box;padding:26px 26px 40px;border-radius:26px;
+  background:linear-gradient(180deg,#2A251D,#1A1610 60%,#14110C);box-shadow:inset 0 2px 0 rgba(255,255,255,.08),inset 0 -3px 0 rgba(0,0,0,.6),0 24px 50px rgba(0,0,0,.65)}
+.parafuso{position:absolute;width:9px;height:9px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#6B6152,#2A251D);box-shadow:inset 0 -1px 1px rgba(0,0,0,.7)}
+.parafuso::after{content:"";position:absolute;left:1px;right:1px;top:4px;height:1px;background:#1A1610;transform:rotate(35deg)}
+.placa-monitor{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:.34em;color:#6B6152}
+.led-monitor{position:absolute;right:42px;bottom:15px;width:8px;height:8px;border-radius:50%}
+.tela{position:relative;width:100%;height:100%;border-radius:16px;overflow:hidden;background:var(--fundo);box-shadow:inset 0 0 0 2px #050403,inset 0 0 60px rgba(0,0,0,.9)}
+.brilho{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,var(--halo),transparent 70%);pointer-events:none}
+.linhas{position:absolute;inset:0;pointer-events:none;z-index:3;background:repeating-linear-gradient(0deg,rgba(0,0,0,.34) 0 2px,transparent 2px 4px)}
+.faixa{position:absolute;left:0;right:0;height:120px;z-index:3;pointer-events:none;background:linear-gradient(180deg,transparent,var(--faixa),transparent);animation:faixa 7s linear infinite}
+@keyframes faixa{from{top:-120px}to{top:100%}}
+.curva{position:absolute;inset:0;z-index:4;pointer-events:none;border-radius:16px;box-shadow:inset 0 0 140px rgba(0,0,0,.85)}
+.reflexo{position:absolute;left:6%;top:3%;width:46%;height:22%;z-index:5;pointer-events:none;border-radius:50%;background:radial-gradient(ellipse at 30% 30%,rgba(255,255,255,.05),transparent 70%)}
+/* conteúdo */
+.texto{position:absolute;inset:0;padding:18px 26px 14px;display:flex;flex-direction:column;gap:8px;color:var(--f);font-size:21px;line-height:22px;
+  text-shadow:0 0 6px var(--sombra),0 0 1px var(--f);animation:tremor 9s infinite}
+@keyframes tremor{0%,97%,100%{opacity:1;transform:none}97.5%{opacity:.84;transform:translateX(1px)}98%{opacity:1}98.6%{opacity:.9}}
+.forte{color:var(--forte)}.apagado{color:var(--apagado)}
+.cab{display:flex;justify-content:space-between}
+.regua{white-space:nowrap;overflow:hidden;color:var(--apagado)}
+.abas{display:flex;gap:4px;align-items:center;min-width:0;overflow:hidden}
+.seg{display:inline-flex;gap:2px;vertical-align:-1px}.seg i{display:block;width:8px;height:12px;border:1px solid var(--apagado);box-sizing:border-box}.seg i.on{background:var(--f);border-color:var(--f);box-shadow:0 0 5px var(--sombra)}
+.status .seg i{border-color:var(--fundo);opacity:.55}.status .seg i.on{background:var(--fundo);opacity:1;box-shadow:none}
+.t-bt{border:0;background:transparent;padding:0 8px;height:24px;white-space:nowrap;flex:0 0 auto;font-family:'VT323',monospace;font-size:21px;line-height:22px;color:var(--f);text-shadow:inherit;cursor:pointer}
+.t-bt.inv,.t-bt:hover{background:var(--f);color:var(--fundo);text-shadow:none}
+.t-bt:focus-visible{outline:2px dashed var(--f);outline-offset:2px}
+.t-bt.apag{color:var(--apagado)}
+.rolar{flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-right:6px;scrollbar-width:thin;scrollbar-color:var(--apagado) transparent}
+.msg .quem{display:inline-block;margin-right:8px}
+.msg.alex .quem{color:var(--forte)}
+.msg.sara .quem{background:var(--f);color:var(--fundo);text-shadow:none;padding:0 6px}
+.bloco{display:inline-block;width:11px;height:19px;background:var(--f);box-shadow:0 0 8px var(--f);vertical-align:-3px;animation:pisca 1s steps(1) infinite}
+@keyframes pisca{50%{opacity:0}}
+.ativ{display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:14px;row-gap:0}
+.barra-txt{letter-spacing:-1px}
+.entrada{display:flex;align-items:center;gap:8px;padding:4px 10px;border:2px solid var(--f);box-shadow:0 0 10px var(--sombra),inset 0 0 10px var(--sombra)}
+.entrada input{flex:1 1 auto;min-width:0;border:0;outline:none;background:transparent;color:var(--forte);font-family:'VT323',monospace;font-size:21px;caret-color:transparent;text-shadow:inherit}
+.entrada input::placeholder{color:var(--apagado)}
+.status{display:flex;gap:0;align-items:stretch;background:var(--f);color:var(--fundo);text-shadow:none}
+.status .t-bt{color:var(--fundo);text-shadow:none;height:24px}
+.status .t-bt:hover{background:var(--fundo);color:var(--f)}
+.status .sep{width:2px;background:var(--fundo);opacity:.5;margin:3px 0}
+.atalhos{display:flex;gap:18px;color:var(--apagado)}
+@media (prefers-reduced-motion:reduce){.faixa,.texto,.bloco{animation:none}}
+
+</style>
+</helmet>
+
+<div class="prancha" style="--f: {{ c.f }}; --forte: {{ c.forte }}; --apagado: {{ c.apagado }}; --fundo: {{ c.fundo }}; --sombra: {{ c.sombra }}; --halo: {{ c.halo }}; --faixa: {{ c.faixa }}">
+  <div class="rotulo">B · TERMINAL DE FÓSFORO, VERSÃO 2 <span>(estilo Fallout)</span></div>
+  <div class="dica">dá para digitar e apertar Enter · clique na barra de baixo para trocar modelo, esforço e velocidade · F1 histórico · F2 fluxo</div>
+  <div class="monitor">
+    <span class="parafuso" style="left: 12px; top: 12px"></span><span class="parafuso" style="right: 12px; top: 12px"></span>
+    <span class="parafuso" style="left: 12px; bottom: 12px"></span><span class="parafuso" style="right: 12px; bottom: 12px"></span>
+    <span class="placa-monitor">PONTE · CANAL 01</span>
+    <span class="led-monitor" style="background: {{ c.led }}; box-shadow: 0 0 8px {{ c.led }}"></span>
+    <div class="tela">
+      <div class="brilho" aria-hidden="true"></div>
+      <div class="texto" role="log" aria-label="Conversa com a Sara">
+        <div class="cab"><span class="forte">PONTE DE COMANDO · TERMINAL SARA</span><span>{{ relogio }} · CANAL 01</span></div>
+        <div class="regua" aria-hidden="true">==========================================================================================</div>
+        <div class="abas" role="tablist">
+          <sc-for list="{{ abas }}" as="a" hint-placeholder-count="2">
+            <button class="{{ a.classe }}" role="tab" aria-selected="{{ a.ativa }}" onClick="{{ a.ir }}">{{ a.rotulo }}</button>
+          </sc-for>
+          <button class="t-bt apag" aria-label="Nova conversa" onClick="{{ nova }}">[+]</button>
+          <span style="flex: 1"></span>
+          <button class="t-bt" aria-keyshortcuts="F1">[F1] HISTÓRICO</button>
+          <button class="t-bt" aria-keyshortcuts="F2">[F2] FLUXO</button>
+        </div>
+        <div class="apagado">{{ meta }}</div>
+        <div class="rolar" ref="{{ rolarRef }}">
+          <sc-for list="{{ linhas }}" as="l" hint-placeholder-count="4">
+            <sc-if value="{{ l.ehAlex }}" hint-placeholder-val="{{ false }}">
+              <div class="msg alex"><span class="quem">ALEX&gt;</span>{{ l.texto }}</div>
+            </sc-if>
+            <sc-if value="{{ l.ehAtiv }}" hint-placeholder-val="{{ false }}">
+              <div class="ativ">
+                <sc-for list="{{ l.itens }}" as="i" hint-placeholder-count="4">
+                  <span>{{ i.marca }} {{ i.quem }}</span><span class="apagado">{{ i.o_que }}</span><span class="barra-txt" aria-label="{{ i.pct }}"><span class="seg" aria-hidden="true"><sc-for list="{{ i.segs }}" as="s" hint-placeholder-count="10"><i class="{{ s.c }}"></i></sc-for></span> {{ i.pct }}</span>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ l.ehSara }}" hint-placeholder-val="{{ false }}">
+              <div class="msg sara"><span class="quem">SARA ▸ {{ l.hora }}</span><br>{{ l.texto }}<sc-if value="{{ l.digitando }}" hint-placeholder-val="{{ false }}"><span class="bloco" aria-hidden="true"></span></sc-if></div>
+            </sc-if>
+            <sc-if value="{{ l.ehProc }}" hint-placeholder-val="{{ false }}">
+              <div class="apagado">PROCESSANDO {{ l.pontos }}</div>
+            </sc-if>
+          </sc-for>
+        </div>
+        <div class="atalhos" aria-hidden="true"><span>[ENTER] ENVIAR</span><span>[ESC] PARAR</span><span>[F1] HISTÓRICO</span><span>[F2] FLUXO</span></div>
+        <label class="entrada"><span class="forte">ALEX&gt;</span><input aria-label="Mensagem para a Sara" placeholder="ESCREVA PARA A SARA" value="{{ texto }}" onChange="{{ digitar }}" onKeyDown="{{ tecla }}"><span class="bloco" aria-hidden="true"></span><button class="t-bt" onClick="{{ enviar }}">[ ENVIAR ]</button></label>
+        <div class="status" role="group" aria-label="Modelo e velocidade desta conversa">
+          <button class="t-bt" onClick="{{ trocaModelo }}">MODELO: {{ modelo }}</button><span class="sep"></span>
+          <button class="t-bt" onClick="{{ trocaEsforco }}">ESFORÇO: {{ esforco }}</button><span class="sep"></span>
+          <button class="t-bt" onClick="{{ trocaVelocidade }}">VELOCIDADE: {{ velocidade }}</button><span class="sep"></span>
+          <span style="flex: 1"></span>
+          <button class="t-bt" onClick="{{ fosforo }}" aria-label="Trocar a cor do fósforo">FÓSFORO: {{ c.nome }}</button><span class="sep"></span>
+          <span style="padding: 0 10px; line-height: 24px; white-space: nowrap">CONTEXTO <span class="seg" aria-hidden="true"><sc-for list="{{ ctxSegs }}" as="s" hint-placeholder-count="10"><i class="{{ s.c }}"></i></sc-for></span> 62%</span>
+        </div>
+      </div>
+      <div class="linhas" aria-hidden="true"></div>
+      <div class="faixa" aria-hidden="true"></div>
+      <div class="curva" aria-hidden="true"></div>
+      <div class="reflexo" aria-hidden="true"></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1040,"height":880}}'>
+
+const COR = {
+  ambar: { nome: 'ÂMBAR', f: '#FFB33D', forte: '#FFE2A8', apagado: '#B98232', fundo: '#0C0803', sombra: 'rgba(255,179,61,0.7)', halo: 'rgba(255,179,61,0.08)', faixa: 'rgba(255,179,61,0.05)', led: '#FFB33D' },
+  branco: { nome: 'BRANCO', f: '#DDEEF1', forte: '#FFFFFF', apagado: '#7F9AA3', fundo: '#04090C', sombra: 'rgba(160,240,255,0.45)', halo: 'rgba(111,243,255,0.07)', faixa: 'rgba(184,250,255,0.045)', led: '#6FF3FF' },
+  verde: { nome: 'VERDE', f: '#4BFF8C', forte: '#D2FFE2', apagado: '#2E9E58', fundo: '#030A05', sombra: 'rgba(75,255,140,0.65)', halo: 'rgba(75,255,140,0.07)', faixa: 'rgba(75,255,140,0.05)', led: '#4BFF8C' }
+};
+const MODELOS = ['OPUS', 'SONNET', 'HAIKU'], ESFORCOS = ['BAIXO', 'MÉDIO', 'ALTO', 'MÁXIMO'];
+const segs = (p) => Array.from({ length: 10 }, (_, k) => ({ c: k < Math.round(p / 10) ? 'on' : '' }));
+const barra = (p) => { const n = Math.round(p / 10); return '[' + '█'.repeat(n) + '░'.repeat(10 - n) + '] ' + String(p).padStart(3, ' ') + '%'; };
+const RESP1 = 'LI A MEMÓRIA DO DRIVE DA MIRIAN E CHAMEI A HELENA PARA A DIREÇÃO VISUAL. ELA TROUXE DUAS LINHAS: UMA EDITORIAL CALMA, EM TONS DE LINHO, E UMA MAIS LUMINOSA, PARA A IMERSÃO. A LIA ESTÁ MONTANDO AS DUAS TELAS AGORA, E O RUI ESCREVE O TEXTO DO TOPO. TE MOSTRO LADO A LADO QUANDO FICAREM PRONTAS.';
+const CONVERSAS = {
+  landing: { rotulo: 'LANDING DO CURSO DA MIRIAN', meta: 'HOJE 16:02 · A:\\CLAUDE\\03-PROJETOS\\CURSO-MIRIAN', base: [
+    { t: 'alex', texto: 'SARA, FAZ UMA LANDING PARA O CURSO DA MIRIAN. QUERO VER DUAS PROPOSTAS DE VISUAL ANTES.' },
+    { t: 'ativ', itens: [['[X]', 'MEMÓRIA', 'DRIVE-CURSO-APOMETRIA', 100], ['[X]', 'HELENA', 'DUAS DIREÇÕES DE VISUAL', 100], ['[~]', 'LIA', 'MONTANDO AS TELAS A E B', 60], ['[~]', 'RUI', 'ESCREVENDO O TEXTO DO TOPO', 35]] },
+    { t: 'sara', texto: RESP1, hora: '16:04' } ] },
+  molduras: { rotulo: 'MOLDURAS E O ESTÚDIO', meta: 'HOJE 14:40 · A:\\CLAUDE\\00-EMPRESA', base: [
+    { t: 'alex', texto: 'QUAL DOS TRÊS KITS DE MOLDURA FICA MELHOR?' },
+    { t: 'sara', texto: 'FICO COM O CONJUNTO DO GEMINI: O RETRATO, O PAINEL LARGO E O KIT SAÍRAM NO MESMO METAL. JUNTOS PARECEM UMA MÁQUINA SÓ.', hora: '14:42' } ] }
+};
+const hora = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+class Component extends DCLogic {
+  componentDidMount() {
+    this._rolarRef = (el) => { this._rolar = el; };
+    this.digitarResposta('landing', 2, RESP1, true);
+    this._relogio = setInterval(() => this.setState({ agora: hora() }), 15000);
+    this._teclas = (ev) => { if (ev.key === 'F1' || ev.key === 'F2') ev.preventDefault(); };
+    window.addEventListener('keydown', this._teclas);
+  }
+  componentWillUnmount() { clearInterval(this._relogio); clearInterval(this._dig); clearTimeout(this._proc); window.removeEventListener('keydown', this._teclas); }
+  componentDidUpdate() { if (this._rolar) this._rolar.scrollTop = this._rolar.scrollHeight; }
+  digitarResposta(conv, indice, texto, inicial) {
+    clearInterval(this._dig);
+    const parado = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (parado) { this.setState({ dig: null }); return; }
+    let n = 0;
+    this.setState({ dig: { conv, indice, n: 0 } });
+    this._dig = setInterval(() => {
+      n += inicial ? 3 : 2;
+      if (n >= texto.length) { clearInterval(this._dig); this.setState({ dig: null }); return; }
+      this.setState({ dig: { conv, indice, n } });
+    }, 22);
+  }
+  renderVals() {
+    const st = this.state || {};
+    const c = COR[st.cor || 'ambar'];
+    const id = st.aba || 'landing';
+    const cfgs = st.cfgs || {}; const cfg = Object.assign({ m: 1, e: 2, r: false }, cfgs[id] || {});
+    const muda = (p) => this.setState({ cfgs: Object.assign({}, cfgs, { [id]: Object.assign({}, cfg, p) }) });
+    const extra = (st.extra || {})[id] || [];
+    const todas = CONVERSAS[id].base.concat(extra);
+    const dig = st.dig;
+    const linhas = todas.map((l, i) => {
+      let texto = l.texto || '', digitando = false;
+      if (dig && dig.conv === id && dig.indice === i) { texto = texto.slice(0, dig.n); digitando = true; }
+      return { ehAlex: l.t === 'alex', ehSara: l.t === 'sara', ehAtiv: l.t === 'ativ', ehProc: l.t === 'proc', texto, hora: l.hora || '', digitando, pontos: l.pontos || '',
+        itens: (l.itens || []).map(([m, q, o, p]) => ({ marca: m, quem: q, o_que: o, pct: String(p).padStart(3, ' ') + '%', segs: segs(p) })) };
+    });
+    const enviar = () => {
+      const txt = (st.texto || '').trim().toUpperCase(); if (!txt || st.ocupado) return;
+      const ex = Object.assign({}, st.extra || {});
+      ex[id] = (ex[id] || []).concat([{ t: 'alex', texto: txt }, { t: 'proc', pontos: '...' }]);
+      this.setState({ extra: ex, texto: '', ocupado: true });
+      this._proc = setTimeout(() => {
+        const ex2 = Object.assign({}, (this.state || {}).extra || {});
+        const lista = (ex2[id] || []).filter((x) => x.t !== 'proc');
+        const resp = 'ENTENDIDO. ANOTEI "' + txt.slice(0, 60) + (txt.length > 60 ? '…' : '') + '" E JÁ PASSEI PARA QUEM PRECISA. TE AVISO QUANDO FICAR PRONTO.';
+        ex2[id] = lista.concat([{ t: 'sara', texto: resp, hora: hora() }]);
+        this.setState({ extra: ex2, ocupado: false });
+        this.digitarResposta(id, CONVERSAS[id].base.length + ex2[id].length - 1, resp, false);
+      }, 1400);
+    };
+    return {
+      c, relogio: st.agora || hora(), meta: CONVERSAS[id].meta,
+      abas: Object.keys(CONVERSAS).map((k) => ({ rotulo: (k === id ? '> ' : '') + CONVERSAS[k].rotulo, ativa: String(k === id), classe: k === id ? 't-bt inv' : 't-bt apag', ir: () => this.setState({ aba: k }) })),
+      nova: () => {}, fosforo: () => { const ordem = ['ambar', 'verde', 'branco']; this.setState({ cor: ordem[(ordem.indexOf(st.cor || 'ambar') + 1) % 3] }); },
+      linhas, rolarRef: this._rolarRef || ((el) => { this._rolar = el; }),
+      texto: st.texto || '', digitar: (ev) => this.setState({ texto: ev.target.value }),
+      tecla: (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); enviar(); } else if (ev.key === 'Escape') { clearInterval(this._dig); this.setState({ dig: null }); } },
+      enviar,
+      modelo: MODELOS[cfg.m], esforco: ESFORCOS[cfg.e], velocidade: cfg.r ? 'RÁPIDA' : 'NORMAL',
+      trocaModelo: () => muda({ m: (cfg.m + 1) % 3 }), trocaEsforco: () => muda({ e: (cfg.e + 1) % 4 }), trocaVelocidade: () => muda({ r: !cfg.r }),
+      ctxSegs: segs(62)
+    };
+  }
+}
+
+</script>
+</body>
+</html>

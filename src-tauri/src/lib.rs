@@ -18,7 +18,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
@@ -50,6 +50,8 @@ pub struct Ponte {
     porta: Mutex<Option<u16>>,
     item_mudo: Mutex<Option<CheckMenuItem<Wry>>>,
     item_mini: Mutex<Option<MenuItem<Wry>>>,
+    item_toast: Mutex<Option<CheckMenuItem<Wry>>>,
+    geracao_mini: AtomicU64,
     motor_tokens: Arc<tokens::Motor>,
 }
 
@@ -71,22 +73,59 @@ fn salvar_config(app: &AppHandle) {
 
 // ---------------------------------------------------------------- estado e avisos
 
+/// O programa está rodando da instalação (e não solto em target\debug ou target\release)?
+/// Só o instalado tem o atalho com o AppUserModelID "com.pixelmartins.pontedecomando"; o solto
+/// mandaria o toast em nome do "Windows PowerShell".
+fn instalado() -> bool {
+    let Ok(exe) = std::env::current_exe() else { return false };
+    let Some(dir) = exe.parent() else { return false };
+    let d = dir.display().to_string().to_lowercase();
+    if d.ends_with("\\target\\debug") || d.ends_with("\\target\\release") {
+        return false;
+    }
+    dir.join("uninstall.exe").is_file()
+}
+
+/// Onde o aviso aparece agora.
+fn onde_avisar(app: &AppHandle) -> &'static str {
+    if principal_na_tela(app) {
+        "principal"
+    } else if app.get_webview_window("mini").and_then(|m| m.is_visible().ok()).unwrap_or(false) {
+        "mini"
+    } else {
+        "nenhum"
+    }
+}
+
 fn receber_evento(app: &AppHandle, ev: Evento) {
     let p = ponte(app);
-    let mudo = p.config.lock().unwrap().mudo;
+    let (mudo, toast) = {
+        let c = p.config.lock().unwrap();
+        (c.mudo, c.toast_windows.clone())
+    };
+    let onde = onde_avisar(app);
     let (copia, notificar) = {
         let mut e = p.estado.lock().unwrap();
         let mut m = p.memoria.lock().unwrap();
         let n = estado::aplicar(&mut e, &mut m, &ev);
         e.mudo = mudo;
+        e.onde = onde.to_string();
         (e.clone(), n)
     };
     let _ = app.emit("ponte:estado", &copia);
     if let Some(n) = notificar {
-        if !mudo {
+        // a miniatura e a Main já são o aviso; o toast é para quando nenhuma das duas está na tela
+        let quer = !mudo && match toast.as_str() {
+            "nunca" => false,
+            "sempre" => true,
+            _ => onde == "nenhum",
+        };
+        if quer && instalado() {
             if let Err(err) = app.notification().builder().title(&n.titulo).body(&n.corpo).show() {
                 registrar(&p.pasta_dados, &format!("notificação falhou: {err}"));
             }
+        } else if quer {
+            registrar(&p.pasta_dados, "toast não enviado: programa fora da instalação (sairia como Windows PowerShell)");
         }
     }
 }
@@ -149,7 +188,8 @@ fn argumentos_webview() -> String {
 
 fn criar_janelas(app: &AppHandle) -> tauri::Result<()> {
     let args = argumentos_webview();
-    WebviewWindowBuilder::new(app, "carregamento", WebviewUrl::App("carregamento.html".into()))
+    let fora = teste_fora_da_tela();
+    let mut carregamento = WebviewWindowBuilder::new(app, "carregamento", WebviewUrl::App("carregamento.html".into()))
         .title("Ponte de Comando")
         .inner_size(960.0, 560.0)
         .resizable(false)
@@ -158,10 +198,13 @@ fn criar_janelas(app: &AppHandle) -> tauri::Result<()> {
         .skip_taskbar(false)
         .initialization_script(PONTE_JS)
         .additional_browser_args(&args)
-        .visible(true)
-        .build()?;
+        .visible(true);
+    if fora {
+        carregamento = carregamento.position(FORA, FORA).focused(false).focusable(false);
+    }
+    carregamento.build()?;
 
-    WebviewWindowBuilder::new(app, "principal", WebviewUrl::App("estudio/Main.dc.html".into()))
+    let mut principal = WebviewWindowBuilder::new(app, "principal", WebviewUrl::App("estudio/Main.dc.html".into()))
         .title("Ponte de Comando · Sara")
         .inner_size(1600.0, 900.0)
         .min_inner_size(960.0, 600.0)
@@ -169,8 +212,11 @@ fn criar_janelas(app: &AppHandle) -> tauri::Result<()> {
         .initialization_script(PONTE_JS)
         .initialization_script(MAIN_JS)
         .additional_browser_args(&args)
-        .visible(false)
-        .build()?;
+        .visible(false);
+    if fora {
+        principal = principal.position(FORA, FORA).focused(false).focusable(false);
+    }
+    principal.build()?;
 
     WebviewWindowBuilder::new(app, "mini", WebviewUrl::App("mini.html".into()))
         .title("Sara")
@@ -194,9 +240,18 @@ fn mostrar_principal_interno(app: &AppHandle) {
     if let Some(j) = app.get_webview_window("principal") {
         let _ = j.show();
         let _ = j.unminimize();
-        let _ = j.set_focus();
+        if !teste_fora_da_tela() {
+            let _ = j.set_focus();
+        }
     }
+    atualizar_mini(app);
 }
+
+/// Modo de teste: janelas fora da área visível e sem pegar o foco (o Alex está usando o PC).
+fn teste_fora_da_tela() -> bool {
+    std::env::var("PONTE_TESTE_FORA_DA_TELA").map(|v| v == "1").unwrap_or(false)
+}
+const FORA: f64 = -30000.0;
 
 #[tauri::command]
 fn mostrar_principal(app: AppHandle) {
@@ -215,9 +270,6 @@ fn concluir_carregamento(app: &AppHandle) {
     std::thread::spawn(move || {
         std::thread::sleep(falta);
         mostrar_principal_interno(&app);
-        if ponte(&app).config.lock().unwrap().mini_visivel {
-            mostrar_mini(&app, true);
-        }
         if let Some(c) = app.get_webview_window("carregamento") {
             let _ = c.close();
         }
@@ -254,6 +306,9 @@ fn posicao_esperada(app: &AppHandle) -> Option<PhysicalPosition<i32>> {
     let canto = ponte(app).config.lock().unwrap().mini_canto.clone();
     let x = if canto.ends_with("direito") { wa.position.x + wa.size.width as i32 - tam.width as i32 - margem } else { wa.position.x + margem };
     let y = if canto.starts_with("inferior") { wa.position.y + wa.size.height as i32 - tam.height as i32 - margem } else { wa.position.y + margem };
+    if teste_fora_da_tela() {
+        return Some(PhysicalPosition::new(FORA as i32 + 2000, FORA as i32 + 2000));
+    }
     Some(PhysicalPosition::new(x, y))
 }
 
@@ -263,23 +318,55 @@ fn posicionar_mini(app: &AppHandle) {
     }
 }
 
-fn mostrar_mini(app: &AppHandle, mostrar: bool) {
-    let p = ponte(app);
-    p.config.lock().unwrap().mini_visivel = mostrar;
-    salvar_config(app);
-    if let Some(mini) = app.get_webview_window("mini") {
-        if mostrar {
-            posicionar_mini(app);
-            let _ = mini.show();
-            let _ = mini.set_always_on_top(true);
-        } else {
-            let _ = mini.hide();
+/// A principal está na tela (visível e não minimizada)?
+fn principal_na_tela(app: &AppHandle) -> bool {
+    app.get_webview_window("principal")
+        .map(|j| j.is_visible().unwrap_or(false) && !j.is_minimized().unwrap_or(false))
+        .unwrap_or(false)
+}
+
+/// A regra da miniatura: aparece quando a principal sai da tela (minimizada, na bandeja ou ainda
+/// não aberta) e "Miniatura ao minimizar" está ligada; some quando a principal volta.
+/// Com debounce de 150 ms, para não piscar ao arrastar ou redimensionar a principal.
+fn atualizar_mini(app: &AppHandle) {
+    let g = ponte(app).geracao_mini.fetch_add(1, Ordering::SeqCst) + 1;
+    let app = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(150));
+        if ponte(&app).geracao_mini.load(Ordering::SeqCst) == g {
+            aplicar_mini(&app);
         }
+    });
+}
+
+fn aplicar_mini(app: &AppHandle) {
+    let p = ponte(app);
+    if !p.concluido.load(Ordering::SeqCst) || p.arrastando.load(Ordering::SeqCst) {
+        return;
     }
+    let ligada = p.config.lock().unwrap().mini_visivel;
+    let deve = ligada && !principal_na_tela(app);
+    let Some(mini) = app.get_webview_window("mini") else { return };
+    let visivel = mini.is_visible().unwrap_or(false);
+    if deve && !visivel {
+        posicionar_mini(app);
+        let _ = mini.show();
+        let _ = mini.set_always_on_top(true);
+    } else if !deve && visivel {
+        let _ = mini.hide();
+    }
+}
+
+fn definir_mini_ao_minimizar(app: &AppHandle, ligada: bool) {
+    let p = ponte(app);
+    p.config.lock().unwrap().mini_visivel = ligada;
+    salvar_config(app);
     let item = p.item_mini.lock().unwrap();
     if let Some(i) = item.as_ref() {
-        let _ = i.set_text(if mostrar { "Esconder a miniatura" } else { "Mostrar a miniatura" });
+        let _ = i.set_text(if ligada { "Miniatura ao minimizar: ligada" } else { "Miniatura ao minimizar: desligada" });
     }
+    drop(item);
+    atualizar_mini(app);
 }
 
 #[tauri::command]
@@ -365,6 +452,114 @@ fn mini_canto(app: AppHandle) -> String {
     ponte(&app).config.lock().unwrap().mini_canto.clone()
 }
 
+// ---------------------------------------------------------------- configurações
+
+fn config_publica(app: &AppHandle) -> Value {
+    let c = ponte(app).config.lock().unwrap().clone();
+    json!({
+        "tema": c.tema,
+        "fosforo": c.fosforo,
+        "pastaTrabalho": arquivos::exibir(&c.pasta_atual().0),
+        "pastaTrabalhoPadrao": c.pasta_atual().1,
+        "miniAoMinimizar": c.mini_visivel,
+        "toastWindows": c.toast_windows,
+        "mudo": c.mudo,
+    })
+}
+
+#[tauri::command]
+fn config_ler(app: AppHandle) -> Value {
+    config_publica(&app)
+}
+
+/// Grava só as chaves conhecidas (as outras são recusadas) e avisa todas as janelas (`ponte:config`).
+#[tauri::command]
+fn config_gravar(app: AppHandle, parcial: Value) -> Result<Value, String> {
+    let o = parcial.as_object().ok_or("Mande um objeto com as chaves a mudar.")?;
+    let texto = |k: &str| o.get(k).and_then(|v| v.as_str()).map(|s| s.trim().to_lowercase());
+    // valida tudo antes de mudar qualquer coisa
+    let mut desconhecidas = vec![];
+    for k in o.keys() {
+        if !["tema", "fosforo", "pastaTrabalho", "miniAoMinimizar", "toastWindows", "mudo"].contains(&k.as_str()) {
+            desconhecidas.push(k.clone());
+        }
+    }
+    if !desconhecidas.is_empty() {
+        return Err(format!("Chave desconhecida: {}", desconhecidas.join(", ")));
+    }
+    let tema = texto("tema");
+    if let Some(t) = &tema {
+        if !config::TEMAS.contains(&t.as_str()) {
+            return Err("Tema desconhecido (use metal, fosforo ou grade).".into());
+        }
+    }
+    let fosforo = texto("fosforo");
+    if let Some(f) = &fosforo {
+        if !config::FOSFOROS.contains(&f.as_str()) {
+            return Err("Cor do fósforo desconhecida (use ambar ou verde).".into());
+        }
+    }
+    let toast = texto("toastWindows");
+    if let Some(t) = &toast {
+        if !["auto", "sempre", "nunca"].contains(&t.as_str()) {
+            return Err("toastWindows aceita auto, sempre ou nunca.".into());
+        }
+    }
+    let mini = match o.get("miniAoMinimizar") {
+        None => None,
+        Some(Value::Bool(b)) => Some(*b),
+        Some(_) => return Err("miniAoMinimizar é verdadeiro ou falso.".into()),
+    };
+    let mudo = match o.get("mudo") {
+        None => None,
+        Some(Value::Bool(b)) => Some(*b),
+        Some(_) => return Err("mudo é verdadeiro ou falso.".into()),
+    };
+    // pastaTrabalho: null volta ao padrão; texto precisa ser uma pasta que existe
+    let pasta: Option<Option<String>> = match o.get("pastaTrabalho") {
+        None => None,
+        Some(Value::Null) => Some(None),
+        Some(Value::String(t)) => {
+            let c = std::fs::canonicalize(t.trim()).map_err(|_| "Essa pasta não existe.".to_string())?;
+            if !c.is_dir() {
+                return Err("Isso não é uma pasta.".into());
+            }
+            Some(Some(arquivos::exibir(&c)))
+        }
+        Some(_) => return Err("pastaTrabalho é um caminho ou null.".into()),
+    };
+    let pasta_mudou = pasta.is_some();
+    {
+        let p = ponte(&app);
+        let mut c = p.config.lock().unwrap();
+        if let Some(t) = tema { c.tema = t; }
+        if let Some(f) = fosforo { c.fosforo = f; }
+        if let Some(t) = toast { c.toast_windows = t; }
+        if let Some(pa) = pasta { c.pasta_de_trabalho = pa; }
+    }
+    salvar_config(&app);
+    if let Some(m) = mini {
+        definir_mini_ao_minimizar(&app, m);
+    }
+    if let Some(m) = mudo {
+        aplicar_mudo(&app, m);
+    }
+    {
+        let p = ponte(&app);
+        let sempre = p.config.lock().unwrap().toast_windows == "sempre";
+        let item = p.item_toast.lock().unwrap();
+        if let Some(i) = item.as_ref() {
+            let _ = i.set_checked(sempre);
+        }
+    }
+    if pasta_mudou {
+        let _ = app.emit("ponte:pasta", info_pasta(&app));
+    }
+    let atual = config_publica(&app);
+    let _ = app.emit("ponte:config", &atual);
+    Ok(atual)
+}
+
 // ---------------------------------------------------------------- pasta de trabalho
 
 #[derive(Serialize, Clone)]
@@ -438,6 +633,7 @@ async fn trocar_pasta(app: AppHandle) -> Result<Option<String>, String> {
     ponte(&app).config.lock().unwrap().pasta_de_trabalho = Some(texto.clone());
     salvar_config(&app);
     let _ = app.emit("ponte:pasta", info_pasta(&app));
+    let _ = app.emit("ponte:config", config_publica(&app));
     Ok(Some(texto))
 }
 
@@ -447,6 +643,7 @@ fn voltar_padrao(app: AppHandle) -> InfoPasta {
     salvar_config(&app);
     let i = info_pasta(&app);
     let _ = app.emit("ponte:pasta", &i);
+    let _ = app.emit("ponte:config", config_publica(&app));
     i
 }
 
@@ -620,9 +817,12 @@ fn info_app(app: AppHandle) -> Value {
         "pastaDeDados": arquivos::exibir(&p.pasta_dados),
         "motorConversa": if p.sidecar.disponivel() { "sdk" } else { "cli" },
         "node": p.sidecar.node.as_ref().map(|n| arquivos::exibir(n)),
+        "toast": { "instalado": instalado(), "modo": p.config.lock().unwrap().toast_windows.clone() },
+        "miniAoMinimizar": p.config.lock().unwrap().mini_visivel,
         "janelas": {
             "carregamento": app.get_webview_window("carregamento").and_then(|j| j.is_visible().ok()),
             "principal": app.get_webview_window("principal").and_then(|j| j.is_visible().ok()),
+            "principalMinimizada": app.get_webview_window("principal").and_then(|j| j.is_minimized().ok()),
             "mini": app.get_webview_window("mini").and_then(|j| j.is_visible().ok()),
         },
     })
@@ -669,18 +869,20 @@ fn retomar_sessao(app: AppHandle, conversa: String, sessao: String, pasta: Strin
 
 fn montar_bandeja(app: &AppHandle) -> tauri::Result<()> {
     let p = ponte(app);
-    let (mudo, mini) = {
+    let (mudo, mini, sempre) = {
         let c = p.config.lock().unwrap();
-        (c.mudo, c.mini_visivel)
+        (c.mudo, c.mini_visivel, c.toast_windows == "sempre")
     };
     let abrir = MenuItem::with_id(app, "abrir", "Abrir a Ponte de Comando", true, None::<&str>)?;
-    let item_mini = MenuItem::with_id(app, "mini", if mini { "Esconder a miniatura" } else { "Mostrar a miniatura" }, true, None::<&str>)?;
+    let item_mini = MenuItem::with_id(app, "mini", if mini { "Miniatura ao minimizar: ligada" } else { "Miniatura ao minimizar: desligada" }, true, None::<&str>)?;
+    let item_toast = CheckMenuItem::with_id(app, "toast", "Notificação do Windows sempre", true, sempre, None::<&str>)?;
     let item_mudo = CheckMenuItem::with_id(app, "mudo", "Silenciar avisos", true, mudo, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
     let item_sair = MenuItem::with_id(app, "sair", "Sair", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&abrir, &item_mini, &item_mudo, &sep, &item_sair])?;
+    let menu = Menu::with_items(app, &[&abrir, &item_mini, &item_mudo, &item_toast, &sep, &item_sair])?;
     *p.item_mudo.lock().unwrap() = Some(item_mudo);
     *p.item_mini.lock().unwrap() = Some(item_mini);
+    *p.item_toast.lock().unwrap() = Some(item_toast);
     TrayIconBuilder::with_id("bandeja")
         .icon(app.default_window_icon().cloned().expect("ícone do programa"))
         .tooltip("Ponte de Comando · Sara")
@@ -690,7 +892,11 @@ fn montar_bandeja(app: &AppHandle) -> tauri::Result<()> {
             "abrir" => mostrar_principal(app.clone()),
             "mini" => {
                 let vis = ponte(app).config.lock().unwrap().mini_visivel;
-                mostrar_mini(app, !vis);
+                definir_mini_ao_minimizar(app, !vis);
+            }
+            "toast" => {
+                let sempre = ponte(app).config.lock().unwrap().toast_windows == "sempre";
+                let _ = config_gravar(app.clone(), json!({ "toastWindows": if sempre { "auto" } else { "sempre" } }));
             }
             "mudo" => {
                 let m = ponte(app).config.lock().unwrap().mudo;
@@ -769,6 +975,8 @@ pub fn rodar() {
                 porta: Mutex::new(None),
                 item_mudo: Mutex::new(None),
                 item_mini: Mutex::new(None),
+                item_toast: Mutex::new(None),
+                geracao_mini: AtomicU64::new(0),
                 motor_tokens: motor.clone(),
             });
 
@@ -814,7 +1022,12 @@ pub fn rodar() {
             std::thread::spawn(move || loop {
                 std::thread::sleep(Duration::from_secs(3));
                 let p = ponte(&h6);
-                if !p.concluido.load(Ordering::SeqCst) || p.arrastando.load(Ordering::SeqCst) || !p.config.lock().unwrap().mini_visivel {
+                if !p.concluido.load(Ordering::SeqCst) || p.arrastando.load(Ordering::SeqCst) {
+                    continue;
+                }
+                // confere a regra de novo, para nunca ficar presa num estado errado
+                aplicar_mini(&h6);
+                if !h6.get_webview_window("mini").and_then(|m| m.is_visible().ok()).unwrap_or(false) {
                     continue;
                 }
                 if let Some(mini) = h6.get_webview_window("mini") {
@@ -833,6 +1046,18 @@ pub fn rodar() {
                 // fechar só esconde (o programa fica na bandeja)
                 api.prevent_close();
                 let _ = janela.hide();
+                atualizar_mini(janela.app_handle());
+            }
+            ("principal", WindowEvent::Resized(_)) | ("principal", WindowEvent::Moved(_)) => atualizar_mini(janela.app_handle()),
+            ("principal", WindowEvent::Focused(foco)) => {
+                atualizar_mini(janela.app_handle());
+                // voltou para a Main: o aviso de pronto que esperava já foi visto
+                if *foco {
+                    let velho = ponte(janela.app_handle()).estado.lock().unwrap().aviso.as_ref().map(|a| a.tipo == "pronto" && config::agora_ms().saturating_sub(a.em) > 2000).unwrap_or(false);
+                    if velho {
+                        dispensar_aviso(janela.app_handle().clone());
+                    }
+                }
             }
             ("carregamento", WindowEvent::Destroyed) => concluir_carregamento(janela.app_handle()),
             ("mini", WindowEvent::ScaleFactorChanged { .. }) => posicionar_mini(janela.app_handle()),
@@ -846,6 +1071,8 @@ pub fn rodar() {
         })
         .invoke_handler(tauri::generate_handler![
             estado_atual,
+            config_ler,
+            config_gravar,
             dispensar_aviso,
             definir_mudo,
             obter_mudo,

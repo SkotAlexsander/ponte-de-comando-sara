@@ -7,6 +7,7 @@ import { mkdirSync, rmSync, writeFileSync, existsSync, readFileSync } from 'node
 import { tmpdir } from 'node:os'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { limparProcessos } from './limpar.mjs'
 
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const { chromium } = await import(pathToFileURL('A:/Claude/03-projetos/.ferramentas/node_modules/playwright/index.mjs').href)
@@ -16,6 +17,7 @@ const semClaude = args.includes('--sem-claude')
 const PORTA = 47699, CDP = 9339
 
 const base = join(tmpdir(), 'ponte-teste-programa')
+limparProcessos(base)
 rmSync(base, { recursive: true, force: true })
 const dados = join(base, 'dados'), webview = join(base, 'webview'), trabalho = join(base, 'trabalho')
 for (const d of [dados, webview, join(trabalho, 'projeto-a', 'design'), join(trabalho, 'node_modules')]) mkdirSync(d, { recursive: true })
@@ -28,10 +30,10 @@ const conferir = (nome, ok, detalhe = '') => { placar.push({ nome, ok }); consol
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms))
 async function ate(fn, ms = 15000, passo = 200) { const t0 = Date.now(); while (Date.now() - t0 < ms) { try { const v = await fn(); if (v) return v } catch {} await esperar(passo) } return null }
 
-const env = { ...process.env, PONTE_PASTA_DE_DADOS: dados, WEBVIEW2_USER_DATA_FOLDER: webview, PONTE_PORTA: String(PORTA), PONTE_DEPURAR_PORTA: String(CDP) }
+const env = { ...process.env, PONTE_PASTA_DE_DADOS: dados, WEBVIEW2_USER_DATA_FOLDER: webview, PONTE_PORTA: String(PORTA), PONTE_DEPURAR_PORTA: String(CDP), PONTE_TESTE_FORA_DA_TELA: '1' }
 delete env.CLAUDECODE
 const t0 = Date.now()
-const prog = spawn(exe, [], { env, stdio: 'ignore' })
+const prog = spawn(exe, [], { env, stdio: 'ignore', windowsHide: true })
 let saiu = null
 prog.on('exit', (c) => { saiu = c })
 
@@ -64,7 +66,7 @@ try {
   const mini = await ate(() => pagina(/mini\.html/))
   const janelas = await ate(() => main.evaluate(() => window.ponte.info().then((i) => i.janelas)), 5000)
   conferir('janela principal abriu', !!janelas && janelas.principal === true)
-  conferir('miniatura abriu', !!janelas && janelas.mini === true)
+  conferir('miniatura escondida com a principal na tela', !!janelas && janelas.mini === false)
 
   // ----- Main: adaptador, árvore real, pasta de trabalho -----
   const pm = await ate(() => main.evaluate(() => window.__ponteMain && window.__ponteMain.ok && { conversa: window.__ponteMain.assumirConversa, arvore: window.__ponteMain.arvoreReal }), 20000)
@@ -99,17 +101,23 @@ try {
   conferir('FLUXO abre o mapa e "← CONVERSA" volta', !!fluxo && !!volta)
   await ate(() => main.evaluate(() => window.__ponteMain && window.__ponteMain.ok), 15000)
 
-  // ----- hook de pronto → miniatura -----
+  // ----- hook de pronto → miniatura (principal na bandeja) -----
+  await main.evaluate(() => window.__TAURI__.window.getCurrentWindow().close())
+  const naBandeja = await ate(() => main.evaluate(() => window.ponte.info().then((i) => !i.janelas.principal && i.janelas.mini)), 5000)
+  conferir('fechar a principal: vai para a bandeja e a miniatura aparece', !!naBandeja)
   const antes = await mini.evaluate(() => document.getElementById('aviso').hidden)
-  const r = spawnSync(process.execPath, [join(raiz, 'ferramentas', 'hook', 'ponte-hook.mjs'), '--verboso'], { cwd: raiz, input: readFileSync(join(raiz, 'ferramentas', 'hook', 'exemplo-stop.json')), env: { ...process.env, PONTE_PASTA_DE_DADOS: dados } })
+  const r = spawnSync(process.execPath, [join(raiz, 'ferramentas', 'hook', 'ponte-hook.mjs'), '--verboso'], { cwd: raiz, windowsHide: true, input: readFileSync(join(raiz, 'ferramentas', 'hook', 'exemplo-stop.json')), env: { ...process.env, PONTE_PASTA_DE_DADOS: dados } })
   conferir('hook saiu com 0', r.status === 0, String(r.stderr).trim())
   const aviso = await ate(() => mini.evaluate(() => !document.getElementById('aviso').hidden && { titulo: document.getElementById('aviso-titulo').textContent, texto: document.getElementById('aviso-texto').textContent, som: window.__ultimoSom }), 5000)
   conferir('miniatura mostra "Alex, seu trabalho está pronto." com o resumo', antes && aviso && aviso.titulo === 'Alex, seu trabalho está pronto.' && /landing do curso/.test(aviso.texto), aviso && `${aviso.titulo} · ${aviso.texto}`)
   conferir('som do aviso tocou (contexto de áudio rodando)', !!aviso && aviso.som && aviso.som.contexto === 'running', JSON.stringify(aviso && aviso.som))
   await mini.screenshot({ path: join(fotos, 'mini-pronto.png'), omitBackground: true }).catch(() => {})
   const placa = await ate(() => main.evaluate(() => /SARA · PRONTO/.test(document.body.innerText)), 4000)
+  await mini.click('#retrato')
+  const voltou = await ate(() => main.evaluate(() => window.ponte.info().then((i) => i.janelas.principal && !i.janelas.mini)), 5000)
+  conferir('clicar na miniatura traz a principal e a miniatura some', !!voltou)
   conferir('placa da Main segue o evento (SARA · PRONTO)', !!placa)
-  await mini.click('#aviso-depois')
+  await mini.evaluate(() => window.ponte.dispensarAviso())
   const dispensou = await ate(() => mini.evaluate(() => document.getElementById('aviso').hidden), 3000)
   conferir('DEPOIS dispensa o aviso', !!dispensou)
   // token errado é recusado
@@ -142,8 +150,8 @@ try {
     await main.press('#msg', 'Enter')
     const cartao = await ate(() => main.evaluate(() => { const c = document.querySelector('[role=alertdialog]'); return c && c.style.display !== 'none' && c.innerText }), 90000, 500)
     conferir('cartão de permissão aparece em português', !!cartao && /PERMISSÃO/.test(cartao) && /Escrever o arquivo/.test(cartao), (cartao || '').split('\n').slice(0, 2).join(' · '))
-    const miniPrecisa = await mini.evaluate(() => document.getElementById('aviso-titulo').textContent)
-    conferir('miniatura avisa que precisa do Alex', /preciso de você/i.test(miniPrecisa), miniPrecisa)
+    const precisa = await main.evaluate(() => window.ponte.estado())
+    conferir('o estado vira "preciso de você" (aviso na Main, que está na tela)', precisa.estado === 'precisa' && precisa.onde === 'principal', precisa.aviso && precisa.aviso.titulo)
     await main.screenshot({ path: join(fotos, 'main-permissao.png') }).catch(() => {})
     if (cartao) await main.click('[role=alertdialog] [data-nao]')
     const terminou = await ate(() => main.evaluate(() => !window.__ponteMain.logica().state.rodandoEm), 90000, 500)
@@ -161,7 +169,8 @@ try {
   conferir('o roteiro chegou ao fim', false, e.message)
 } finally {
   if (nav) await nav.close().catch(() => {})
-  if (saiu === null) spawnSync('taskkill', ['/PID', String(prog.pid), '/T', '/F'])
+  if (saiu === null) spawnSync('C:\\Windows\\System32\\taskkill.exe', ['/PID', String(prog.pid), '/T', '/F'], { windowsHide: true })
+  limparProcessos(base)
 }
 const falhas = placar.filter((x) => !x.ok).length
 console.log(`\nplacar: ${placar.length - falhas}/${placar.length}`)

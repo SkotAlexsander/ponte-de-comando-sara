@@ -41,6 +41,8 @@ npm run testar:programa     # o .exe de verdade, isolado: carregamento, janelas,
                             # conversa real com Haiku, cartão de permissão, tokens, limites (gasta centavos)
 node ferramentas\testes\programa.mjs --sem-claude   # o mesmo, sem a conversa real
 npm run testar:sidecar-real # só o sidecar: sessão nova, segunda mensagem, retomar depois de fechar
+npm run testar:job          # matar a Ponte à força derruba o sidecar e o claude (Job Object)
+npm run testar:paginas      # as páginas no navegador comum, com a ponte de mentira, em 2040×790 e 1440×900
 ```
 
 Os testes do programa usam pasta de dados, perfil do WebView2, pasta de trabalho e porta **próprios**, em `%TEMP%\ponte-teste-programa`. Nunca tocam nos dados de verdade. As capturas ficam em `docs\capturas\`.

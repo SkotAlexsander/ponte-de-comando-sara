@@ -52,7 +52,7 @@ test('o hook manda o POST com o token, não escreve no stdout e sai com 0', asyn
   writeFileSync(join(dados, 'token'), 'abc123'); writeFileSync(join(dados, 'porta'), String(srv.address().port))
   const r = await new Promise((ok) => {
     const { spawn } = require_spawn()
-    const p = spawn(process.execPath, [join(raiz, 'ferramentas', 'hook', 'ponte-hook.mjs')], { cwd: raiz, env: { ...process.env, PONTE_PASTA_DE_DADOS: dados } })
+    const p = spawn(process.execPath, [join(raiz, 'ferramentas', 'hook', 'ponte-hook.mjs')], { cwd: raiz, windowsHide: true, env: { ...process.env, PONTE_PASTA_DE_DADOS: dados } })
     let out = ''; p.stdout.on('data', (d) => out += d)
     p.on('exit', (code) => ok({ code, out }))
     p.stdin.end(JSON.stringify(ex('exemplo-stop.json')))
@@ -66,9 +66,9 @@ test('com o programa fechado o hook sai com 0, rápido e calado', () => {
   const dados = mkdtempSync(join(tmpdir(), 'ponte-hook-fechado-'))
   writeFileSync(join(dados, 'token'), 'x'); writeFileSync(join(dados, 'porta'), '1')
   const t0 = Date.now()
-  const r = spawnSync(process.execPath, [join(raiz, 'ferramentas', 'hook', 'ponte-hook.mjs')], { input: JSON.stringify(ex('exemplo-stop.json')), env: { ...process.env, PONTE_PASTA_DE_DADOS: dados } })
+  const r = spawnSync(process.execPath, [join(raiz, 'ferramentas', 'hook', 'ponte-hook.mjs')], { input: JSON.stringify(ex('exemplo-stop.json')), windowsHide: true, env: { ...process.env, PONTE_PASTA_DE_DADOS: dados } })
   assert.equal(r.status, 0); assert.equal(String(r.stdout), ''); assert.ok(Date.now() - t0 < 3000)
-  const semDados = spawnSync(process.execPath, [join(raiz, 'ferramentas', 'hook', 'ponte-hook.mjs')], { input: 'lixo', env: { ...process.env, PONTE_PASTA_DE_DADOS: join(dados, 'nao-existe') } })
+  const semDados = spawnSync(process.execPath, [join(raiz, 'ferramentas', 'hook', 'ponte-hook.mjs')], { input: 'lixo', windowsHide: true, env: { ...process.env, PONTE_PASTA_DE_DADOS: join(dados, 'nao-existe') } })
   assert.equal(semDados.status, 0)
 })
 

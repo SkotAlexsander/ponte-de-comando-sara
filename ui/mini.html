@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-tema="metal" data-fosforo="ambar">
 <head>
 <meta charset="utf-8">
 <title>Sara</title>
@@ -7,12 +7,11 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
 <script src="ponte.js"></script>
 <style>
-  /* visual copiado de estudio/Mini.dc.html (fonte da Sara); a janela é transparente e do tamanho do conteúdo */
+  /* visual copiado de estudio/Mini.dc.html (fonte da Sara, revisão do Otto em 06/11);
+     a janela é transparente e do tamanho do conteúdo */
   html, body { margin: 0; background: transparent; overflow: hidden; color: #E6F1F3; font-family: 'IBM Plex Sans', system-ui, sans-serif; user-select: none; }
   .mini { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 8px; padding: 14px; box-sizing: border-box; }
   body.esq .mini { align-items: flex-start; }
-  .topo { display: flex; align-items: flex-start; gap: 8px; }
-  body.esq .topo { flex-direction: row-reverse; }
   .mini-retrato { position: relative; width: 184px; aspect-ratio: 800/1017; }
   .retrato { position: absolute; inset: 0; padding: 0; border: 0; background: transparent; cursor: pointer; transition: filter .3s; }
   .tela { position: absolute; left: 11.75%; top: 9.14%; width: 76.5%; height: 81.71%; overflow: hidden; background: #14181C; }
@@ -20,23 +19,32 @@
   .scan { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.2) 0px, rgba(0,0,0,0.2) 1px, transparent 1px, transparent 3px); }
   .moldura { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   .led-caixa { position: absolute; left: 27.62%; top: 93.75%; width: 43.75%; height: 4.72%; display: flex; align-items: center; justify-content: center; }
-  .led { width: 6px; height: 6px; border-radius: 50%; }
-  .mini-bts { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; opacity: 0; transition: opacity .15s; }
+  .led { display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto; box-shadow: inset 0 -1px 1px rgba(0,0,0,.5); }
+  /* botões dentro do retrato, no canto de cima do vidro */
+  .mini-bts { position: absolute; top: calc(9.14% + 8px); right: calc(11.75% + 8px); z-index: 2; display: flex; flex-direction: column; gap: 16px; opacity: 0; transition: opacity .15s; }
   .mini:hover .mini-bts, .mini:focus-within .mini-bts { opacity: 1; }
-  .mini-bt { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(111,243,255,0.4); background: rgba(5,9,13,0.92); color: #B8FAFF; cursor: pointer; padding: 0; }
-  .mini-bt:hover { background: rgba(111,243,255,0.14); }
+  .metal { background: linear-gradient(180deg,#474D52 0%,#2E3337 46%,#202427 100%); border: 1px solid #0A0C0D; border-radius: 3px; box-shadow: inset 0 1px 0 rgba(255,255,255,.22), inset 0 -1px 0 rgba(0,0,0,.55), 0 2px 4px rgba(0,0,0,.55); text-shadow: 0 1px 0 rgba(0,0,0,.65); transition: filter .15s, transform .08s; cursor: pointer; }
+  .metal:hover { filter: brightness(1.18); }
+  .metal:active { background: linear-gradient(180deg,#1C1F22,#2A2E32); box-shadow: inset 0 2px 6px rgba(0,0,0,.8); transform: translateY(1px); }
+  .mini-bt { position: relative; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: #B8FAFF; padding: 0; }
+  .mini-bt::before, .aviso-bt::before { content: ''; position: absolute; inset: -8px; }
+  .mini-bt .led { position: absolute; top: 3px; right: 3px; width: 4px; height: 4px; }
   .linha { max-width: 340px; box-sizing: border-box; padding: 6px 10px; background: rgba(5,9,13,0.9); border-right: 2px solid; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 16px; color: #B8D3D8; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 4px 14px rgba(0,0,0,0.6); }
   body.esq .linha { border-right: 0; border-left: 2px solid; text-align: left; }
-  .aviso { width: 340px; box-sizing: border-box; padding: 14px 16px; background: linear-gradient(180deg, rgba(6,20,22,0.97), rgba(4,12,14,0.97)); border: 1px solid; box-shadow: 0 8px 24px rgba(0,0,0,0.7); animation: entra .35s cubic-bezier(.2,.9,.3,1.2); }
+  .aviso { position: relative; isolation: isolate; width: 340px; box-sizing: border-box; padding: 26px 30px 28px; animation: entra .35s cubic-bezier(.2,.9,.3,1.2); }
+  .aviso-fundo { position: absolute; inset: 9px; z-index: -1; background: linear-gradient(180deg, rgba(6,20,22,0.97), rgba(4,12,14,0.97)); }
+  .aviso-moldura { position: absolute; inset: 0; box-sizing: border-box; border-style: solid; border-width: 17px; border-image-slice: 50; border-image-repeat: stretch; pointer-events: none; z-index: 2; filter: drop-shadow(0 4px 6px rgba(0,0,0,.6)); }
+  .aviso-erro { animation: entra .35s cubic-bezier(.2,.9,.3,1.2), treme .36s ease-in-out .38s 1; }
+  @keyframes treme { 0%,100% { transform: none } 20% { transform: translateX(-2px) } 40% { transform: translateX(2px) } 60% { transform: translateX(-2px) } 80% { transform: translateX(1px) } }
+  .aviso-pronto::after { content: ''; position: absolute; inset: 6px; z-index: 1; pointer-events: none; opacity: 0; box-shadow: 0 0 12px 3px rgba(155,247,214,.65), inset 0 0 10px rgba(155,247,214,.35); animation: halo 1.3s ease-out .35s 1; }
+  @keyframes halo { 0% { opacity: 0 } 30% { opacity: 1 } 100% { opacity: 0 } }
   @keyframes entra { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
   .aviso-topo { display: flex; align-items: center; gap: 8px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.22em; }
-  .aviso-topo .ponto { width: 7px; height: 7px; border-radius: 50%; }
   .aviso-topo .hora { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-weight: 400; letter-spacing: 0; color: #7F9AA3; }
   .aviso-titulo { margin-top: 8px; font-size: 15px; line-height: 22px; font-weight: 600; color: #E6F1F3; }
   .aviso-texto { margin-top: 4px; font-size: 13px; line-height: 20px; color: #B8D3D8; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .aviso-bts { display: flex; gap: 8px; margin-top: 12px; }
-  .aviso-bt { height: 32px; padding: 0 14px; border: 1px solid; background: transparent; cursor: pointer; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.16em; display: inline-flex; align-items: center; }
-  .aviso-bt:hover { filter: brightness(1.25); }
+  .aviso-bts { display: flex; gap: 16px; margin-top: 14px; }
+  .aviso-bt { position: relative; box-sizing: border-box; height: 30px; padding: 0 12px; gap: 7px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.16em; text-decoration: none; display: inline-flex; align-items: center; }
   .mini-bt:focus-visible, .aviso-bt:focus-visible, .retrato:focus-visible { outline: 2px solid #6FF3FF; outline-offset: 2px; }
   .chama { animation: chama 1.6s ease-in-out infinite; }
   @keyframes chama { 0%,100% { filter: drop-shadow(0 0 6px rgba(155,247,214,0.35)) drop-shadow(0 6px 10px rgba(0,0,0,.7)); } 50% { filter: drop-shadow(0 0 18px rgba(155,247,214,0.85)) drop-shadow(0 6px 10px rgba(0,0,0,.7)); } }
@@ -45,41 +53,42 @@
   .pisca { animation: pisca 1.2s ease-in-out infinite; }
   @keyframes pisca { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
   [hidden] { display: none !important; }
-  @media (prefers-reduced-motion: reduce) { .chama, .varre, .pisca, .aviso { animation: none; } .mini-bts { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .chama, .varre, .pisca, .aviso, .aviso-erro { animation: none; } .aviso-pronto::after { animation: none; opacity: 0; } .mini-bts, .metal { transition: none; } }
 </style>
 </head>
 <body>
 <div class="mini" id="mini" role="complementary" aria-label="Sara em miniatura">
-  <div class="topo">
+  <div class="mini-retrato">
+    <button class="retrato" id="retrato" aria-label="Abrir a Ponte de Comando. Sara: esperando" title="Clique para abrir; arraste para mudar de canto">
+      <span class="tela">
+        <video id="v-esp" autoplay muted loop playsinline aria-hidden="true"></video>
+        <video id="v-ana" autoplay muted loop playsinline aria-hidden="true" style="opacity:0"></video>
+        <span class="scan" aria-hidden="true"></span>
+        <span class="varre" id="varre" hidden aria-hidden="true"></span>
+      </span>
+      <img class="moldura" id="moldura" alt="">
+      <span class="led-caixa" aria-hidden="true"><span class="led" id="led"></span></span>
+    </button>
     <div class="mini-bts">
-      <button class="mini-bt" id="bt-abrir" aria-label="Abrir a Ponte de Comando" title="Abrir"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"></path></svg></button>
-      <button class="mini-bt" id="bt-som" aria-pressed="true" aria-label="Silenciar o som do aviso" title="Silenciar o som do aviso">
+      <button class="mini-bt metal" id="bt-abrir" aria-label="Abrir a Ponte de Comando" title="Abrir"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"></path></svg></button>
+      <button class="mini-bt metal" id="bt-som" aria-pressed="true" aria-label="Silenciar o som do aviso" title="Silenciar o som do aviso">
+        <span class="led" id="led-som" aria-hidden="true"></span>
         <svg id="ic-som" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
         <svg id="ic-mudo" hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7F9AA3" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 0 1 9.3-5M18 8c0 7 3 9 3 9H9M10.3 21a1.94 1.94 0 0 0 3.4 0M2 2l20 20"></path></svg>
-      </button>
-    </div>
-    <div class="mini-retrato">
-      <button class="retrato" id="retrato" aria-label="Abrir a Ponte de Comando. Sara: esperando" title="Clique para abrir; arraste para mudar de canto">
-        <span class="tela">
-          <video id="v-esp" autoplay muted loop playsinline aria-hidden="true"></video>
-          <video id="v-ana" autoplay muted loop playsinline aria-hidden="true" style="opacity:0"></video>
-          <span class="scan" aria-hidden="true"></span>
-          <span class="varre" id="varre" hidden aria-hidden="true"></span>
-        </span>
-        <img class="moldura" id="moldura" alt="">
-        <span class="led-caixa" aria-hidden="true"><span class="led" id="led"></span></span>
       </button>
     </div>
   </div>
   <div class="linha" id="linha" aria-live="polite"><span id="linha-rotulo"></span> · <span id="linha-texto"></span></div>
   <div class="aviso" id="aviso" role="status" hidden>
-    <div class="aviso-topo" id="aviso-topo-cor"><span class="ponto" id="aviso-ponto"></span><span id="aviso-topo"></span><span class="hora" id="aviso-hora"></span></div>
+    <div class="aviso-fundo" aria-hidden="true"></div>
+    <div class="aviso-topo" id="aviso-topo-cor"><span class="led" id="aviso-ponto" aria-hidden="true"></span><span id="aviso-topo"></span><span class="hora" id="aviso-hora"></span></div>
     <div class="aviso-titulo" id="aviso-titulo"></div>
     <div class="aviso-texto" id="aviso-texto"></div>
     <div class="aviso-bts">
-      <button class="aviso-bt" id="aviso-acao"></button>
-      <button class="aviso-bt" id="aviso-depois" style="color:#B8D3D8;border-color:#2F3A3F">DEPOIS</button>
+      <button class="aviso-bt metal" id="aviso-acao"><span class="led" id="aviso-acao-led" aria-hidden="true"></span><span id="aviso-acao-texto"></span></button>
+      <button class="aviso-bt metal" id="aviso-depois" style="color:#B8D3D8">DEPOIS</button>
     </div>
+    <div class="aviso-moldura" id="aviso-moldura" aria-hidden="true"></div>
   </div>
 </div>
 <script>
@@ -92,22 +101,27 @@
     pronto:      { rotulo: 'Pronto',          cor: '#9BF7D6', brilho: 'rgba(155,247,214,0.35)', video: 'esp' },
     erro:        { rotulo: 'Erro',            cor: '#FF6B5A', brilho: 'rgba(255,107,90,0.35)',  video: 'esp' },
   }
-  const BORDA = { pronto: 'rgba(155,247,214,0.5)', precisa: 'rgba(255,197,110,0.55)', erro: 'rgba(255,107,90,0.55)' }
   let atual = { estado: 'esperando', legenda: 'Por aqui', aviso: null, mudo: false }
 
   // as peças vêm do protótipo da Sara: se ela reexportar com outros nomes, a miniatura acompanha
-  const PADRAO = { esp: 'estudio/assets/61926cbf3759014a85a07a28a306b879.mp4', ana: 'estudio/assets/59727c0ff45b6dc696a6ab25c27dafdd.mp4', poster: 'estudio/assets/d2c797fb83405f7d534f92395c670718.jpg', moldura: 'estudio/assets/40121a1b92478c55b90c910bf44ffdac.webp' }
+  const PADRAO = { esp: 'estudio/assets/61926cbf3759014a85a07a28a306b879.mp4', ana: 'estudio/assets/59727c0ff45b6dc696a6ab25c27dafdd.mp4', poster: 'estudio/assets/d2c797fb83405f7d534f92395c670718.jpg', moldura: 'estudio/assets/40121a1b92478c55b90c910bf44ffdac.webp', molduraAviso: 'estudio/assets/d837fc7db557d249d2fca02ae16de29f.webp' }
   const aplicarPecas = (p) => {
     $('v-esp').src = p.esp; $('v-esp').poster = p.poster; $('v-ana').src = p.ana; $('moldura').src = p.moldura
+    $('aviso-moldura').style.borderImageSource = `url("${p.molduraAviso}")`
     ;['v-esp', 'v-ana'].forEach((id) => { const v = $(id); v.muted = true; const r = v.play(); if (r && r.catch) r.catch(() => {}) })
   }
   fetch('estudio/Mini.dc.html').then((r) => r.ok ? r.text() : '').then((html) => {
     const d = new DOMParser().parseFromString(html, 'text/html')
     const vids = d.querySelectorAll('.mini-retrato video'), img = d.querySelector('.mini-retrato img')
     const ajusta = (s) => s ? 'estudio/' + s.replace(/^\.\//, '') : null
-    if (vids.length >= 2 && img) aplicarPecas({ esp: ajusta(vids[0].getAttribute('src')), ana: ajusta(vids[1].getAttribute('src')), poster: ajusta(vids[0].getAttribute('poster')) || PADRAO.poster, moldura: ajusta(img.getAttribute('src')) })
+    const css = [...d.querySelectorAll('style')].map((s) => s.textContent).join('\n')
+    const mAviso = /\.aviso-moldura\{[^}]*url\(\.\/([^)]+)\)/.exec(css)
+    if (vids.length >= 2 && img) aplicarPecas({ esp: ajusta(vids[0].getAttribute('src')), ana: ajusta(vids[1].getAttribute('src')), poster: ajusta(vids[0].getAttribute('poster')) || PADRAO.poster, moldura: ajusta(img.getAttribute('src')), molduraAviso: mAviso ? 'estudio/' + mAviso[1] : PADRAO.molduraAviso })
     else aplicarPecas(PADRAO)
   }).catch(() => aplicarPecas(PADRAO))
+
+  // tema de display (ponte.config): a miniatura segue o mesmo da Main
+  const aplicarTema = (c) => { if (!c) return; document.documentElement.dataset.tema = c.tema || 'metal'; document.documentElement.dataset.fosforo = c.fosforo || 'ambar' }
 
   // som curto (o mesmo do protótipo)
   let ctx = null
@@ -126,6 +140,7 @@
     } catch (e) { window.__ultimoSom = { erro: String(e) } }
   }
   const hora = (ms) => { const d = ms ? new Date(ms) : new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') }
+  const acender = (el, cor) => { el.style.background = cor; el.style.boxShadow = `0 0 6px ${cor}, 0 0 2px ${cor}` }
 
   function desenhar(e) {
     atual = Object.assign({}, atual, e)
@@ -135,7 +150,7 @@
     $('v-ana').style.opacity = E.video === 'ana' ? '1' : '0'
     $('v-esp').style.filter = k === 'erro' ? 'saturate(0.45) hue-rotate(-12deg) brightness(0.9)' : 'none'
     $('varre').hidden = k !== 'trabalhando'
-    $('led').style.background = E.cor; $('led').style.boxShadow = `0 0 6px ${E.cor}, 0 0 2px ${E.cor}`
+    acender($('led'), E.cor)
     $('led').className = 'led' + (k === 'trabalhando' ? ' pisca' : '')
     const r = $('retrato')
     r.style.filter = `drop-shadow(0 0 10px ${E.brilho}) drop-shadow(0 6px 10px rgba(0,0,0,0.7))`
@@ -151,23 +166,26 @@
     $('linha').title = atual.legenda || ''
     if (a) {
       const cor = (ESTADO[a.tipo] || E).cor
-      $('aviso').style.borderColor = BORDA[a.tipo] || BORDA.pronto
+      $('aviso').className = 'aviso' + (a.tipo === 'pronto' ? ' aviso-pronto' : a.tipo === 'erro' ? ' aviso-erro' : '')
       $('aviso-topo-cor').style.color = cor
-      $('aviso-ponto').style.background = cor; $('aviso-ponto').style.boxShadow = `0 0 8px ${cor}`
+      acender($('aviso-ponto'), cor)
       $('aviso-topo').textContent = a.topo || ''
       $('aviso-hora').textContent = hora(a.em)
       $('aviso-titulo').textContent = a.titulo || ''
       $('aviso-texto').textContent = a.texto || ''
       $('aviso-texto').title = a.texto || ''
-      $('aviso-acao').textContent = a.acao || 'VER AGORA'
-      $('aviso-acao').style.color = cor; $('aviso-acao').style.borderColor = BORDA[a.tipo] || BORDA.pronto
+      $('aviso-acao-texto').textContent = a.acao || 'VER AGORA'
+      $('aviso-acao').style.color = cor
+      acender($('aviso-acao-led'), cor)
     }
     const mudo = !!atual.mudo
     $('ic-som').hidden = mudo; $('ic-mudo').hidden = !mudo
+    acender($('led-som'), mudo ? '#3A4247' : '#9BF7D6')
     $('bt-som').setAttribute('aria-pressed', String(!mudo))
     const rotSom = mudo ? 'Ligar o som do aviso' : 'Silenciar o som do aviso'
     $('bt-som').setAttribute('aria-label', rotSom); $('bt-som').title = rotSom
-    if (e && e.som && a && !mudo) som(a.tipo)
+    // com a principal na tela o aviso é dela (onde = 'principal'); a miniatura só toca quando é a vez dela
+    if (e && e.som && a && !mudo && (!e.onde || e.onde === 'mini')) som(a.tipo)
   }
 
   // a janela acompanha o tamanho do conteúdo (o resto é transparente e não pode pegar clique)
@@ -179,7 +197,7 @@
 
   const aplicarCanto = (canto) => { if (canto) document.body.classList.toggle('esq', /esquerdo$/.test(canto)) }
 
-  // clicar abre a principal; arrastar muda de canto
+  // clicar abre a principal; arrastar muda de canto (o fim do arrasto é percebido pela casca)
   let inicio = null, arrastou = false
   const retrato = $('retrato')
   retrato.addEventListener('pointerdown', (ev) => { if (ev.button === 0) { inicio = { x: ev.screenX, y: ev.screenY }; arrastou = false } })
@@ -189,9 +207,7 @@
     arrastou = true; inicio = null
     const T = window.__TAURI__
     if (!T) return
-    window.ponte._invocar('mini_arrastando').then(() => T.window.getCurrentWindow().startDragging())
-      .then(() => window.ponte._invocar('mini_soltou')).then(aplicarCanto)
-      .catch(() => window.ponte._invocar('mini_soltou'))
+    window.ponte._invocar('mini_arrastando').then(() => T.window.getCurrentWindow().startDragging()).catch(() => {})
   })
   retrato.addEventListener('click', (ev) => { if (arrastou) { arrastou = false; ev.preventDefault(); return } inicio = null; window.ponte.mostrarPrincipal() })
   $('bt-abrir').addEventListener('click', () => window.ponte.mostrarPrincipal())
@@ -201,6 +217,8 @@
 
   window.ponte.aoEstado(desenhar)
   window.ponte.aoMudo((m) => desenhar({ mudo: m, som: false }))
+  window.ponte.aoConfig(aplicarTema)
+  window.ponte.config.ler().then(aplicarTema).catch(() => {})
   if (window.__TAURI__) window.__TAURI__.event.listen('ponte:mini-canto', (e) => aplicarCanto(e.payload))
   window.ponte.estado().then((e) => desenhar(Object.assign({}, e, { som: false })))
   window.ponte._invocar('mini_canto').then(aplicarCanto)

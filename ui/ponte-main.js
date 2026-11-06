@@ -224,7 +224,24 @@
 
   // ---------- 5. placa da Sara pelos eventos de fora ----------
   const MAPA = { esperando: 'esperando', trabalhando: 'trabalhando', precisa: 'escutando', pronto: 'pronto', erro: 'erro' }
+  // som curto (o mesmo da miniatura): com a Main na tela, o aviso é dela
+  let ctxSom = null
+  function tocar(tipo) {
+    try {
+      ctxSom = ctxSom || new (window.AudioContext || window.webkitAudioContext)()
+      if (ctxSom.state === 'suspended') ctxSom.resume()
+      const notas = tipo === 'erro' ? [523, 392] : tipo === 'precisa' ? [659, 880] : [784, 1175]
+      notas.forEach((f, i) => {
+        const o = ctxSom.createOscillator(), g = ctxSom.createGain(), t = ctxSom.currentTime + i * 0.14
+        o.type = 'sine'; o.frequency.value = f
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45)
+        o.connect(g).connect(ctxSom.destination); o.start(t); o.stop(t + 0.5)
+      })
+      window.__ultimoSomMain = { tipo, quando: Date.now(), contexto: ctxSom.state }
+    } catch (err) { window.__ultimoSomMain = { erro: String(err) } }
+  }
   function aoEstado(e) {
+    if (e.som && !e.mudo && e.aviso && e.onde === 'principal') tocar(e.aviso.tipo)
     if (st().rodandoEm) return // a conversa daqui manda na placa enquanto roda
     const k = MAPA[e.estado]
     if (k && st().estado !== k) set({ estado: k })
@@ -291,6 +308,10 @@
     p().aoPasta(() => montarRaiz())
     if (usaArvoreReal()) await montarRaiz()
     else { const i = await p().pastaDeTrabalho(); set({ pastaTrabalho: i.caminho }) }
+    // tema de display: a Main da Sara põe o data-tema na área da conversa; aqui fica também no <html>
+    const aplicarTema = (c) => { if (c) { document.documentElement.dataset.tema = c.tema || 'metal'; document.documentElement.dataset.fosforo = c.fosforo || 'ambar' } }
+    p().config.ler().then(aplicarTema).catch(() => {})
+    p().aoConfig(aplicarTema)
     p().aoTokens(atualizarConsumo)
     p().tokens().then(atualizarConsumo)
     setInterval(() => p().tokens().then(atualizarConsumo), 15000)

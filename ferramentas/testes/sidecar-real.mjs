@@ -11,7 +11,7 @@ const cwd = mkdtempSync(join(tmpdir(), 'ponte-sidecar-'))
 const sessao = randomUUID()
 function rodar(passos) {
   return new Promise((ok) => {
-    const p = spawn(process.execPath, [join(raiz, 'sidecar', 'ponte-sidecar.mjs')], { stdio: ['pipe', 'pipe', 'inherit'] })
+    const p = spawn(process.execPath, [join(raiz, 'sidecar', 'ponte-sidecar.mjs')], { stdio: ['pipe', 'pipe', 'inherit'], windowsHide: true })
     const evs = []; let buf = ''; let i = 0
     const proximo = () => { const s = passos[i++]; if (!s) { p.stdin.write(JSON.stringify({ cmd: 'sair' }) + '\n'); return } p.stdin.write(JSON.stringify(s) + '\n') }
     p.stdout.on('data', (d) => {

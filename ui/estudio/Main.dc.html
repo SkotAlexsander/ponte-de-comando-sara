@@ -16,7 +16,7 @@
 body{margin:0;background:#0B0D0F}
 a{color:#6FF3FF}a:hover{color:#B8FAFF}
 .casco{background-color:#16191B;background-image:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 45%,rgba(0,0,0,.45) 100%),url(./assets/7e1849384392f4275d02f957a5c94ab4.webp);background-size:auto,cover;background-position:center,center;background-repeat:no-repeat}
-@media (min-width:1100px){.app{height:100vh}.rolagem{min-height:0;overflow-y:auto;overflow-x:visible}.cresce{min-height:0}.linha-app{flex-wrap:nowrap !important}}
+@media (min-width:760px){.app{height:100vh}.rolagem{min-height:0;overflow-y:auto;overflow-x:visible}.cresce{min-height:0}.linha-app{flex-wrap:nowrap !important}}
 .caixa{position:relative;isolation:isolate;box-sizing:border-box}
 .fundo{position:absolute;inset:12px;z-index:-1;background:rgba(5,9,13,.95)}
 .halo{position:absolute;inset:-40px;z-index:-2;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,rgba(111,243,255,.10),rgba(111,243,255,.03) 45%,transparent 70%);animation:respira 7s ease-in-out infinite}
@@ -94,7 +94,7 @@ input::placeholder{color:#6E8790}
 .entra{animation:entra .3s ease-out}
 @keyframes luz{0%{background-position:-200px 0}100%{background-position:200px 0}}
 .luz{background:linear-gradient(90deg,transparent,rgba(111,243,255,.9),transparent) no-repeat;background-size:200px 1px;animation:luz 3.5s linear infinite}
-@media (prefers-reduced-motion: reduce){.halo,.corrente,.faisca,.pulso,.anel,.onda,.varre,.pisca,.rola,.holo,.cursor,.luz,.entra,[class^="fx-"]{animation:none !important}}
+@media (prefers-reduced-motion: reduce){.halo,.corrente,.faisca,.pulso,.anel,.onda,.varre,.pisca,.rola,.holo,.cursor,.luz,.entra,[class^="fx-"],.led-rapido,.led-troca,.led-atv,.led-canto.aceso,.medidor.aceso,.solta,.pulsa,.liga,.painel > *,.corre path,.volta-pronto path,.varre-erro{animation:none !important}.painel > .liga,.corrente-estado path,.volta-pronto path{opacity:0 !important}}
 .trilho{background:linear-gradient(180deg,#22272A,#141719);border:1px solid #0A0C0D;border-radius:4px;box-shadow:inset 0 1px 0 rgba(255,255,255,.09),inset 0 -1px 0 rgba(0,0,0,.6),0 6px 12px rgba(0,0,0,.6)}
 .campo{box-sizing:border-box;width:100%;height:32px;padding:0 10px;border:1px solid #07090A;border-radius:3px;background:linear-gradient(180deg,#05080A,#0B1013);box-shadow:inset 0 2px 4px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.06);color:#E6F1F3;font-family:'IBM Plex Sans',sans-serif;font-size:13px;outline:none}
 .campo:focus{border-color:rgba(111,243,255,.6);box-shadow:inset 0 2px 4px rgba(0,0,0,.8),0 0 0 1px rgba(111,243,255,.25)}
@@ -112,11 +112,91 @@ input::placeholder{color:#6E8790}
 .cabo-h{background:linear-gradient(180deg,rgba(255,255,255,.18) 0 1px,#16191C 1px 4.5px,#0A0C0D 4.5px 5.2px,rgba(255,220,170,.55) 5.2px 6.2px,#B06A1E 6.2px 8.8px,#0A0C0D 8.8px 9.5px,rgba(255,255,255,.14) 9.5px 10.5px,#2B3034 10.5px 14px)}
 .cabo-v{background:linear-gradient(90deg,rgba(255,255,255,.18) 0 1px,#16191C 1px 4.5px,#0A0C0D 4.5px 5.2px,rgba(255,220,170,.55) 5.2px 6.2px,#B06A1E 6.2px 8.8px,#0A0C0D 8.8px 9.5px,rgba(255,255,255,.14) 9.5px 10.5px,#2B3034 10.5px 14px)}
 .reticencias{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ---- revisão do Otto ---- */
+@media (max-width:759.98px){.casco{overflow-x:clip !important;overflow-y:visible !important}.linha-app{height:auto !important}}
+.pular{position:absolute;left:16px;top:-64px;z-index:90;display:flex;align-items:center;min-height:32px;padding:0 14px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:.14em;color:#B8FAFF;text-decoration:none}
+.pular:focus{top:10px}
+/* P3: área de toque de 44 sem mudar o desenho */
+.toque{position:relative}
+.toque::before{content:"";position:absolute;top:min(0px,calc((100% - 44px) / 2));bottom:min(0px,calc((100% - 44px) / 2));left:min(0px,calc((100% - 44px) / 2));right:min(0px,calc((100% - 44px) / 2))}
+/* B4: abaixo de 600 px de barra, HISTÓRICO e FLUXO viram só ícone */
+@container (max-width:600px){.rot-txt{display:none}.rot-btn{width:32px;padding:0 !important;justify-content:center}}
+/* efeito 10 + B2/B3/B7: rolagem com sinal (esmaece em cima/embaixo e seta ciano quando há mais) */
+.lista{--mc:0px;--mb:0px;padding-bottom:10px;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 var(--mc),#000 calc(100% - var(--mb)),transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 var(--mc),#000 calc(100% - var(--mb)),transparent 100%)}
+.lista[data-cima]{--mc:18px}.lista[data-baixo]{--mb:18px}
+.lista[role=tablist]{--me:0px;--md:0px;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 var(--me),#000 calc(100% - var(--md)),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 var(--me),#000 calc(100% - var(--md)),transparent 100%)}
+.lista[data-esq]{--me:22px}.lista[data-dir]{--md:26px}
+.setas{position:fixed;left:0;top:0;width:0;height:0;z-index:1;pointer-events:none}
+.seta{position:fixed;left:0;top:0;width:14px;height:8px;display:block;opacity:0;transition:opacity .2s;filter:drop-shadow(0 0 3px rgba(111,243,255,.9))}
+.seta.on{opacity:.95}
+.seta svg{display:block}
+/* P2: abaixo de 1366 o painel abre por cima da conversa, como gaveta */
+.gaveta{position:absolute !important;z-index:30;top:12px;bottom:12px;left:88px;filter:drop-shadow(16px 0 22px rgba(0,0,0,.65))}
+@media (max-width:759.98px){.gaveta{position:fixed !important;top:64px;left:8px;right:8px;bottom:8px;width:auto !important}}
+/* P7 */
+.ambar.vazio,.ambar.vazio:hover{filter:saturate(.55) brightness(.82);cursor:default}
+/* efeito 1: LEDs do retrato seguem o estado; volta verde no pronto; passada vermelha no erro */
+.led-ret{position:absolute;width:2.1%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:2;transition:background-color .3s,box-shadow .3s}
+.volta-pronto{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:2}
+.volta-pronto path{fill:none;stroke:#C9FFEA;stroke-width:5;stroke-linecap:round;stroke-dasharray:13 87;stroke-dashoffset:13;opacity:0;filter:drop-shadow(0 0 5px #9BF7D6);animation:volta 1.5s cubic-bezier(.45,.05,.35,1) .15s 1 both}
+@keyframes volta{0%{stroke-dashoffset:13;opacity:0}8%{opacity:1}88%{opacity:1}100%{stroke-dashoffset:-87;opacity:0}}
+.varre-erro{top:-10%;opacity:0;animation:varre-erro 2.2s linear 2}
+@keyframes varre-erro{0%{top:-10%;opacity:1}100%{top:110%;opacity:1}}
+/* efeito 2: corrente na cor do novo estado, uma vez */
+.corrente-estado{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:4}
+.corrente-estado path{fill:none;stroke:var(--cor,#6FF3FF);stroke-width:2;stroke-linecap:round;stroke-dasharray:16 84;stroke-dashoffset:16;opacity:0;filter:drop-shadow(0 0 4px var(--cor,#6FF3FF))}
+.corrente-estado.corre path{animation:corrente-volta .6s cubic-bezier(.4,0,.3,1) 1}
+@keyframes corrente-volta{0%{stroke-dashoffset:16;opacity:0}10%{opacity:1}85%{opacity:1}100%{stroke-dashoffset:-84;opacity:0}}
+/* efeito 3: faíscas do envio e o campo pulsa uma vez */
+.fe{opacity:0}
+.fe1.solta{animation:fe1 .6s ease-out 1}.fe2.solta{animation:fe2 .6s ease-out .05s 1}.fe3.solta{animation:fe3 .6s ease-out .1s 1}
+@keyframes fe1{0%{opacity:0;transform:none}12%{opacity:1}100%{opacity:0;transform:translate(-12px,-9px)}}
+@keyframes fe2{0%{opacity:0;transform:none}12%{opacity:1}100%{opacity:0;transform:translate(11px,-10px)}}
+@keyframes fe3{0%{opacity:0;transform:none}12%{opacity:1}100%{opacity:0;transform:translate(10px,11px)}}
+.fundo-envio.pulsa{animation:pulsa-campo .6s ease-out 1}
+@keyframes pulsa-campo{0%{box-shadow:inset 0 0 0 1px rgba(255,200,130,.95),inset 0 0 16px rgba(255,165,58,.45)}100%{box-shadow:inset 0 0 0 1px rgba(255,165,58,0),inset 0 0 16px rgba(255,165,58,0)}}
+/* efeito 4: LED do chip */
+.led-rapido{animation:pulso .9s ease-in-out infinite}
+.led-troca{animation:led-troca .15s steps(3,end) 1 !important}
+@keyframes led-troca{0%{opacity:1}33%{opacity:.15}66%{opacity:1}100%{opacity:.15}}
+/* efeito 5: painel ligando e desligando */
+.painel > .liga{position:absolute;inset:19px;z-index:4;pointer-events:none;opacity:0;background-image:linear-gradient(#B8FAFF,#B8FAFF),linear-gradient(#B8FAFF,#B8FAFF),linear-gradient(#B8FAFF,#B8FAFF),linear-gradient(#B8FAFF,#B8FAFF),linear-gradient(#B8FAFF,#B8FAFF),linear-gradient(#B8FAFF,#B8FAFF),linear-gradient(#B8FAFF,#B8FAFF),linear-gradient(#B8FAFF,#B8FAFF);background-repeat:no-repeat;background-position:left 13px top 0,right 13px top 0,left 13px bottom 0,right 13px bottom 0,left 0 top 13px,left 0 bottom 13px,right 0 top 13px,right 0 bottom 13px;background-size:0 2px,0 2px,0 2px,0 2px,2px 0,2px 0,2px 0,2px 0;filter:drop-shadow(0 0 3px rgba(111,243,255,.95));animation:liga-linha .55s ease-out 1 both}
+@keyframes liga-linha{0%{opacity:1;background-size:0 2px,0 2px,0 2px,0 2px,2px 0,2px 0,2px 0,2px 0}55%{opacity:1;background-size:calc(50% - 13px) 2px,calc(50% - 13px) 2px,calc(50% - 13px) 2px,calc(50% - 13px) 2px,2px calc(50% - 13px),2px calc(50% - 13px),2px calc(50% - 13px),2px calc(50% - 13px)}100%{opacity:0;background-size:calc(50% - 13px) 2px,calc(50% - 13px) 2px,calc(50% - 13px) 2px,calc(50% - 13px) 2px,2px calc(50% - 13px),2px calc(50% - 13px),2px calc(50% - 13px),2px calc(50% - 13px)}}
+.painel > :not(.fundo):not(.fr):not(.liga){animation:painel-aparece .22s ease-out .12s 1 both}
+@keyframes painel-aparece{from{opacity:0}to{opacity:1}}
+.painel.desliga > :not(.fundo):not(.fr):not(.liga){animation:painel-some .12s ease-in 1 both}
+@keyframes painel-some{from{opacity:1}to{opacity:0}}
+.painel.desliga > .liga{animation:desliga-linha .2s ease-in 1 both}
+@keyframes desliga-linha{0%{opacity:1;background-size:calc(50% - 13px) 2px,calc(50% - 13px) 2px,calc(50% - 13px) 2px,calc(50% - 13px) 2px,2px calc(50% - 13px),2px calc(50% - 13px),2px calc(50% - 13px),2px calc(50% - 13px)}100%{opacity:1;background-size:0 2px,0 2px,0 2px,0 2px,2px 0,2px 0,2px 0,2px 0}}
+/* efeito 6: LED no canto de cada moldura menor, aceso quando há atividade */
+.led-canto{position:absolute;right:15px;top:15px;z-index:3;width:5px;height:5px;border-radius:50%;pointer-events:none;background:radial-gradient(circle at 35% 35%,#55615F 0 20%,#1E2526 70%);box-shadow:0 0 0 1px rgba(0,0,0,.55),inset 0 -1px 1px rgba(0,0,0,.6);transition:background .3s,box-shadow .3s}
+.led-canto.bib{right:13px;top:20px}.encaixe .led-canto{right:5px;top:5px;width:4px;height:4px}
+.led-canto.aceso.ciano{background:radial-gradient(circle at 35% 35%,#FFFFFF 0 20%,#6FF3FF 55%);box-shadow:0 0 0 1px rgba(0,0,0,.4),0 0 6px #6FF3FF,0 0 2px #6FF3FF}
+.led-canto.aceso.ambar{background:radial-gradient(circle at 35% 35%,#FFF1D6 0 20%,#FFA53A 55%);box-shadow:0 0 0 1px rgba(0,0,0,.4),0 0 6px #FFA53A,0 0 2px #FFA53A}
+.led-atv,.led-canto.aceso,.medidor.aceso{animation:led-atv 1.4s ease-in-out infinite}
+@keyframes led-atv{0%,100%{opacity:.6}50%{opacity:1}}
+.medidor{position:absolute;right:10px;top:11px;z-index:3;width:27px;height:27px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(255,200,110,.6),rgba(255,165,58,.2) 55%,transparent 72%);mix-blend-mode:screen;opacity:0;transition:opacity .4s}
+
+/* Biblioteca: peça de ações e estantes */
+.pecas{display:flex;align-items:stretch;flex:0 0 auto;height:24px;background:linear-gradient(180deg,#474D52 0%,#2E3337 46%,#202427 100%);border:1px solid #0A0C0D;border-radius:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.55),0 2px 4px rgba(0,0,0,.55)}
+.peca{position:relative;width:28px;height:100%;padding:0;border:0;background:transparent;color:#6FF3FF;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background-color .12s}
+.peca:hover{background:rgba(255,255,255,.08)}
+.peca:active{background:rgba(0,0,0,.35)}
+.peca:focus-visible{outline:2px solid #6FF3FF;outline-offset:1px;z-index:2}
+.peca.toque-esq::before{content:"";position:absolute;top:-10px;bottom:-10px;left:-16px;right:0}
+.peca.toque-dir::before{content:"";position:absolute;top:-10px;bottom:-10px;left:0;right:-16px}
+.peca-div{flex:0 0 1px;background:#0A0C0D;box-shadow:1px 0 0 rgba(255,255,255,.08)}
+.peca .led{position:absolute;right:3px;top:3px;width:4px;height:4px}
+.estante{display:grid;grid-template-columns:14px minmax(0,1fr) auto 6px;align-items:center;column-gap:7px;min-height:30px;padding:0 10px;text-align:left}
+.estante .unid{font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#A3BAC1;margin-left:3px}
+.bib-rodape{display:none;margin-top:2px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#7F9AA3}
+@media (min-height:860px){.bib-rodape{display:block}}
 </style>
 </helmet>
 <div class="casco app" style="position: relative; min-height: 100vh; box-sizing: border-box; color: #E6F1F3; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+  <a href="#msg" class="metal pular" onClick="{{ irMsg }}">Ir para a mensagem</a>
 
-  <header style="position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 5px 16px; background: linear-gradient(180deg, rgba(8,12,15,0.97), rgba(8,12,15,0.88)); border-bottom: 1px solid rgba(111,243,255,0.28); box-shadow: 0 3px 16px rgba(0,0,0,0.65)">
+  <header style="position: relative; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 5px 16px; background: linear-gradient(180deg, rgba(8,12,15,0.97), rgba(8,12,15,0.88)); border-bottom: 1px solid rgba(111,243,255,0.28); box-shadow: 0 3px 16px rgba(0,0,0,0.65)">
     <div class="placa" role="img" aria-label="Ponte de Comando, Sara" style="position: relative; height: 46px; display: flex; align-items: center; gap: 10px">
       <span aria-hidden="true" class="visor-nome"></span>
       <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6FF3FF" stroke-width="1.6" style="position: relative; flex: 0 0 auto; filter: drop-shadow(0 0 4px rgba(111,243,255,0.8))"><circle cx="12" cy="12" r="9.5"></circle><circle cx="12" cy="12" r="5"></circle><circle cx="12" cy="12" r="1.6" fill="#FFA53A" stroke="none" style="filter: drop-shadow(0 0 3px #FFA53A)"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"></path></svg>
@@ -153,13 +233,14 @@ input::placeholder{color:#6E8790}
   <div class="cresce linha-app" ref="{{ linhaRef }}" style="position: relative; isolation: isolate; flex: 1 1 auto; display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px; padding: 12px; height: 892px">
 
     <sc-if value="{{ navCheia }}" hint-placeholder-val="{{ true }}">
-    <nav aria-label="Explorador" class="rolagem" style="flex: 1 1 240px; max-width: 290px; display: flex; flex-direction: column; gap: 10px; padding: 14px; margin: -14px -12px">
+    <nav aria-label="Explorador" class="rolagem" style="flex: 1 1 262px; max-width: 290px; display: flex; flex-direction: column; gap: 10px; padding: 14px; margin: -14px -12px">
 
-      <section aria-label="Arquivos" data-moldura="1" class="caixa" style="flex: 1 1 160px; min-height: 150px; padding: 34px 34px 34px; display: flex; flex-direction: column; gap: 2px">
+      <section aria-label="Arquivos" data-moldura="1" class="caixa" style="flex: 1 1 160px; min-height: {{ criar.arquivos.minimo }}; padding: 34px 34px 34px; display: flex; flex-direction: column; gap: 2px">
         <div class="fundo" aria-hidden="true"></div>
+        <span class="{{ atv.arquivos }}" aria-hidden="true"></span>
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px">
           <span style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.22em; color: #6FF3FF">ARQUIVOS</span>
-          <button class="metal" onClick="{{ criar.arquivos.alternar }}" aria-expanded="{{ criar.arquivos.expandido }}" aria-label="Criar pasta ou arquivo" title="Nova pasta ou arquivo" style="position: relative; z-index: 3; width: 26px; height: 22px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+          <button class="metal toque" onClick="{{ criar.arquivos.alternar }}" aria-expanded="{{ criar.arquivos.expandido }}" aria-label="Criar pasta ou arquivo" title="Nova pasta ou arquivo" style="position: relative; z-index: 3; width: 26px; height: 22px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
         </div>
         <sc-if value="{{ criar.arquivos.aberto }}" hint-placeholder-val="{{ false }}">
           <div role="group" aria-label="Criar na arquivos" style="position: relative; z-index: 3; display: flex; flex-direction: column; gap: 6px; margin: 0 0 8px; padding: 8px; background: rgba(3,8,11,0.9); border: 1px solid rgba(111,243,255,0.28)">
@@ -186,13 +267,16 @@ input::placeholder{color:#6E8790}
         <div class="fr fr-lateral" aria-hidden="true"></div>
       </section>
 
-      <section aria-label="Biblioteca" data-moldura="1" data-liga="1" data-liga-acima="0.42" class="caixa" style="flex: 0 0 auto; padding: 31px 34px 34px 34px; display: flex; flex-direction: column; gap: 4px">
+      <section aria-label="Biblioteca" data-moldura="1" data-liga="1" data-liga-acima="0.42" class="caixa" style="flex: 0 0 auto; padding: 31px 34px 34px 34px; display: flex; flex-direction: column; gap: 6px">
         <div class="fundo" aria-hidden="true"></div>
-        <div style="display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px 40px">
-          <span style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.22em; color: #6FF3FF">BIBLIOTECA</span>
-          <span style="flex: 1 1 auto"></span>
-          <button class="metal" onClick="{{ criar.biblioteca.alternar }}" aria-expanded="{{ criar.biblioteca.expandido }}" aria-label="Criar pasta ou arquivo na Biblioteca" title="Nova pasta ou arquivo" style="position: relative; z-index: 3; width: 26px; height: 22px; margin-right: 6px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
-          <button class="metal" onClick="{{ abrir.biblioteca }}" aria-label="Abrir a Biblioteca num painel" style="position: relative; z-index: 3; width: 26px; height: 22px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg></button>
+        <span class="{{ atv.biblioteca }}" aria-hidden="true"></span>
+        <div style="position: relative; z-index: 3; display: flex; align-items: center; gap: 10px; height: 24px; margin: -5px 0 6px 32px">
+          <span style="flex: 1 1 auto; min-width: 0; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; line-height: 16px; letter-spacing: 0.22em; color: #6FF3FF">BIBLIOTECA</span>
+          <div class="pecas" role="group" aria-label="Ações da Biblioteca">
+            <button class="peca toque-esq" onClick="{{ criar.biblioteca.alternar }}" aria-expanded="{{ criar.biblioteca.expandido }}" aria-label="Criar pasta ou arquivo na Biblioteca" title="Nova pasta ou arquivo"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg><span class="led" aria-hidden="true" style="background: {{ criar.biblioteca.led }}; box-shadow: {{ criar.biblioteca.ledBrilho }}"></span></button>
+            <span class="peca-div" aria-hidden="true"></span>
+            <button class="peca toque-dir" onClick="{{ abrir.biblioteca }}" aria-label="Abrir a Biblioteca num painel" title="Abrir num painel"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg></button>
+          </div>
         </div>
         <sc-if value="{{ criar.biblioteca.aberto }}" hint-placeholder-val="{{ false }}">
           <div role="group" aria-label="Criar na biblioteca" style="position: relative; z-index: 3; display: flex; flex-direction: column; gap: 6px; margin: 0 0 8px; padding: 8px; background: rgba(3,8,11,0.9); border: 1px solid rgba(111,243,255,0.28)">
@@ -210,19 +294,28 @@ input::placeholder{color:#6E8790}
           </div>
         </sc-if>
         <sc-for list="{{ biblioteca }}" as="b" hint-placeholder-count="3">
-          <button class="metal" onClick="{{ b.escolher }}" aria-pressed="{{ b.alvo }}" style="display: flex; justify-content: space-between; align-items: center; min-height: 25px; padding: 0 10px; color: #E6F1F3; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px">
-            <span>{{ b.nome }}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8FA9B1">{{ b.qtd }}</span>
+          <button class="metal estante" onClick="{{ b.escolher }}" aria-pressed="{{ b.alvo }}" aria-label="{{ b.rotulo }}" title="{{ b.dica }}" style="color: #E6F1F3; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; box-shadow: {{ b.borda }}">
+            <span aria-hidden="true" style="display: flex; color: {{ b.corIcone }}">
+              <sc-if value="{{ b.ehCerebro }}" hint-placeholder-val="{{ true }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 0 0-5.6-1.5A3 3 0 0 0 4 7.5a3 3 0 0 0-1 5.2A3 3 0 0 0 6 18a3 3 0 0 0 6 1zM12 5a3 3 0 0 1 5.6-1.5A3 3 0 0 1 20 7.5a3 3 0 0 1 1 5.2A3 3 0 0 1 18 18a3 3 0 0 1-6 1zM12 5v14M8 9.5a2.5 2.5 0 0 0 2 1M16 9.5a2.5 2.5 0 0 1-2 1M8 14.5a2.5 2.5 0 0 1 2-1M16 14.5a2.5 2.5 0 0 0-2-1"></path></svg></sc-if>
+              <sc-if value="{{ b.ehAlexandria }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h5v14H4zM10 5h4v14h-4zM15 6l4-1 2 13-4 1z"></path></svg></sc-if>
+              <sc-if value="{{ b.ehMemoria }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v9H3zM6 16v3M10 16v3M14 16v3M18 16v3M7 10v3M11 10v3M15 10v3"></path></svg></sc-if>
+            </span>
+            <span class="reticencias" style="font-size: 12.5px">{{ b.nome }}</span>
+            <span style="white-space: nowrap"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-variant-numeric: tabular-nums; color: #E6F1F3">{{ b.n }}</span><span class="unid">{{ b.unidade }}</span></span>
+            <span class="led" aria-hidden="true" style="background: {{ b.led }}; box-shadow: {{ b.ledBrilho }}"></span>
           </button>
         </sc-for>
+        <span class="bib-rodape">{{ bibRodape }}</span>
         <div class="fr fr-biblioteca" aria-hidden="true"></div>
       </section>
 
       <section aria-label="Skills" data-moldura="1" data-liga="1" class="caixa" style="flex: 0 0 auto; padding: 34px 34px 36px 34px; display: flex; flex-direction: column; gap: 4px">
         <div class="fundo" aria-hidden="true"></div>
+        <span class="{{ atv.skills }}" aria-hidden="true"></span>
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
           <span style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.22em; color: #6FF3FF">SKILLS</span>
           <span style="display: flex; align-items: center; gap: 8px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #FFA53A">140</span>
-          <button class="metal" onClick="{{ abrir.skills }}" aria-label="Abrir as Skills num painel" style="position: relative; z-index: 3; width: 26px; height: 22px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg></button></span>
+          <button class="metal toque" onClick="{{ abrir.skills }}" aria-label="Abrir as Skills num painel" style="position: relative; z-index: 3; width: 26px; height: 22px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg></button></span>
         </div>
         <span style="font-size: 12px; color: #8FA9B1; margin-top: 2px">usadas agora</span>
         <sc-for list="{{ skillsAgora }}" as="s" hint-placeholder-count="3">
@@ -234,13 +327,14 @@ input::placeholder{color:#6E8790}
 
       <section aria-label="Conexões" data-moldura="1" data-liga="1" class="caixa" style="flex: 0 0 auto; padding: 32px 34px 33px 34px; display: flex; flex-direction: column; gap: 4px">
         <div class="fundo" aria-hidden="true"></div>
+        <span class="{{ atv.conexoes }}" aria-hidden="true"></span>
         <div style="display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px 30px">
           <span style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.22em; color: #6FF3FF">CONEXÕES</span>
-          <button class="metal" onClick="{{ abrir.conexoes }}" aria-label="Abrir as Conexões num painel" style="position: relative; z-index: 3; width: 26px; height: 22px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg></button>
+          <button class="metal toque" onClick="{{ abrir.conexoes }}" aria-label="Abrir as Conexões num painel" style="position: relative; z-index: 3; width: 26px; height: 22px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg></button>
         </div>
         <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 8px">
           <sc-for list="{{ conexoesResumo }}" as="c" hint-placeholder-count="6">
-            <button class="linha" onClick="{{ abrir.conexoes }}" aria-label="{{ c.nome }}: {{ c.estado }}" title="{{ c.estado }}" style="display: flex; align-items: center; gap: 7px; min-height: 24px; padding: 0 4px; border: 0; background: transparent; color: {{ c.corNome }}; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; text-align: left; white-space: nowrap; min-width: 0">
+            <button class="linha toque" onClick="{{ abrir.conexoes }}" aria-label="{{ c.rotulo }}" title="{{ c.estado }}" style="display: flex; align-items: center; gap: 7px; min-height: 24px; padding: 0 4px; border: 0; background: transparent; color: {{ c.corNome }}; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; text-align: left; white-space: nowrap; min-width: 0">
               <span class="led" style="background: {{ c.cor }}; box-shadow: 0 0 7px {{ c.cor }}"></span><span class="reticencias">{{ c.nome }}</span>
             </button>
           </sc-for>
@@ -255,6 +349,7 @@ input::placeholder{color:#6E8790}
       <sc-for list="{{ trilho }}" as="t" hint-placeholder-count="5">
         <div style="display: flex; flex-direction: column; align-items: center; gap: 3px">
           <button class="encaixe" onClick="{{ t.acao }}" aria-label="{{ t.nome }}" aria-pressed="{{ t.aberto }}" title="{{ t.nome }}" style="color: {{ t.cor }}">
+          <span class="{{ t.atv }}" aria-hidden="true"></span>
           <sc-if value="{{ t.ehArvore }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></sc-if>
           <sc-if value="{{ t.ehConversas }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2"></path></svg></sc-if>
           <sc-if value="{{ t.ehBiblioteca }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h5v14H4zM10 5h4v14h-4zM15 6l4-1 2 13-4 1z"></path></svg></sc-if>
@@ -275,6 +370,7 @@ input::placeholder{color:#6E8790}
       <div class="fr fr-painel" aria-hidden="true"></div>
       <div class="corrente" aria-hidden="true" style="top: 24px; left: 70px; right: 70px"></div>
       <div class="corrente" aria-hidden="true" style="bottom: 19px; left: 70px; right: 70px; animation-delay: -2.7s; animation-duration: 7s"></div>
+      <svg class="corrente-estado" data-corrente="1" aria-hidden="true"><path pathLength="100" d="M0 0"></path></svg>
       <span class="faisca f1" aria-hidden="true" style="right: 34px; bottom: 30px"></span>
       <span class="faisca f2" aria-hidden="true" style="right: 46px; bottom: 26px; animation-delay: -3s"></span>
       <span class="faisca f3" aria-hidden="true" style="left: 30px; top: 168px; animation-delay: -5s"></span>
@@ -282,29 +378,29 @@ input::placeholder{color:#6E8790}
       <span aria-hidden="true" style="position: absolute; left: 50%; top: 3px; transform: translateX(-50%); z-index: 4; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; line-height: 16px; letter-spacing: 0.16em; color: #6FF3FF; text-shadow: 0 0 8px rgba(111,243,255,0.7); white-space: nowrap">{{ tituloAba }}</span>
 
       <sc-if value="{{ modoConversa }}" hint-placeholder-val="{{ true }}">
-        <div style="position: relative; z-index: 3; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(111,243,255,0.14)">
-          <div role="tablist" aria-label="Conversas abertas" class="lista" style="flex: 1 1 auto; min-width: 0; display: flex; gap: 4px; overflow-x: auto; padding: 8px 8px 9px; margin: -6px -6px -5px">
+        <div style="position: relative; z-index: 3; flex: 0 0 auto; container-type: inline-size; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(111,243,255,0.14)">
+          <div role="tablist" aria-label="Conversas abertas" class="lista" style="flex: 0 1 auto; min-width: 0; display: flex; gap: 4px; overflow-x: auto; padding: 8px 8px 9px; margin: -6px -6px -5px">
             <sc-for list="{{ abasSessao }}" as="s" hint-placeholder-count="2">
               <div style="position: relative; display: flex; flex: 0 1 220px; min-width: 120px">
                 <button role="tab" class="metal" onClick="{{ s.ir }}" aria-selected="{{ s.sel }}" title="{{ s.dica }}" style="flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 30px 0 10px; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; color: {{ s.cor }}; box-shadow: {{ s.sombra }}; text-align: left">
                   <span class="{{ s.ledClasse }}" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto; background: {{ s.led }}; box-shadow: 0 0 6px {{ s.led }}"></span>
                   <span class="reticencias">{{ s.titulo }}</span>
                 </button>
-                <button class="linha" onClick="{{ s.fechar }}" aria-label="Fechar a conversa {{ s.titulo }}" style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; padding: 0; border: 0; border-radius: 2px; background: transparent; color: #8FA9B1; display: flex; align-items: center; justify-content: center"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                <button class="linha toque" onClick="{{ s.fechar }}" aria-label="Fechar a conversa {{ s.titulo }}" style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; padding: 0; border: 0; border-radius: 2px; background: transparent; color: #B8D3D8; display: flex; align-items: center; justify-content: center"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
               </div>
             </sc-for>
-            <button class="metal" onClick="{{ novaConversa }}" aria-label="Nova conversa" title="Nova conversa" style="flex: 0 0 32px; height: 32px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
           </div>
-          <button class="metal" onClick="{{ abrir.conversas }}" aria-pressed="{{ conversasAberto }}" title="Conversas anteriores" style="flex: 0 0 auto; display: flex; align-items: center; gap: 7px; min-height: 32px; padding: 0 12px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.14em; color: #B8FAFF">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2"></path></svg>HISTÓRICO
+          <button class="metal toque" onClick="{{ novaConversa }}" aria-label="Nova conversa" title="Nova conversa" style="flex: 0 0 32px; margin-right: auto; height: 32px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+          <button class="metal toque rot-btn" onClick="{{ abrir.conversas }}" aria-pressed="{{ conversasAberto }}" aria-label="Histórico de conversas" title="Conversas anteriores" style="flex: 0 0 auto; display: flex; align-items: center; gap: 7px; min-height: 32px; padding: 0 12px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.14em; color: #B8FAFF">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2"></path></svg><span class="rot-txt">HISTÓRICO</span>
           </button>
-          <a href="Fluxo.dc.html" class="metal" style="flex: 0 0 auto; display: flex; align-items: center; gap: 7px; min-height: 32px; padding: 0 12px; box-sizing: border-box; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.14em; color: #B8FAFF; text-decoration: none">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 6h5v5H5zM14 13h5v5h-5zM10 8.5h4.5v4.5"></path></svg>FLUXO
+          <a href="Fluxo.dc.html" class="metal toque rot-btn" aria-label="Fluxo dos agentes" style="flex: 0 0 auto; display: flex; align-items: center; gap: 7px; min-height: 32px; padding: 0 12px; box-sizing: border-box; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.14em; color: #B8FAFF; text-decoration: none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 6h5v5H5zM14 13h5v5h-5zM10 8.5h4.5v4.5"></path></svg><span class="rot-txt">FLUXO</span>
           </a>
         </div>
-        <div style="position: relative; z-index: 1; margin: -4px 0 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8FA9B1" class="reticencias">{{ sessao.meta }}</div>
+        <div style="position: relative; z-index: 1; flex: 0 0 auto; margin: -4px 0 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 16px; color: #8FA9B1" class="reticencias">{{ sessao.meta }}</div>
 
-        <div class="lista" ref="{{ lista }}" style="position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 6px; display: flex; flex-direction: column; gap: 14px; max-width: 900px; width: 100%; margin: 0 auto; box-sizing: border-box">
+        <div class="lista" ref="{{ lista }}" style="position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 6px; padding-bottom: 12px; display: flex; flex-direction: column; gap: 14px; max-width: 900px; width: 100%; margin: 0 auto; box-sizing: border-box">
           <sc-if value="{{ conversaVazia }}" hint-placeholder-val="{{ false }}">
             <div style="margin: auto; text-align: center; display: flex; flex-direction: column; gap: 6px; color: #8FA9B1; font-size: 14px">
               <span style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.24em; color: #6FF3FF">CONVERSA NOVA</span>
@@ -347,33 +443,36 @@ input::placeholder{color:#6E8790}
             <label for="msg" style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.22em; color: #8FA9B1">MENSAGEM PARA A SARA</label>
             <div role="group" aria-label="Modelo e velocidade desta conversa" style="display: flex; flex-wrap: wrap; gap: 6px">
               <sc-for list="{{ chipsConversa }}" as="c" hint-placeholder-count="3">
-                <button class="metal" onClick="{{ c.acao }}" aria-label="{{ c.dica }}" title="{{ c.dica }}" style="display: flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.12em; color: {{ c.cor }}">
-                  <span class="led" style="width: 6px; height: 6px; background: {{ c.cor }}; box-shadow: 0 0 6px {{ c.cor }}"></span><span style="color: #8FA9B1">{{ c.nome }}</span>{{ c.valor }}
+                <button class="metal toque" onClick="{{ c.acao }}" aria-label="{{ c.dica }}" title="{{ c.dica }}" style="display: flex; align-items: center; justify-content: flex-start; gap: 6px; min-width: {{ c.minimo }}; min-height: 28px; padding: 0 10px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.12em; color: {{ c.cor }}">
+                  <span class="{{ c.ledClasse }}" data-chip="{{ c.id }}" style="width: 6px; height: 6px; background: {{ c.led }}; box-shadow: {{ c.brilho }}"></span><span style="color: #B8D3D8">{{ c.nome }}</span>{{ c.valor }}
                 </button>
               </sc-for>
             </div>
           </div>
           <div class="caixa" style="display: flex; gap: 8px; align-items: center; padding: 22px 25px">
-            <div class="fundo" aria-hidden="true" style="inset: 9px; background: rgba(3,8,11,0.96)"></div>
-            <button class="metal" aria-label="Anexar arquivo" style="position: relative; z-index: 3; width: 34px; height: 34px; padding: 0; color: #B8D3D8; display: flex; align-items: center; justify-content: center; flex: 0 0 auto">
+            <div class="fundo fundo-envio" aria-hidden="true" style="inset: 9px; background: rgba(3,8,11,0.96)"></div>
+            <span class="faisca fe fe1" data-envio="1" aria-hidden="true" style="left: 10px; top: 10px"></span>
+            <span class="faisca fe fe2" data-envio="1" aria-hidden="true" style="right: 10px; top: 10px"></span>
+            <span class="faisca fe fe3" data-envio="1" aria-hidden="true" style="right: 10px; bottom: 10px"></span>
+            <button class="metal toque" aria-label="Anexar arquivo" style="position: relative; z-index: 3; width: 34px; height: 34px; padding: 0; color: #B8D3D8; display: flex; align-items: center; justify-content: center; flex: 0 0 auto">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5 5 0 0 1-7.1-7.1l8.6-8.6a3.4 3.4 0 0 1 4.8 4.8l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4l7.9-7.9"></path></svg>
             </button>
-            <input id="msg" type="text" autocomplete="off" placeholder="Escreva e aperte Enter, ou toque no microfone" value="{{ texto }}" onChange="{{ digitar }}" onKeyDown="{{ tecla }}" onFocus="{{ focar }}" onBlur="{{ desfocar }}" style="position: relative; z-index: 3; flex: 1 1 200px; min-width: 0; height: 34px; padding: 0 6px; border: 0; background: transparent; color: #E6F1F3; font-family: 'IBM Plex Sans', sans-serif; font-size: 15px; outline: none">
-            <button class="metal" aria-label="Falar com a Sara" aria-pressed="{{ mic.ligado }}" onClick="{{ alternarMic }}" style="position: relative; z-index: 3; width: 34px; height: 34px; padding: 0; color: {{ mic.cor }}; display: flex; align-items: center; justify-content: center; flex: 0 0 auto">
+            <input id="msg" type="text" autocomplete="off" placeholder="Escreva para a Sara…" value="{{ texto }}" onChange="{{ digitar }}" onKeyDown="{{ tecla }}" onFocus="{{ focar }}" onBlur="{{ desfocar }}" style="position: relative; z-index: 3; flex: 1 1 200px; min-width: 0; height: 34px; padding: 0 6px; border: 0; background: transparent; color: #E6F1F3; font-family: 'IBM Plex Sans', sans-serif; font-size: 15px; outline: none">
+            <button class="metal toque" aria-label="Falar com a Sara" aria-pressed="{{ mic.ligado }}" onClick="{{ alternarMic }}" style="position: relative; z-index: 3; width: 34px; height: 34px; padding: 0; color: {{ mic.cor }}; display: flex; align-items: center; justify-content: center; flex: 0 0 auto">
               <sc-if value="{{ mic.on }}" hint-placeholder-val="{{ false }}">
                 <span class="anel" aria-hidden="true" style="position: absolute; inset: 2px; border: 1px solid #6FF3FF; pointer-events: none"></span>
               </sc-if>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg>
             </button>
             <sc-if value="{{ meuCiclo }}" hint-placeholder-val="{{ false }}">
-              <button class="parar" onClick="{{ parar }}" style="position: relative; z-index: 3; height: 34px; min-width: 104px; padding: 0 16px; color: #FFB4A6; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.16em; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 0 0 auto">
-                PARAR
+              <button class="parar toque" onClick="{{ parar }}" style="position: relative; z-index: 3; height: 34px; min-width: 104px; padding: 0 16px; color: #FFB4A6; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.16em; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 0 0 auto">
+                <span class="led pulso" aria-hidden="true" style="background: #FF6B5A; box-shadow: 0 0 6px #FF6B5A, 0 0 2px #FF6B5A"></span>PARAR
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12"></rect></svg>
               </button>
             </sc-if>
             <sc-if value="{{ livreAqui }}" hint-placeholder-val="{{ true }}">
-              <button class="ambar" onClick="{{ enviar }}" style="position: relative; z-index: 3; height: 34px; min-width: 104px; padding: 0 16px; color: #1C0E02; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.16em; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 0 0 auto">
-                ENVIAR
+              <button class="{{ envio.classe }}" onClick="{{ enviar }}" aria-disabled="{{ envio.desligado }}" style="position: relative; z-index: 3; height: 34px; min-width: 104px; padding: 0 16px; color: #1C0E02; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.16em; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 0 0 auto">
+                <span class="led" aria-hidden="true" style="background: {{ envio.led }}; box-shadow: {{ envio.brilho }}"></span>ENVIAR
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
               </button>
             </sc-if>
@@ -488,13 +587,13 @@ input::placeholder{color:#6E8790}
     </main>
 
     <sc-for list="{{ paineis }}" as="p" hint-placeholder-count="0">
-      <section aria-label="{{ p.titulo }}" data-moldura="1" data-liga="1" class="caixa" style="flex: 0 0 {{ p.largura }}; width: {{ p.largura }}; min-height: 0; padding: 34px; display: flex; flex-direction: column; gap: 10px">
+      <section aria-label="{{ p.titulo }}" data-moldura="1" data-liga="1" class="{{ p.classe }}" style="flex: 0 0 {{ p.largura }}; width: {{ p.largura }}; min-height: 0; padding: 34px; display: flex; flex-direction: column; gap: 10px">
         <div class="fundo" aria-hidden="true"></div>
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
           <span style="display: flex; align-items: center; gap: 8px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.22em; color: #6FF3FF"><span class="led" style="background: #6FF3FF; box-shadow: 0 0 6px #6FF3FF"></span>{{ p.titulo }}</span>
           <span style="display: flex; gap: 5px">
-          <button class="metal" onClick="{{ p.ampliar }}" aria-label="Ampliar o painel {{ p.titulo }}" title="Ampliar" style="position: relative; z-index: 3; width: 26px; height: 24px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"></path></svg></button>
-          <button class="metal" onClick="{{ p.fechar }}" aria-label="Fechar o painel {{ p.titulo }}" style="position: relative; z-index: 3; width: 26px; height: 24px; padding: 0; color: #B8D3D8; display: flex; align-items: center; justify-content: center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+          <button class="metal toque" onClick="{{ p.ampliar }}" aria-label="Ampliar o painel {{ p.titulo }}" title="Ampliar" style="position: relative; z-index: 3; width: 26px; height: 24px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"></path></svg></button>
+          <button class="metal toque" onClick="{{ p.fechar }}" aria-label="Fechar o painel {{ p.titulo }}" style="position: relative; z-index: 3; width: 26px; height: 24px; padding: 0; color: #B8D3D8; display: flex; align-items: center; justify-content: center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
           </span>
         </div>
         <img src="./assets/1da14ae98cd94ee85a016a146aeaf3dc.webp" alt="" aria-hidden="true" style="display: block; width: 100%; height: auto; margin: -2px 0 2px; opacity: 0.9">
@@ -596,23 +695,27 @@ input::placeholder{color:#6E8790}
         </sc-if>
 
         <div class="fr fr-lateral" aria-hidden="true"></div>
+        <div class="liga" aria-hidden="true"></div>
       </section>
     </sc-for>
 
-    <aside aria-label="Sara e consumo" class="rolagem" style="flex: 0 1 300px; max-width: 300px; display: flex; flex-direction: column; gap: 6px; padding: 20px 14px 14px; margin: -20px -12px -14px">
+    <aside aria-label="Sara e consumo" class="rolagem" style="flex: 0 1 300px; max-width: 300px; display: flex; flex-direction: column; gap: 6px; padding: 20px 20px 14px; margin: -20px -12px -14px -20px">
 
       <section aria-label="Retrato da Sara" style="position: relative; display: flex; flex-direction: column; gap: 7px">
         <button class="retrato" data-moldura="1" data-liga="1" data-liga-y="0.38" onClick="{{ proximo }}" aria-label="Retrato da Sara, estado {{ e.rotulo }}. Clique para ver o próximo estado" style="position: relative; display: block; width: 100%; aspect-ratio: 800 / 1017; padding: 0; border: 0; background: transparent; cursor: pointer; filter: drop-shadow(0 0 14px {{ e.brilho }}) drop-shadow(0 8px 12px rgba(0,0,0,0.7))">
           <div class="{{ e.fx }}" style="position: absolute; left: 11.75%; top: 9.14%; width: 76.5%; height: 81.71%; overflow: hidden; background: #14181C">
             <video src="./assets/61926cbf3759014a85a07a28a306b879.mp4" poster="./assets/d2c797fb83405f7d534f92395c670718.jpg" autoplay="" muted="" loop="" playsinline="" preload="auto" ref="{{ video }}" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 0%; opacity: {{ e.opEsp }}; transition: opacity .35s; filter: {{ e.filtro }}"></video>
             <video src="./assets/59727c0ff45b6dc696a6ab25c27dafdd.mp4" autoplay="" muted="" loop="" playsinline="" preload="auto" ref="{{ video }}" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 0%; opacity: {{ e.opAna }}; transition: opacity .35s; filter: {{ e.filtro }}"></video>
-            <div aria-hidden="true" style="position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.2) 0px, rgba(0,0,0,0.2) 1px, transparent 1px, transparent 3px); pointer-events: none"></div>
+            <div aria-hidden="true" style="position: absolute; inset: 0; background: {{ e.linhasTv }}; pointer-events: none; transition: background .3s"></div>
             <div aria-hidden="true" style="position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 58%, rgba(2,4,6,0.7) 100%); pointer-events: none"></div>
             <sc-if value="{{ e.orelhaViva }}" hint-placeholder-val="{{ false }}">
               <div aria-hidden="true" class="pulso" style="position: absolute; left: 61%; top: 21%; width: 9%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, {{ e.corOrelha }} 0%, rgba(111,243,255,0.2) 45%, transparent 70%)"></div>
             </sc-if>
             <sc-if value="{{ e.varrendo }}" hint-placeholder-val="{{ false }}">
               <div aria-hidden="true" class="varre" style="position: absolute; left: 0; right: 0; height: 9%; background: linear-gradient(180deg, transparent, rgba(255,165,58,0.3), transparent); border-bottom: 1px solid rgba(255,165,58,0.7)"></div>
+            </sc-if>
+            <sc-if value="{{ e.ehErro }}" hint-placeholder-val="{{ false }}">
+              <div aria-hidden="true" class="varre-erro" style="position: absolute; left: 0; right: 0; height: 9%; background: linear-gradient(180deg, transparent, rgba(255,107,90,0.32), transparent); border-bottom: 1px solid rgba(255,120,100,0.85)"></div>
             </sc-if>
             <sc-if value="{{ e.lendo }}" hint-placeholder-val="{{ false }}">
               <div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 60% 35% at 30% 38%, rgba(111,243,255,0.16), transparent 70%); mix-blend-mode: screen"></div>
@@ -645,6 +748,8 @@ input::placeholder{color:#6E8790}
             <span aria-hidden="true" style="position: absolute; right: 14%; top: 4%; display: flex; align-items: center; gap: 5px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(230,241,243,0.85)"><span class="pisca" style="width: 5px; height: 5px; border-radius: 50%; background: #FF6B5A"></span>CANAL 01 · AO VIVO</span>
           </div>
           <img src="./assets/40121a1b92478c55b90c910bf44ffdac.webp" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none">
+          <sc-for list="{{ e.leds }}" as="l" hint-placeholder-count="3"><span class="{{ l.classe }}" aria-hidden="true" style="left: {{ l.x }}; top: {{ l.y }}; background: {{ l.fundo }}; box-shadow: {{ l.brilho }}"></span></sc-for>
+          <sc-if value="{{ e.ehPronto }}" hint-placeholder-val="{{ false }}"><svg class="volta-pronto" aria-hidden="true" viewBox="0 0 800 1017" preserveAspectRatio="none"><path pathLength="100" d="M170 73 L629 73 L726 170 L726 832 L618 942 L180 942 L73 835 L73 169 Z"></path></svg></sc-if>
           <span style="position: absolute; left: 27.62%; top: 93.75%; width: 43.75%; height: 4.72%; display: flex; align-items: center; justify-content: center; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; color: {{ e.cor }}; text-shadow: 0 0 8px {{ e.cor }}; white-space: nowrap">{{ e.placa }}</span>
         </button>
 
@@ -654,6 +759,7 @@ input::placeholder{color:#6E8790}
 
       <section aria-label="Consumo de tokens" data-moldura="1" data-liga="1" data-liga-y="0.3" class="caixa" style="flex: 0 0 auto; padding: 34px 38px 38px 38px; display: flex; flex-direction: column; gap: 9px">
         <div class="fundo" aria-hidden="true"></div>
+        <span class="{{ atv.consumo }}" aria-hidden="true"></span>
         <div style="display: flex; align-items: baseline; justify-content: space-between; margin: 0 14px 0 34px">
           <span style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.22em; color: #6FF3FF">CONSUMO</span>
           <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8FA9B1">exemplo</span>
@@ -661,7 +767,7 @@ input::placeholder{color:#6E8790}
         <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px">
           <div style="display: flex; justify-content: space-between; font-size: 12px"><span style="color: #B8D3D8">Contexto usado</span><span style="font-family: 'JetBrains Mono', monospace; color: #E6F1F3">62%</span></div>
           <div class="trilho-prog" aria-hidden="true"><span style="position: absolute; left: -2px; top: -3px; width: 62%; height: 6px; background: linear-gradient(90deg, #6FF3FF, #FFA53A); box-shadow: 0 0 8px rgba(111,243,255,0.8)"></span></div>
-          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8FA9B1; white-space: nowrap">184k entrada · 21k saída · <span style="color: #FFA53A">US$ 1,90</span></span>
+          <span style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8FA9B1"><span style="white-space: nowrap">184k entrada · 21k saída</span><span style="white-space: nowrap; color: #FFA53A">US$ 1,90</span></span>
         </div>
         <sc-for list="{{ consumo }}" as="c" hint-placeholder-count="3">
           <div style="display: flex; flex-direction: column; gap: 3px">
@@ -677,6 +783,7 @@ input::placeholder{color:#6E8790}
       <span aria-hidden="true" class="{{ r.classe }}" style="left: {{ r.x }}; top: {{ r.y }}; width: {{ r.w }}; height: {{ r.h }}"></span>
     </sc-for>
   </div>
+  <div class="setas" aria-hidden="true" ref="{{ setasRef }}"></div>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"estadoInicial":{"editor":"enum","options":["esperando","escutando","lendo","pensando","trabalhando","erro","pronto"],"default":"esperando","section":"Retrato"},"$preview":{"width":1440,"height":900}}'>
@@ -710,24 +817,87 @@ class Component extends DCLogic {
     const chave = JSON.stringify(rotas);
     if (chave !== this._chaveRotas) { this._chaveRotas = chave; this.setState({ rotas }); }
   }
+  reiniciar(el, cls) {
+    if (!el) return;
+    el.classList.remove(cls); void el.getBoundingClientRect(); el.classList.add(cls);
+    clearTimeout(el._fim); el._fim = setTimeout(() => el.classList.remove(cls), 1700);
+  }
+  rolarFim() { const l = this._lista; if (l) l.scrollTop = l.scrollHeight; }
+  correnteEstado(k) {
+    const COR = { esperando: '#6FF3FF', escutando: '#6FF3FF', lendo: '#6FF3FF', pensando: '#FFA53A', trabalhando: '#FFA53A', erro: '#FF6B5A', pronto: '#9BF7D6' };
+    const svg = typeof document !== 'undefined' && document.querySelector('svg[data-corrente]'); if (!svg || !svg.firstChild) return;
+    const B = svg.getBoundingClientRect(); const l = 18.5, t = 24.5, r = B.width - 18.5, b = B.height - 18, c = 22;
+    svg.firstChild.setAttribute('d', 'M' + (l + c) + ' ' + t + 'H' + (r - c) + 'L' + r + ' ' + (t + c) + 'V' + (b - c) + 'L' + (r - c) + ' ' + b + 'H' + (l + c) + 'L' + l + ' ' + (b - c) + 'V' + (t + c) + 'Z');
+    svg.style.setProperty('--cor', COR[k] || '#6FF3FF'); this.reiniciar(svg, 'corre');
+  }
+  disparoEnvio() {
+    document.querySelectorAll('[data-envio]').forEach((s) => this.reiniciar(s, 'solta'));
+    this.reiniciar(document.querySelector('.fundo-envio'), 'pulsa');
+  }
+  abaVisivel() {
+    const t = document.querySelector('[role=tablist] [aria-selected="true"]'); if (!t) return;
+    const tl = t.closest('[role=tablist]'); const a = t.getBoundingClientRect(), b = tl.getBoundingClientRect();
+    if (a.right > b.right - 26) tl.scrollLeft += a.right - b.right + 30; else if (a.left < b.left + 8) tl.scrollLeft -= b.left - a.left + 12;
+  }
+  sinalizar() {
+    if (typeof document === 'undefined') return;
+    const camada = this._setas; let k = 0;
+    document.querySelectorAll('.lista').forEach((l) => {
+      const R = l.getBoundingClientRect(); if (R.width < 30 || R.height < 20) return;
+      const flag = (n, v) => { if (v) { if (!l.hasAttribute(n)) l.setAttribute(n, ''); } else if (l.hasAttribute(n)) l.removeAttribute(n); };
+      const horiz = l.getAttribute('role') === 'tablist'; let mais;
+      if (horiz) { flag('data-esq', l.scrollLeft > 2); mais = l.scrollLeft + l.clientWidth < l.scrollWidth - 2; flag('data-dir', mais); }
+      else { flag('data-cima', l.scrollTop > 2); mais = l.scrollTop + l.clientHeight < l.scrollHeight - 2; flag('data-baixo', mais); }
+      if (!mais || !camada) return;
+      const hit = document.elementFromPoint(horiz ? R.right - 34 : R.left + R.width / 2, horiz ? R.top + R.height / 2 : R.bottom - 26);
+      if (!hit || !(hit === l || l.contains(hit))) return;
+      let s = camada.children[k];
+      if (!s) { s = document.createElement('span'); s.className = 'seta'; s.innerHTML = '<svg width="14" height="8" viewBox="0 0 14 8" fill="none" stroke="#6FF3FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5 7 6.5l5.5-5"></path></svg>'; camada.appendChild(s); }
+      k++;
+      const x = horiz ? R.right - 11 : R.left + R.width / 2, y = horiz ? R.top + R.height / 2 : R.bottom - 7;
+      s.style.transform = 'translate(' + Math.round(x - 7) + 'px,' + Math.round(y - 4) + 'px)' + (horiz ? ' rotate(-90deg)' : '');
+      s.classList.add('on');
+    });
+    if (camada) for (let i = k; i < camada.children.length; i++) camada.children[i].classList.remove('on');
+  }
   componentDidMount() {
     this._linhaRef = (el) => { this._linha = el; };
+    this._sinal = () => { if (this._rafS) return; this._rafS = requestAnimationFrame(() => { this._rafS = 0; this.sinalizar(); }); };
+    document.addEventListener('scroll', this._sinal, true); window.addEventListener('resize', this._sinal);
+    setTimeout(this._sinal, 90); setTimeout(this._sinal, 900);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { this.rolarFim(); if (this._medir) this._medir(); this._sinal(); });
+    this._tecla = (ev) => {
+      if (ev.key !== 'Escape') return; const st = this.state || {};
+      if (st.menuPasta) { this.setState({ menuPasta: false }); return; }
+      if ((st.w || 1440) < 1366 && (st.paineis || []).length) this.setState({ paineis: [] });
+    };
+    window.addEventListener('keydown', this._tecla);
     this._medir = () => { if (this._raf) cancelAnimationFrame(this._raf); this._raf = requestAnimationFrame(() => this.medir()); };
     setTimeout(this._medir, 60); setTimeout(this._medir, 700);
     this._onResize = () => { this.setState({ w: window.innerWidth }); this._medir(); };
     window.addEventListener('resize', this._onResize);
     this._onResize();
   }
-  componentDidUpdate() {
+  componentDidUpdate(pp, ps) {
     if (this._medir) this._medir();
-    const st = this.state || {};
+    const st = this.state || {}; const a = ps || {};
+    if (a.estado !== st.estado && st.estado) this.correnteEstado(st.estado);
+    const id = st.sessao || 'landing';
+    if ((a.sessao || 'landing') === id) {
+      const D = { m: 0, e: 2, r: false }; const p0 = (a.cfgs || {})[id] || {}, p1 = (st.cfgs || {})[id] || {};
+      ['m', 'e', 'r'].forEach((k) => { const v0 = k in p0 ? p0[k] : D[k], v1 = k in p1 ? p1[k] : D[k]; if (v0 !== v1) this.reiniciar(document.querySelector('[data-chip="' + k + '"]'), 'led-troca'); });
+    }
+    if (a.sessao !== st.sessao || (a.sessoesAbertas || []).length !== (st.sessoesAbertas || []).length) requestAnimationFrame(() => this.abaVisivel());
+    if (this._sinal) this._sinal();
     const chave = (st.sessao || 'landing') + ':' + (((st.extra || {})[st.sessao || 'landing'] || []).length) + ':' + (st.rodandoEm || '') + ':' + (st.ampliado || '');
-    if (this._lista && chave !== this._ultimo) { this._lista.scrollTop = this._lista.scrollHeight; }
+    if (this._lista && chave !== this._ultimo) { this.rolarFim(); requestAnimationFrame(() => { this.rolarFim(); if (this._sinal) this._sinal(); }); }
     this._ultimo = chave;
   }
   componentWillUnmount() {
     (this._timers || []).forEach((t) => clearTimeout(t));
     if (this._onResize) window.removeEventListener('resize', this._onResize);
+    if (this._sinal) { document.removeEventListener('scroll', this._sinal, true); window.removeEventListener('resize', this._sinal); }
+    if (this._tecla) window.removeEventListener('keydown', this._tecla);
   }
   renderVals() {
     const st = this.state || {};
@@ -744,7 +914,18 @@ class Component extends DCLogic {
     const atual = st.estado || this.props.estadoInicial || 'esperando';
     const base = E[atual] || E.esperando;
     const brilhos = { '#6FF3FF': 'rgba(111,243,255,0.22)', '#FFA53A': 'rgba(255,165,58,0.28)', '#FF6B5A': 'rgba(255,107,90,0.3)', '#9BF7D6': 'rgba(155,247,214,0.25)' };
+    const AM = '#FFA53A', CI = '#6FF3FF', VM = '#FF6B5A', VD = '#9BF7D6', ESPERA = '#7A5426';
+    const LEDS = {
+      esperando: [[ESPERA, 0, 0], [ESPERA, 0, 0], [CI, 1, 0]], escutando: [[CI, 1, 0], [ESPERA, 0, 0], [CI, 1, 0]], lendo: [[CI, 1, 1], [ESPERA, 0, 0], [CI, 1, 0]],
+      pensando: [[AM, 1, 0], [AM, 1, 1], [CI, 1, 0]], trabalhando: [[AM, 1, 1], [AM, 1, 0], [CI, 1, 0]], erro: [[VM, 1, 1], [VM, 1, 0], [VM, 1, 0]], pronto: [[VD, 1, 0], [VD, 1, 0], [VD, 1, 0]]
+    };
+    const POS = [['8.25%', '89.09%'], ['10.875%', '91.05%'], ['13.5%', '93.22%']];
+    const leds = (LEDS[atual] || LEDS.esperando).map(([c, aceso, pisca], i) => ({ x: POS[i][0], y: POS[i][1], classe: 'led-ret' + (pisca ? ' pisca' : ''),
+      fundo: aceso ? 'radial-gradient(circle at 35% 35%, #FFFFFF 0 16%, ' + c + ' 52%)' : 'radial-gradient(circle at 35% 35%, #B08050 0 16%, ' + c + ' 60%, #2A1C0E 100%)',
+      brilho: aceso ? '0 0 0 1px rgba(0,0,0,0.45), 0 0 6px ' + c + ', 0 0 2px ' + c : '0 0 0 1px rgba(0,0,0,0.55), inset 0 -1px 1px rgba(0,0,0,0.5)' }));
     const e = Object.assign({ orelhaViva: false, varrendo: false, pensando: false, lendo: false, filtro: 'none', corOrelha: 'rgba(255,165,58,0.95)' }, base, {
+      leds, ehPronto: atual === 'pronto', ehErro: atual === 'erro',
+      linhasTv: atual === 'erro' ? 'repeating-linear-gradient(0deg, rgba(70,6,2,0.34) 0px, rgba(70,6,2,0.34) 1px, transparent 1px, transparent 3px)' : 'repeating-linear-gradient(0deg, rgba(0,0,0,0.2) 0px, rgba(0,0,0,0.2) 1px, transparent 1px, transparent 3px)',
       fx: 'fx-' + atual,
       placa: 'SARA · ' + base.rotulo.toUpperCase(),
       brilho: brilhos[base.cor] || 'rgba(111,243,255,0.2)',
@@ -756,6 +937,7 @@ class Component extends DCLogic {
     if (!this._video) {
       this._video = (el) => { if (!el) return; el.muted = true; const p = el.play && el.play(); if (p && p.catch) p.catch(() => {}); };
       this._listaRef = (el) => { this._lista = el; };
+      this._setasRef = (el) => { this._setas = el; };
     }
     const hora = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
 
@@ -825,6 +1007,7 @@ class Component extends DCLogic {
       const novosTitulos = Object.assign({}, titulos);
       if (sessaoObj.nova && !titulos[id]) novosTitulos[id] = t.length > 42 ? t.slice(0, 40) + '…' : t;
       this.setState({ extra: Object.assign({}, extra, { [id]: minhas }), titulos: novosTitulos, texto: '', estado: 'pensando', rodandoEm: id, mic: false });
+      requestAnimationFrame(() => this.disparoEnvio());
       const resposta = RESPOSTAS[minhas.length % RESPOSTAS.length];
       this._timers.push(setTimeout(() => this.setState({ estado: 'trabalhando' }), 2600));
       this._timers.push(setTimeout(() => {
@@ -855,8 +1038,17 @@ class Component extends DCLogic {
       const alvo = tipo === 'arquivo' ? 'arvore' : tipo;
       this.setState({ ampliado: alvo, paineis: (st.paineis || []).filter((x) => x !== tipo && x !== alvo && !(alvo === 'arvore' && x === 'arquivo')) });
     };
-    const fechar = (tipo) => () => this.setState({ paineis: (st.paineis || []).filter((x) => x !== tipo) });
-    const navCheia = abertos.length === 0 || (largo && abertos.length === 1);
+    const fechar = (tipo) => () => {
+      const fim = () => this.setState({ paineis: ((this.state || {}).paineis || []).filter((x) => x !== tipo) });
+      const s = typeof document !== 'undefined' && document.querySelector('section.painel[aria-label="' + ({ conversas: 'CONVERSAS', skills: 'SKILLS', biblioteca: 'BIBLIOTECA', conexoes: 'CONEXÕES', arvore: 'ARQUIVOS', arquivo: 'ARQUIVO' })[tipo] + '"]');
+      const reduz = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!s || reduz) { fim(); return; }
+      s.classList.add('desliga');
+      setTimeout(() => { fim(); requestAnimationFrame(() => s.classList.remove('desliga')); }, 200);
+    };
+    const estreito = w >= 760 && w < 1200;
+    const gaveta = w < 1366;
+    const navCheia = w < 760 || (!estreito && (abertos.length === 0 || (largo && abertos.length === 1)));
     const busca = st.busca || {};
     const buscar = (tipo) => (ev) => this.setState({ busca: Object.assign({}, busca, { [tipo]: ev.target.value }) });
 
@@ -936,10 +1128,11 @@ class Component extends DCLogic {
         } else feito();
       };
       return {
-        aberto: !!c.aberto, expandido: c.aberto ? 'true' : 'false',
+        aberto: !!c.aberto, expandido: c.aberto ? 'true' : 'false', minimo: c.aberto ? 'auto' : '150px',
+        led: c.aberto ? '#FFA53A' : '#2A3335', ledBrilho: c.aberto ? '0 0 5px #FFA53A, 0 0 2px #FFA53A' : 'inset 0 -1px 1px rgba(0,0,0,0.6)',
         alternar: () => set({ aberto: !c.aberto, erro: '' }),
         ehPasta: String(ehPasta), ehArquivo: String(!ehPasta),
-        corPasta: ehPasta ? '#6FF3FF' : '#8FA9B1', corArquivo: ehPasta ? '#8FA9B1' : '#6FF3FF',
+        corPasta: ehPasta ? '#6FF3FF' : '#B8D3D8', corArquivo: ehPasta ? '#B8D3D8' : '#6FF3FF',
         tipoPasta: () => set({ tipo: 'pasta', erro: '' }), tipoArquivo: () => set({ tipo: 'arquivo', erro: '' }),
         dica: ehPasta ? 'nome da pasta' : 'nome do arquivo, ex.: notas.md',
         destino, nome: c.nome || '', erro: c.erro || '', temErro: !!c.erro,
@@ -1035,7 +1228,7 @@ class Component extends DCLogic {
       const estado = c.autorizar ? 'precisa autorizar' : (!ligado ? 'desligado' : (c.semCota ? 'ligado · sem cota de imagem' : (c.pausa ? 'em pausa' : 'ligado')));
       const cor = !ligado ? '#3A4A50' : ((c.pausa || c.semCota) ? '#FFA53A' : '#6FF3FF');
       return {
-        nome: c.nome, estado, cor, ligado: ligado ? 'true' : 'false', temChave: !c.autorizar, autorizar: !!c.autorizar,
+        nome: c.nome, estado, rotulo: c.nome + ': ' + estado, cor, ligado: ligado ? 'true' : 'false', temChave: !c.autorizar, autorizar: !!c.autorizar,
         corNome: ligado ? '#E6F1F3' : '#8FA9B1', corTexto: (c.pausa || c.semCota) && ligado ? '#FFA53A' : '#7F9AA3',
         trilho: ligado ? 'linear-gradient(180deg,#0E3B43,#145864)' : 'linear-gradient(180deg,#07090A,#111518)',
         brilho: ligado ? 'inset 0 2px 3px rgba(0,0,0,0.6), 0 0 8px -2px rgba(111,243,255,0.7)' : 'inset 0 2px 3px rgba(0,0,0,0.8)',
@@ -1047,7 +1240,7 @@ class Component extends DCLogic {
 
     const NOMES = { conversas: 'CONVERSAS', skills: 'SKILLS', biblioteca: 'BIBLIOTECA', conexoes: 'CONEXÕES', arvore: 'ARQUIVOS', arquivo: 'ARQUIVO' };
     const paineis = abertos.map((tipo) => ({
-      tipo, titulo: NOMES[tipo], largura: abertos.length === 2 ? '330px' : (largo ? '400px' : '360px'), fechar: fechar(tipo), ampliar: ampliar(tipo),
+      tipo, titulo: NOMES[tipo], classe: 'caixa painel' + (gaveta ? ' gaveta' : ''), largura: abertos.length === 2 ? '330px' : (largo ? '400px' : '360px'), fechar: fechar(tipo), ampliar: ampliar(tipo),
       ehConversas: tipo === 'conversas', ehSkills: tipo === 'skills', ehBiblioteca: tipo === 'biblioteca', ehConexoes: tipo === 'conexoes', ehArvore: tipo === 'arvore', ehArquivo: tipo === 'arquivo',
       busca: busca[tipo] || '', buscar: buscar(tipo),
       grupos, nada: tipo === 'conversas' && grupos.length === 0,
@@ -1079,7 +1272,8 @@ class Component extends DCLogic {
     const CURTOS = { arvore: 'ARQUIVOS', conversas: 'CONVERSAS', biblioteca: 'BIBLIO', skills: 'SKILLS', conexoes: 'CONEXÕES' };
     const trilho = ['arvore', 'conversas', 'biblioteca', 'skills', 'conexoes'].map((tipo) => {
       const on = abertos.indexOf(tipo) >= 0;
-      return { nome: NOMES[tipo], curto: CURTOS[tipo], ehArvore: tipo === 'arvore', ehConversas: tipo === 'conversas', ehBiblioteca: tipo === 'biblioteca', ehSkills: tipo === 'skills', ehConexoes: tipo === 'conexoes', aberto: on ? 'true' : 'false', acao: on ? fechar(tipo) : abrir(tipo),
+      const atvT = { arvore: atual === 'lendo', conversas: rodando, biblioteca: atual === 'pensando', skills: atual === 'trabalhando', conexoes: atual === 'trabalhando' }[tipo];
+      return { atv: 'led-canto' + (atvT ? (tipo === 'skills' || tipo === 'conversas' ? ' aceso ambar' : ' aceso ciano') : ''), nome: ({ arvore: 'Arquivos', conversas: 'Conversas', biblioteca: 'Biblioteca', skills: 'Skills', conexoes: 'Conexões' })[tipo], curto: CURTOS[tipo], ehArvore: tipo === 'arvore', ehConversas: tipo === 'conversas', ehBiblioteca: tipo === 'biblioteca', ehSkills: tipo === 'skills', ehConexoes: tipo === 'conexoes', aberto: on ? 'true' : 'false', acao: on ? fechar(tipo) : abrir(tipo),
         cor: on ? '#6FF3FF' : '#AFC3C8', led: on ? '#6FF3FF' : '#33403F', sombra: on ? sombraAtiva('#6FF3FF') : 'inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.55)' };
     });
 
@@ -1099,17 +1293,48 @@ class Component extends DCLogic {
     const cfgs = st.cfgs || {};
     const cfg = Object.assign({ m: 0, e: 2, r: false }, cfgs[sessaoObj.id] || {});
     const mudaCfg = (patch) => this.setState({ cfgs: Object.assign({}, cfgs, { [sessaoObj.id]: Object.assign({}, cfg, patch) }) });
+    const LED_M = ['#FFA53A', '#6FF3FF', '#9BF7D6'];
+    const LED_E = ['#3E7F88', '#6FF3FF', '#FFA53A', '#FFD08A'];
+    const brilhoLed = (c, forte) => '0 0 ' + (forte ? 9 : 6) + 'px ' + c + (forte ? ', 0 0 3px ' + c : '');
     const chipsConversa = [
-      { nome: 'MODELO', valor: MODELOS[cfg.m], cor: '#B8FAFF', dica: 'Trocar o modelo desta conversa', acao: () => mudaCfg({ m: (cfg.m + 1) % MODELOS.length }) },
-      { nome: 'ESFORÇO', valor: ESFORCOS[cfg.e], cor: '#FFA53A', dica: 'Trocar o esforço desta conversa', acao: () => mudaCfg({ e: (cfg.e + 1) % ESFORCOS.length }) },
-      { nome: 'VELOCIDADE', valor: cfg.r ? 'RÁPIDA' : 'NORMAL', cor: cfg.r ? '#9BF7D6' : '#8FA9B1', dica: cfg.r ? 'Voltar à velocidade normal' : 'Usar o modo rápido nesta conversa', acao: () => mudaCfg({ r: !cfg.r }) }
+      { id: 'm', nome: 'MODELO', valor: MODELOS[cfg.m], cor: '#B8FAFF', minimo: '128px', led: LED_M[cfg.m], brilho: brilhoLed(LED_M[cfg.m]), ledClasse: 'led', dica: 'Trocar o modelo desta conversa', acao: () => mudaCfg({ m: (cfg.m + 1) % MODELOS.length }) },
+      { id: 'e', nome: 'ESFORÇO', valor: ESFORCOS[cfg.e], cor: '#FFA53A', minimo: '136px', led: LED_E[cfg.e], brilho: cfg.e === 0 ? 'inset 0 -1px 1px rgba(0,0,0,0.5)' : brilhoLed(LED_E[cfg.e], cfg.e === 3), ledClasse: 'led', dica: 'Trocar o esforço desta conversa', acao: () => mudaCfg({ e: (cfg.e + 1) % ESFORCOS.length }) },
+      { id: 'r', nome: 'VELOCIDADE', valor: cfg.r ? 'RÁPIDA' : 'NORMAL', cor: cfg.r ? '#9BF7D6' : '#B8D3D8', minimo: '156px', led: cfg.r ? '#9BF7D6' : '#5E7A82', brilho: cfg.r ? brilhoLed('#9BF7D6') : 'inset 0 -1px 1px rgba(0,0,0,0.5)', ledClasse: cfg.r ? 'led led-rapido' : 'led', dica: cfg.r ? 'Voltar à velocidade normal' : 'Usar o modo rápido nesta conversa', acao: () => mudaCfg({ r: !cfg.r }) }
     ];
     const chipsTopo = [
       { rotulo: diario ? 'SALA · DIÁRIO' : 'SALA · TRABALHO', cor: diario ? '#C9A7FF' : '#B8FAFF', dica: 'Trocar de sala', acao: () => this.setState({ diario: !diario }) }
     ];
     const micOn = !!st.mic;
     const ws = ['82%', '64%', '90%', '40%', '76%', '58%', '88%', '30%', '70%', '84%', '52%', '66%', '92%', '44%', '78%', '60%'];
+    // biblioteca: estantes usadas nesta conversa acendem o LED em âmbar
+    const USO = { landing: ['Memória'], estudio: ['Cérebro', 'Memória'], empresa: ['Cérebro'], artemis: ['Cérebro'], souls: ['Memória'] };
+    const usadas = (USO[sessaoObj.id] || []).concat(atual === 'pensando' && rodandoEm === sessaoObj.id ? ['Memória'] : []);
+    const formBib = !!(cr.biblioteca || {}).aberto;
+    const bibLinhas = [['Cérebro', 228, 'notas', 'notas'], ['Alexandria', 12, 'estantes', 'estantes'], ['Memória', 50, 'memórias', 'memórias']].map(([nome, n0, uni]) => {
+      const n = n0 + ((st.bibNovos || {})[nome] || []).length; const alvo = alvoBib === nome && formBib; const usada = usadas.indexOf(nome) >= 0;
+      return { nome, n, unidade: uni, alvo: String(alvo), ehCerebro: nome === 'Cérebro', ehAlexandria: nome === 'Alexandria', ehMemoria: nome === 'Memória',
+        rotulo: nome + ', ' + n + ' ' + uni + (usada ? ', usada nesta conversa' : '') + (alvo ? ', destino escolhido' : ''),
+        dica: formBib ? 'Criar em ' + nome : 'Abrir ' + nome + ' no painel',
+        corIcone: usada ? '#FFC56E' : '#6FF3FF',
+        led: usada ? '#FFA53A' : '#2F6E76', ledBrilho: usada ? '0 0 6px #FFA53A, 0 0 2px #FFA53A' : '0 0 3px rgba(111,243,255,0.35)',
+        borda: alvo ? 'inset 0 1px 0 rgba(255,255,255,0.22), 0 0 0 1px #6FF3FF, 0 0 8px -2px rgba(111,243,255,0.8), 0 2px 4px rgba(0,0,0,0.55)' : 'inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.05), 0 2px 4px rgba(0,0,0,0.55)',
+        escolher: formBib ? () => this.setState({ alvoBib: nome }) : abrir('biblioteca') };
+    });
+    const canto = (on, cor, extra) => 'led-canto' + (extra || '') + (on ? ' aceso ' + cor : '');
+    const atv = {
+      arquivos: canto(atual === 'lendo', 'ciano'), biblioteca: canto(atual === 'pensando', 'ciano', ' bib'),
+      skills: canto(atual === 'trabalhando', 'ambar'), conexoes: canto(atual === 'trabalhando', 'ciano'), consumo: 'medidor' + (rodando ? ' aceso' : '')
+    };
+    const vazio = !(st.texto || '').trim();
+    const envio = { classe: 'ambar toque' + (vazio ? ' vazio' : ''), desligado: vazio ? 'true' : 'false', led: vazio ? '#7A4A16' : '#FFF4DC',
+      brilho: vazio ? 'inset 0 1px 1px rgba(0,0,0,0.45)' : '0 0 6px #FFF0C8, 0 0 2px #FFFFFF' };
+    const irMsg = (ev) => {
+      if (ev && ev.preventDefault) ev.preventDefault();
+      const foco = () => { const i = document.getElementById('msg'); if (i) i.focus(); };
+      if (ampliado) { this.setState({ ampliado: null }); setTimeout(foco, 60); } else foco();
+    };
     return {
+      atv, envio, irMsg, setasRef: this._setasRef,
       rotas: st.rotas || [], linhaRef: this._linhaRef || ((el) => { this._linha = el; }),
       e, estados, rodando, chipsTopo, chipsConversa, arvore, conexoes, conexoesResumo, paineis, trilho, mensagens,
       navCheia, navTrilho: !navCheia, parado: !rodando,
@@ -1134,7 +1359,7 @@ class Component extends DCLogic {
       enviar, parar: () => { limpar(); this.setState({ estado: 'esperando', rodandoEm: null }); },
       proximo: () => ir(ORDEM[(ORDEM.indexOf(atual) + 1) % ORDEM.length]),
       arquivo: { caminho: caminho(porId[aberto]), linhas: linhasArq, rodape: linhasArq.length + ' linhas · só leitura' },
-      biblioteca: [['Cérebro', 228, ' notas'], ['Alexandria', 12, ' estantes'], ['Memória', 50, '']].map(([nome, n, suf]) => ({ nome, qtd: (n + ((st.bibNovos || {})[nome] || []).length) + suf, alvo: String(alvoBib === nome && !!(cr.biblioteca || {}).aberto), escolher: (cr.biblioteca || {}).aberto ? () => this.setState({ alvoBib: nome }) : abrir('biblioteca') })),
+      biblioteca: bibLinhas, bibRodape: 'atualizado há 2 h · ' + bibLinhas.reduce((s, b) => s + b.n, 0) + ' itens',
       pasta, criar,
       skillsAgora: st.skillsReais || [{ nome: 'frontend-design' }, { nome: 'copywriting' }],
       consumo: st.consumoReal || [

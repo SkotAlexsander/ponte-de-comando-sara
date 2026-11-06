@@ -20,6 +20,57 @@ pub struct Sidecar {
     pub node: Option<PathBuf>,
     vivo: Mutex<Option<Vivo>>,
     pasta_log: PathBuf,
+    /// Job Object do Windows (KILL_ON_JOB_CLOSE): quando a Ponte fecha, por qualquer motivo,
+    /// o Windows encerra o sidecar, o claude e os comandos que as ferramentas abriram.
+    job: Mutex<usize>,
+}
+
+#[cfg(windows)]
+fn criar_job() -> usize {
+    use windows_sys::Win32::System::JobObjects::*;
+    unsafe {
+        let job = CreateJobObjectW(std::ptr::null(), std::ptr::null());
+        if job.is_null() {
+            return 0;
+        }
+        let mut info: JOBOBJECT_EXTENDED_LIMIT_INFORMATION = std::mem::zeroed();
+        info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        SetInformationJobObject(
+            job,
+            JobObjectExtendedLimitInformation,
+            &info as *const _ as *const core::ffi::c_void,
+            std::mem::size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as u32,
+        );
+        job as usize
+    }
+}
+
+#[cfg(windows)]
+fn amarrar(job: usize, pid: u32) -> bool {
+    use windows_sys::Win32::Foundation::CloseHandle;
+    use windows_sys::Win32::System::JobObjects::AssignProcessToJobObject;
+    use windows_sys::Win32::System::Threading::{OpenProcess, PROCESS_SET_QUOTA, PROCESS_TERMINATE};
+    if job == 0 {
+        return false;
+    }
+    unsafe {
+        let h = OpenProcess(PROCESS_SET_QUOTA | PROCESS_TERMINATE, 0, pid);
+        if h.is_null() {
+            return false;
+        }
+        let ok = AssignProcessToJobObject(job as _, h) != 0;
+        CloseHandle(h);
+        ok
+    }
+}
+
+#[cfg(not(windows))]
+fn criar_job() -> usize {
+    0
+}
+#[cfg(not(windows))]
+fn amarrar(_job: usize, _pid: u32) -> bool {
+    false
 }
 
 /// Acha o node.exe por caminho absoluto (nunca pelo nome solto).
@@ -44,7 +95,7 @@ pub fn achar_node() -> Option<PathBuf> {
 
 impl Sidecar {
     pub fn novo(script: Option<PathBuf>, pasta_log: &Path) -> Sidecar {
-        Sidecar { script, node: achar_node(), vivo: Mutex::new(None), pasta_log: pasta_log.to_path_buf() }
+        Sidecar { script, node: achar_node(), vivo: Mutex::new(None), pasta_log: pasta_log.to_path_buf(), job: Mutex::new(0) }
     }
 
     pub fn disponivel(&self) -> bool {
@@ -76,6 +127,15 @@ impl Sidecar {
             cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
         }
         let mut filho = cmd.spawn().map_err(|e| format!("Não consegui abrir o sidecar: {e}"))?;
+        {
+            let mut j = self.job.lock().unwrap();
+            if *j == 0 {
+                *j = criar_job();
+            }
+            if !amarrar(*j, filho.id()) {
+                crate::config::registrar(&self.pasta_log, "não consegui amarrar o sidecar ao Job Object");
+            }
+        }
         let entrada = filho.stdin.take().ok_or("sem stdin")?;
         let saida = filho.stdout.take().ok_or("sem stdout")?;
         if let Some(mut erro) = filho.stderr.take() {

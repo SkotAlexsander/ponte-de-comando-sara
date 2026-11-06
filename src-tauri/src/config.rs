@@ -19,7 +19,15 @@ pub struct Config {
     pub pasta_de_trabalho: Option<String>,
     /// Silenciar avisos: sem som e sem notificação do Windows (o aviso na miniatura continua).
     pub mudo: bool,
+    /// "Miniatura ao minimizar": ligada = a Sara aparece no canto quando a principal sai da tela.
     pub mini_visivel: bool,
+    /// Notificação do Windows: "auto" (só quando nem a principal nem a miniatura estão na tela),
+    /// "sempre" ou "nunca". Fora do programa instalado nunca sai (apareceria como Windows PowerShell).
+    pub toast_windows: String,
+    /// Tema de display dentro do vidro da conversa: "metal" | "fosforo" | "grade".
+    pub tema: String,
+    /// Cor do terminal de fósforo: "ambar" | "verde".
+    pub fosforo: String,
     /// "inferior-direito", "inferior-esquerdo", "superior-direito", "superior-esquerdo".
     pub mini_canto: String,
     /// Nome do monitor onde a miniatura ficou. `None` = monitor principal.
@@ -33,11 +41,17 @@ impl Default for Config {
             pasta_de_trabalho: None,
             mudo: false,
             mini_visivel: true,
+            toast_windows: "auto".into(),
+            tema: "metal".into(),
+            fosforo: "ambar".into(),
             mini_canto: "inferior-direito".into(),
             mini_monitor: None,
         }
     }
 }
+
+pub const TEMAS: [&str; 3] = ["metal", "fosforo", "grade"];
+pub const FOSFOROS: [&str; 2] = ["ambar", "verde"];
 
 pub fn cantos_validos() -> [&'static str; 4] {
     ["inferior-direito", "inferior-esquerdo", "superior-direito", "superior-esquerdo"]
@@ -51,6 +65,15 @@ impl Config {
             .unwrap_or_default();
         if !cantos_validos().contains(&c.mini_canto.as_str()) {
             c.mini_canto = "inferior-direito".into();
+        }
+        if !["auto", "sempre", "nunca"].contains(&c.toast_windows.as_str()) {
+            c.toast_windows = "auto".into();
+        }
+        if !TEMAS.contains(&c.tema.as_str()) {
+            c.tema = "metal".into();
+        }
+        if !FOSFOROS.contains(&c.fosforo.as_str()) {
+            c.fosforo = "ambar".into();
         }
         if c.porta < 1024 {
             c.porta = PORTA_PADRAO;
@@ -134,10 +157,23 @@ pub fn garantir_token(pasta: &Path) -> Result<String, String> {
     Ok(t)
 }
 
-/// Registro simples em `ponte.log` (gira em 1 MB).
+/// Troca a pasta pessoal por %USERPROFILE% (o registro não leva o nome do usuário nos caminhos).
+pub fn sem_pasta_pessoal(msg: &str) -> String {
+    match std::env::var("USERPROFILE") {
+        Ok(u) if u.len() > 3 => {
+            let mut t = msg.replace(&u, "%USERPROFILE%");
+            t = t.replace(&u.replace('\\', "/"), "%USERPROFILE%");
+            t
+        }
+        _ => msg.to_string(),
+    }
+}
+
+/// Registro simples em `ponte.log` (gira em 200 KB; nunca leva conteúdo de conversa).
 pub fn registrar(pasta: &Path, msg: &str) {
+    let msg = &sem_pasta_pessoal(msg);
     let arq = pasta.join("ponte.log");
-    if fs::metadata(&arq).map(|m| m.len() > 1_000_000).unwrap_or(false) {
+    if fs::metadata(&arq).map(|m| m.len() > 200_000).unwrap_or(false) {
         let _ = fs::rename(&arq, pasta.join("ponte.log.1"));
     }
     let agora = std::time::SystemTime::now()
@@ -180,6 +216,15 @@ mod testes {
         assert_eq!(a, b);
         assert_eq!(a.len(), 64);
         fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn registro_sem_pasta_pessoal() {
+        if let Ok(u) = std::env::var("USERPROFILE") {
+            let t = sem_pasta_pessoal(&format!("abrindo {u}\\AppData\\x"));
+            assert!(!t.contains(&u));
+            assert!(t.starts_with("abrindo %USERPROFILE%"));
+        }
     }
 
     #[test]

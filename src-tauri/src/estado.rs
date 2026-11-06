@@ -50,6 +50,8 @@ pub struct Estado {
     /// true = este evento pede som (pronto/precisa/erro) — a miniatura toca se não estiver mudo.
     pub som: bool,
     pub mudo: bool,
+    /// Onde o aviso aparece agora: "principal" (a Main está na tela), "mini" ou "nenhum" (vira toast).
+    pub onde: String,
     pub em: u64,
 }
 
@@ -64,6 +66,7 @@ impl Default for Estado {
             aviso: None,
             som: false,
             mudo: false,
+            onde: String::new(),
             em: agora_ms(),
         }
     }

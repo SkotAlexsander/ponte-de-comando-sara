@@ -353,10 +353,14 @@ mod testes {
     fn recusa_juncao_para_fora() {
         let d = pasta_teste("juncao");
         let fora = pasta_teste("juncao-fora");
-        let ok = std::process::Command::new("cmd")
-            .args(["/c", "mklink", "/J"])
-            .arg(d.join("atalho"))
-            .arg(&fora)
+        let mut cmd = std::process::Command::new(r"C:\Windows\System32\cmd.exe");
+        cmd.args(["/c", "mklink", "/J"]).arg(d.join("atalho")).arg(&fora);
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+        }
+        let ok = cmd
             .output()
             .map(|o| o.status.success())
             .unwrap_or(false);

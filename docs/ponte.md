@@ -82,6 +82,36 @@ await ponte.enviar({
 
 **Permissão:** `aoPermissao({ conversa, pedido, ferramenta, frase, detalhe })`, por exemplo com `frase: 'Escrever o arquivo X'` ou `'Rodar um comando: …'`, e depois `aoPermissaoFim({ pedido })`. Responda com `responderPermissao(pedido, true|false)`. Enquanto o pedido espera, a miniatura avisa "Alex, preciso de você."
 
+## Configurações
+
+```js
+const c = await ponte.config.ler()
+// → { tema: 'metal'|'fosforo'|'grade', fosforo: 'ambar'|'verde', pastaTrabalho: 'A:\\Claude', pastaTrabalhoPadrao: true,
+//     miniAoMinimizar: true, toastWindows: 'auto'|'sempre'|'nunca', mudo: false }
+await ponte.config.gravar({ tema: 'fosforo', fosforo: 'verde' })   // → a config inteira depois de gravar
+ponte.aoConfig((c) => { … })                                         // todas as janelas recebem quando alguma grava
+```
+
+- O arquivo é `%APPDATA%\com.pixelmartins.pontedecomando\config.json`.
+- `gravar` aceita **só** as chaves acima, e chave ou valor desconhecido rejeita com mensagem em PT-BR, sem gravar nada.
+- `pastaTrabalho: null` volta ao padrão; texto precisa ser uma pasta que existe.
+- `miniAoMinimizar` é o mesmo item da bandeja.
+- `toastWindows`:
+  - `auto`: só quando nem a principal nem a miniatura estão na tela;
+  - `sempre`: o item "Notificação do Windows sempre" da bandeja;
+  - `nunca`.
+  - **Fora do programa instalado nunca sai toast**, porque ele apareceria como "Windows PowerShell".
+- **Tema:** a miniatura e a Main recebem `data-tema` e `data-fosforo` no `<html>`. Na Main, a Sara aplica o atributo na área da conversa. O tema muda **só** o que fica dentro do vidro da moldura da conversa.
+
+## Miniatura e janela principal
+
+- A miniatura **some** quando a principal está na tela e **aparece** quando ela é minimizada, vai para a bandeja (fechar) ou ainda não abriu, se "Miniatura ao minimizar" estiver ligada. Há um debounce de 150 ms, para não piscar, e a regra é reconferida a cada 3 s.
+- Clicar na miniatura traz a principal (`mostrarPrincipal()`), e a miniatura some.
+- `estado().onde` diz onde está o aviso agora:
+  - `principal`: a Main toca o som e mostra na placa;
+  - `mini`;
+  - `nenhum`: vira toast se `toastWindows` deixar.
+
 ## Estado da Sara e avisos
 
 | Função | |

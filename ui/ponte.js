@@ -14,6 +14,7 @@
     arvore: { '': [{ nome: '03-projetos', tipo: 'pasta' }, { nome: 'LEIA-ME.md', tipo: 'arquivo' }], '03-projetos': [{ nome: 'ponte-de-comando-sara', tipo: 'pasta' }], '03-projetos\\ponte-de-comando-sara': [] },
     estado: { estado: 'esperando', legenda: 'Por aqui', aviso: null, mudo: false, som: false },
     conversas: {},
+    config: { tema: 'metal', fosforo: 'ambar', pastaTrabalho: 'A:\\Claude', pastaTrabalhoPadrao: true, miniAoMinimizar: true, toastWindows: 'auto', mudo: false },
   }
   const montarItem = (pai, it) => { const caminho = pai ? pai + '\\' + it.nome : it.nome; return { nome: it.nome, caminho, absoluto: falso.raiz + '\\' + caminho, tipo: it.tipo, link: false, tamanho: null } }
   const relFalso = (d) => {
@@ -54,6 +55,17 @@
         return { conversa: p.conversa, sessao: 'falsa', nova: true, motor: 'falso' }
       }
       case 'mini_canto': return 'inferior-direito'
+      case 'config_ler': return Object.assign({}, falso.config)
+      case 'config_gravar': {
+        const ok = { tema: ['metal', 'fosforo', 'grade'], fosforo: ['ambar', 'verde'], toastWindows: ['auto', 'sempre', 'nunca'] }
+        for (const [k, v] of Object.entries(a.parcial || {})) {
+          if (!(k in falso.config)) throw new Error('Chave desconhecida: ' + k)
+          if (ok[k] && !ok[k].includes(v)) throw new Error('Valor inválido para ' + k)
+        }
+        Object.assign(falso.config, a.parcial)
+        emitirFalso('ponte:config', Object.assign({}, falso.config))
+        return Object.assign({}, falso.config)
+      }
       case 'tokens_resumo': return { sessoes: [], total: { custo: 0, tokens: 0 }, precosConferidos: false }
       case 'limites': return { disponivel: false }
       default: return null
@@ -97,6 +109,13 @@
     conversa: (conversa) => invocar('conversa_info', { conversa: String(conversa) }),
     conversasAntigas: (pasta, limite) => invocar('conversas_antigas', { pasta: pasta || null, limite: limite || null }),
     retomarSessao: (conversa, sessao, pasta) => erroEmTexto(invocar('retomar_sessao', { conversa: String(conversa), sessao: String(sessao), pasta: String(pasta || '') })),
+
+    // configurações (gravadas em %APPDATA%\com.pixelmartins.pontedecomando\config.json)
+    config: {
+      ler: () => invocar('config_ler'),
+      gravar: (parcial) => erroEmTexto(invocar('config_gravar', { parcial: parcial || {} })),
+    },
+    aoConfig: (fn) => ouvir('ponte:config', fn),
 
     // estado da Sara e avisos
     estado: () => invocar('estado_atual'),

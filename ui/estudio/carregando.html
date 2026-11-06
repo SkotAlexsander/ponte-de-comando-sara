@@ -45,9 +45,11 @@ html,body{margin:0;height:100%;background:#05080A}
 @keyframes cg-bolha{from{transform:translateY(0);opacity:0}15%{opacity:.9}80%{opacity:.6}to{transform:translateY(-19px);opacity:0}}
 .cg-moldura{position:absolute;inset:0;box-sizing:border-box;border-style:solid;border-width:17px;border-image:url(./assets/d837fc7db557d249d2fca02ae16de29f.webp) 50 stretch;pointer-events:none;filter:drop-shadow(0 5px 8px rgba(0,0,0,.6)) drop-shadow(0 0 8px rgba(111,243,255,.25))}
 .cg-grupo{width:100%;display:flex;flex-direction:column;gap:10px}
-.cg-estado{box-sizing:border-box;width:100%;padding:0 15px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.cg-pct{flex:0 0 auto;min-width:62px;box-sizing:border-box;padding:2px 10px;text-align:right;background:rgba(3,8,11,.94);border:1px solid rgba(111,243,255,.3);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;line-height:18px;letter-spacing:.08em;color:#B8FAFF;font-variant-numeric:tabular-nums;text-shadow:0 0 6px rgba(111,243,255,.5)}
-.cg-pct small{font-size:11px;margin-left:2px;color:#B8D3D8}
+.cg-estado{box-sizing:border-box;width:100%;display:flex;align-items:center;justify-content:center}
+.cg-pct-caixa{position:absolute;left:15px;right:15px;top:15px;bottom:15px;z-index:2;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.cg-pct{box-sizing:border-box;min-width:64px;height:26px;padding:6px 10px;display:flex;align-items:center;justify-content:center;position:relative;isolation:isolate;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:16px;line-height:14px;letter-spacing:.06em;color:#F2FEFF;font-variant-numeric:tabular-nums;text-shadow:0 0 1px #021014,0 0 2px #021014,0 0 7px rgba(111,243,255,.85)}
+.cg-pct::before{content:'';position:absolute;inset:0;z-index:-1;background:rgba(2,10,14,.7);clip-path:polygon(5px 0,calc(100% - 5px) 0,100% 5px,100% calc(100% - 5px),calc(100% - 5px) 100%,5px 100%,0 calc(100% - 5px),0 5px)}
+.cg-pct small{font-size:11px;margin-left:2px;color:#D8F6FA}
 .cg-etapa{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:.3em;color:#6FF3FF;text-shadow:0 0 8px rgba(111,243,255,.7);min-height:18px;line-height:18px;white-space:nowrap;overflow:visible}
 .cg-registro{position:relative;width:min(640px,100%);height:156px}
 .cg-log{position:absolute;inset:9px;box-sizing:border-box;padding:14px 19px;overflow:hidden;background:rgba(3,8,11,.9);font-family:'JetBrains Mono',monospace;font-size:12px;line-height:18px;color:#8FA9B1;display:flex;flex-direction:column;justify-content:flex-end}
@@ -59,8 +61,8 @@ html,body{margin:0;height:100%;background:#05080A}
 .cg-flash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,rgba(111,243,255,.35),transparent 60%);opacity:0;transition:opacity .5s}
 .cg-pronto .cg-flash{opacity:1}
 .cg-pronto .cg-liquido{background:linear-gradient(180deg,#E6FFFA 0%,#9BF7D6 30%,#3FCFA8 70%,#1E8F74 100%)}
-.cg-pronto .cg-etapa,.cg-pronto .cg-pct{color:#9BF7D6;text-shadow:0 0 8px rgba(155,247,214,.6)}
-.cg-pronto .cg-pct{border-color:rgba(155,247,214,.45)}
+.cg-pronto .cg-etapa{color:#9BF7D6;text-shadow:0 0 10px rgba(155,247,214,.8)}
+.cg-pronto .cg-pct{text-shadow:0 0 1px #021014,0 0 2px #021014,0 0 7px rgba(155,247,214,.85)}
 @media (prefers-reduced-motion:reduce){.cg-onda,.cg-reflexo,.cg-bolha,.cg-glitch,.cg-cursor,.cg-pronto .cg-clarao,.cg-pronto .cg-faisca{animation:none}.cg-brilho{transition:none}}
 
 </style>
@@ -95,6 +97,7 @@ html,body{margin:0;height:100%;background:#05080A}
           </div>
           <div class="cg-clarao" aria-hidden="true"></div>
         </div>
+        <div class="cg-pct-caixa" aria-hidden="true"><div class="cg-pct"><span id="cg-num">0</span><small>%</small></div></div>
         <div class="cg-moldura" aria-hidden="true"></div>
         <span class="cg-faisca cg-fa1" aria-hidden="true"></span>
         <span class="cg-faisca cg-fa2" aria-hidden="true"></span>
@@ -103,7 +106,6 @@ html,body{margin:0;height:100%;background:#05080A}
       </div>
       <div class="cg-estado">
         <div class="cg-etapa" id="cg-etapa">PONTE DE COMANDO ABRINDO</div>
-        <div class="cg-pct" aria-hidden="true"><span id="cg-num">0</span><small>%</small></div>
       </div>
     </div>
     <div class="cg-registro">
