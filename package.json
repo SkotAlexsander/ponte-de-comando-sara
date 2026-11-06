@@ -1,0 +1,19 @@
+{
+  "name": "ponte-de-comando-sara",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Ponte de Comando · Sara — programa local para acompanhar o Claude Code",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "sincronizar-ui": "node ferramentas/sincronizar-ui.mjs",
+    "icone": "node ferramentas/gerar-icone.mjs && tauri icon src-tauri/icons/fonte.png",
+    "testar": "node --test "ferramentas/testes/*.test.mjs" && cargo test --manifest-path src-tauri/Cargo.toml",
+    "testar:paginas": "node ferramentas/testes/paginas.mjs",
+    "testar:programa": "node ferramentas/testes/programa.mjs",
+    "testar:sidecar-real": "node ferramentas/testes/sidecar-real.mjs"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.12.0"
+  }
+}

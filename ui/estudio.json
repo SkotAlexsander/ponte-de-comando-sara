@@ -1,0 +1,213 @@
+{
+  "origem": "A:\\Claude\\00-empresa\\corpos\\sara\\interface\\estudio-local",
+  "sincronizadoEm": "2026-11-06T02:40:23.142Z",
+  "remendos": [
+    {
+      "arquivo": "Main.dc.html",
+      "motivo": "árvore de Arquivos real (ponte.listar)",
+      "resultado": "aplicado"
+    },
+    {
+      "arquivo": "Main.dc.html",
+      "motivo": "conteúdo real do arquivo aberto (só leitura)",
+      "resultado": "aplicado"
+    },
+    {
+      "arquivo": "Main.dc.html",
+      "motivo": "consumo por funcionário (motor de tokens)",
+      "resultado": "aplicado"
+    },
+    {
+      "arquivo": "Main.dc.html",
+      "motivo": "skills usadas agora (motor de tokens)",
+      "resultado": "aplicado"
+    }
+  ],
+  "arquivos": [
+    {
+      "arquivo": "assets/06963d13ba568248bfca6c03653f15fc.webp",
+      "bytes": 2570,
+      "sha1": "8d8fb69518cb"
+    },
+    {
+      "arquivo": "assets/135718d1dc4572a0f1c0a7eb295b54b1.webp",
+      "bytes": 5644,
+      "sha1": "95f8ce525a62"
+    },
+    {
+      "arquivo": "assets/13cc469cdbfc3d60164e213e6caef50e.webp",
+      "bytes": 10360,
+      "sha1": "b560f03793e1"
+    },
+    {
+      "arquivo": "assets/1da14ae98cd94ee85a016a146aeaf3dc.webp",
+      "bytes": 5676,
+      "sha1": "830d398aa0e2"
+    },
+    {
+      "arquivo": "assets/40121a1b92478c55b90c910bf44ffdac.webp",
+      "bytes": 58334,
+      "sha1": "db3bac5cb35e"
+    },
+    {
+      "arquivo": "assets/50541702bc48000b57fd9f3ce55395bb.mp4",
+      "bytes": 594916,
+      "sha1": "76bebc9f663d"
+    },
+    {
+      "arquivo": "assets/59727c0ff45b6dc696a6ab25c27dafdd.mp4",
+      "bytes": 457469,
+      "sha1": "496ecee6fe7b"
+    },
+    {
+      "arquivo": "assets/61926cbf3759014a85a07a28a306b879.mp4",
+      "bytes": 650220,
+      "sha1": "bc2b5351b59c"
+    },
+    {
+      "arquivo": "assets/67b98744cb1b842add20b1431bd68ae8.webp",
+      "bytes": 2076,
+      "sha1": "fef9c33476be"
+    },
+    {
+      "arquivo": "assets/7619a07bdf0a0735be67b2e4e1ccc8fa.webp",
+      "bytes": 40486,
+      "sha1": "84bcae036d74"
+    },
+    {
+      "arquivo": "assets/7e1849384392f4275d02f957a5c94ab4.webp",
+      "bytes": 130920,
+      "sha1": "fd559a260952"
+    },
+    {
+      "arquivo": "assets/8473b85283f544452c8150c855903f33.webp",
+      "bytes": 39112,
+      "sha1": "e139b0cd9276"
+    },
+    {
+      "arquivo": "assets/8866322c7fd2af87bdb05bfb51bee09f.webp",
+      "bytes": 10554,
+      "sha1": "b0a3e5d5bb46"
+    },
+    {
+      "arquivo": "assets/a27f360a33ff8b483780d5fd713c76b2.webp",
+      "bytes": 6480,
+      "sha1": "c996dbc59743"
+    },
+    {
+      "arquivo": "assets/a5552362508c01e428f5742c541d703c.webp",
+      "bytes": 11790,
+      "sha1": "42bc0d9f316b"
+    },
+    {
+      "arquivo": "assets/a6a7e6e9a14f1d310570a102f9408e32.webp",
+      "bytes": 16330,
+      "sha1": "7dca69780de3"
+    },
+    {
+      "arquivo": "assets/aa1c931a78e5ce2ab14f62f6763fb02f.webp",
+      "bytes": 3410,
+      "sha1": "036ae9650141"
+    },
+    {
+      "arquivo": "assets/af6ade3d0c563575f76c0aee86ca1eac.webp",
+      "bytes": 39220,
+      "sha1": "3d2ef73ff248"
+    },
+    {
+      "arquivo": "assets/b5d606dff55ad702b348394788ebe926.webp",
+      "bytes": 15756,
+      "sha1": "3522e8915271"
+    },
+    {
+      "arquivo": "assets/c720b3aecaa3c8cefe683b40e2905e54.webp",
+      "bytes": 2234,
+      "sha1": "6f502aa810e6"
+    },
+    {
+      "arquivo": "assets/c7ed81cf64ba0319e10a1a23271326a8.webp",
+      "bytes": 3978,
+      "sha1": "386f14de57c3"
+    },
+    {
+      "arquivo": "assets/d2c797fb83405f7d534f92395c670718.jpg",
+      "bytes": 36476,
+      "sha1": "0c2504e704c9"
+    },
+    {
+      "arquivo": "assets/d837fc7db557d249d2fca02ae16de29f.webp",
+      "bytes": 7540,
+      "sha1": "339de45069b3"
+    },
+    {
+      "arquivo": "assets/dbe467e3dbb6c60364355356f2ddd7df.webp",
+      "bytes": 7880,
+      "sha1": "1cdcc5d5383b"
+    },
+    {
+      "arquivo": "assets/fluxo-barra-ferramentas.webp",
+      "bytes": 13884,
+      "sha1": "47f97fdab82c"
+    },
+    {
+      "arquivo": "assets/fluxo-cartao-funcionario.webp",
+      "bytes": 39594,
+      "sha1": "45303661bbb6"
+    },
+    {
+      "arquivo": "assets/fluxo-cartao-lider.webp",
+      "bytes": 56800,
+      "sha1": "d8c10605bb48"
+    },
+    {
+      "arquivo": "assets/fluxo-faixa-setor.webp",
+      "bytes": 19076,
+      "sha1": "49ada0ade103"
+    },
+    {
+      "arquivo": "assets/fluxo-porta.webp",
+      "bytes": 3102,
+      "sha1": "5509b97385d7"
+    },
+    {
+      "arquivo": "Carregando.dc.html",
+      "bytes": 19191,
+      "sha1": "1ff9969c524e"
+    },
+    {
+      "arquivo": "carregando.html",
+      "bytes": 17838,
+      "sha1": "6fabd2f80271"
+    },
+    {
+      "arquivo": "Fluxo.dc.html",
+      "bytes": 49818,
+      "sha1": "73cfc7ce9499"
+    },
+    {
+      "arquivo": "Main.dc.html",
+      "bytes": 114376,
+      "sha1": "b9c351c6f1f2"
+    },
+    {
+      "arquivo": "Mini.dc.html",
+      "bytes": 18152,
+      "sha1": "4d246ef6d9d7"
+    },
+    {
+      "arquivo": "support.js",
+      "bytes": 46105,
+      "sha1": "a40c333009ea"
+    },
+    {
+      "arquivo": "vendor/react-dom.js",
+      "bytes": 131835,
+      "sha1": "feb8ddc9d056"
+    },
+    {
+      "arquivo": "vendor/react.js",
+      "bytes": 10751,
+      "sha1": "aa77ae4c49f5"
+    }
+  ]
+}

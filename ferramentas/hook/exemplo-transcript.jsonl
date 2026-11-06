@@ -1,0 +1,3 @@
+{"type":"user","message":{"role":"user","content":"Sara, faz a landing do curso da Mirian com duas propostas de visual."}}
+{"type":"assistant","message":{"id":"m1","model":"claude-opus-5","content":[{"type":"text","text":"Montei as telas A e B e o texto do topo."}],"usage":{"input_tokens":10,"output_tokens":20}}}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"x","content":"ok"}]}}

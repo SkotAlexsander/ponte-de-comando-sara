@@ -1,0 +1,1149 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Ponte de Comando — conversa</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#0B0D0F}
+a{color:#6FF3FF}a:hover{color:#B8FAFF}
+.casco{background-color:#16191B;background-image:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 45%,rgba(0,0,0,.45) 100%),url(./assets/7e1849384392f4275d02f957a5c94ab4.webp);background-size:auto,cover;background-position:center,center;background-repeat:no-repeat}
+@media (min-width:1100px){.app{height:100vh}.rolagem{min-height:0;overflow-y:auto;overflow-x:visible}.cresce{min-height:0}.linha-app{flex-wrap:nowrap !important}}
+.caixa{position:relative;isolation:isolate;box-sizing:border-box}
+.fundo{position:absolute;inset:12px;z-index:-1;background:rgba(5,9,13,.95)}
+.halo{position:absolute;inset:-40px;z-index:-2;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,rgba(111,243,255,.10),rgba(111,243,255,.03) 45%,transparent 70%);animation:respira 7s ease-in-out infinite}
+@keyframes respira{0%,100%{opacity:.65}50%{opacity:1}}
+.corrente{position:absolute;height:2px;z-index:3;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(190,252,255,.95),transparent) no-repeat;background-size:120px 2px;filter:blur(.4px);animation:corre 5.5s linear infinite}
+@keyframes corre{0%{background-position:-140px 0}100%{background-position:calc(100% + 140px) 0}}
+.faisca{position:absolute;width:2px;height:2px;border-radius:50%;background:#FFE7B8;box-shadow:0 0 6px 2px rgba(255,190,90,.9);pointer-events:none;z-index:7;opacity:0}
+.f1{animation:fa1 6s ease-out infinite}.f2{animation:fa2 7.5s ease-out infinite}.f3{animation:fa3 9s ease-out infinite}
+@keyframes fa1{0%,90%{opacity:0;transform:translate(0,0)}91%{opacity:1}100%{opacity:0;transform:translate(-14px,10px)}}
+@keyframes fa2{0%,88%{opacity:0;transform:translate(0,0)}89%{opacity:1}100%{opacity:0;transform:translate(9px,16px)}}
+@keyframes fa3{0%,92%{opacity:0;transform:translate(0,0)}93%{opacity:1}100%{opacity:0;transform:translate(-6px,18px)}}
+.fundo-azul{position:absolute;inset:16px;z-index:-1;overflow:hidden;background:radial-gradient(ellipse at 50% 0%,rgba(28,84,104,.34),rgba(4,10,14,0) 62%),#04090D}
+.fr{position:absolute;inset:0;box-sizing:border-box;border-style:solid;border-image-repeat:stretch;pointer-events:none;z-index:2;filter:drop-shadow(0 5px 8px rgba(0,0,0,.6))}
+.fr-painel{border-width:61px 53px 57px 57px;border-image-source:url(./assets/8473b85283f544452c8150c855903f33.webp);border-image-slice:161 140 150 150}
+.fr-lateral{border-width:42px;border-image-source:url(./assets/a6a7e6e9a14f1d310570a102f9408e32.webp);border-image-slice:60}
+.fr-biblioteca{border-width:62px 40px 40px 62px;border-image-source:url(./assets/a5552362508c01e428f5742c541d703c.webp);border-image-slice:100 65 65 100}
+.fr-skills{border-width:40px 59px 59px 40px;border-image-source:url(./assets/8866322c7fd2af87bdb05bfb51bee09f.webp);border-image-slice:65 95 95 65}
+.fr-conexoes{border-width:64px 40px 34px 59px;border-image-source:url(./assets/13cc469cdbfc3d60164e213e6caef50e.webp);border-image-slice:103 65 55 95}
+.fr-consumo{border-width:65px 43px 40px 68px;border-image-source:url(./assets/b5d606dff55ad702b348394788ebe926.webp);border-image-slice:105 70 65 110}
+.fr-botao{border-width:21px;border-image-source:url(./assets/d837fc7db557d249d2fca02ae16de29f.webp);border-image-slice:50}
+.visor-nome{position:absolute;left:-13px;right:-13px;top:-6px;bottom:-6px;background:linear-gradient(180deg,rgba(4,12,16,.96),rgba(6,18,24,.92)),repeating-linear-gradient(0deg,rgba(111,243,255,.05) 0 1px,transparent 1px 3px);box-shadow:inset 0 0 10px rgba(111,243,255,.28),inset 0 1px 0 rgba(0,0,0,.8),inset 0 -1px 0 rgba(111,243,255,.25);clip-path:polygon(6px 0,calc(100% - 6px) 0,100% 6px,100% calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,0 calc(100% - 6px),0 6px)}
+.placa{box-sizing:border-box;border-style:solid;border-width:19px 27px 19px 27px;border-image-source:url(./assets/dbe467e3dbb6c60364355356f2ddd7df.webp);border-image-slice:64 90 64 90 fill;border-image-repeat:stretch;filter:drop-shadow(0 3px 5px rgba(0,0,0,.6))}
+.metal{background:linear-gradient(180deg,#474D52 0%,#2E3337 46%,#202427 100%);border:1px solid #0A0C0D;border-radius:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.05),0 2px 4px rgba(0,0,0,.55);text-shadow:0 1px 0 rgba(0,0,0,.65);transition:filter .15s,transform .08s,box-shadow .15s;cursor:pointer}
+.metal:hover{filter:brightness(1.18)}
+.metal:active{background:linear-gradient(180deg,#1C1F22,#2A2E32) !important;box-shadow:inset 0 2px 6px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.05) !important;transform:translateY(1px)}
+.metal:focus-visible{outline:2px solid #6FF3FF;outline-offset:2px}
+.ambar{background:linear-gradient(180deg,#FFCB7D 0%,#F5A03A 48%,#C9741C 100%);border:1px solid #5E3209;border-radius:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 0 rgba(90,45,5,.45),0 0 14px -4px rgba(255,165,58,.8),0 2px 4px rgba(0,0,0,.55);text-shadow:0 1px 0 rgba(255,230,190,.45);transition:filter .15s,transform .08s;cursor:pointer}
+.ambar:hover{filter:brightness(1.08) saturate(1.1)}
+.ambar:active{background:linear-gradient(180deg,#B8681A,#E08A26) !important;box-shadow:inset 0 2px 6px rgba(60,25,0,.6) !important;transform:translateY(1px)}
+.ambar:focus-visible{outline:2px solid #FFE0B0;outline-offset:3px}
+.parar{background:linear-gradient(180deg,#5E2C24 0%,#3C1A15 55%,#2A110D 100%);border:1px solid #160705;border-radius:3px;box-shadow:inset 0 1px 0 rgba(255,180,160,.28),0 0 12px -4px rgba(255,107,90,.7),0 2px 4px rgba(0,0,0,.55);cursor:pointer}
+.parar:active{transform:translateY(1px)}
+.led{display:inline-block;width:6px;height:6px;border-radius:50%;flex:0 0 auto;box-shadow:inset 0 -1px 1px rgba(0,0,0,.5)}
+.linha{transition:background-color .12s,color .12s;cursor:pointer}
+.linha:hover{background-color:rgba(111,243,255,.08) !important;color:#FFFFFF !important}
+.linha:focus-visible{outline:1px solid #6FF3FF;outline-offset:-1px}
+.retrato:focus-visible{outline:2px solid #6FF3FF;outline-offset:4px}
+.lista{scrollbar-width:thin;scrollbar-color:rgba(111,243,255,.45) transparent}
+.lista::-webkit-scrollbar,.rolagem::-webkit-scrollbar{width:6px}.lista::-webkit-scrollbar-thumb,.rolagem::-webkit-scrollbar-thumb{background:rgba(111,243,255,.35)}
+.rolagem{scrollbar-width:thin;scrollbar-color:rgba(111,243,255,.35) transparent}
+input::placeholder{color:#6E8790}
+@keyframes tx1{0%{opacity:.1;filter:contrast(1.8) brightness(1.8) hue-rotate(-20deg)}18%{opacity:.85}30%{opacity:.3}55%{opacity:1;filter:none}100%{opacity:1}}
+@keyframes tx2{0%{opacity:.1;filter:contrast(1.8) brightness(1.8) hue-rotate(-20deg)}18%{opacity:.85}30%{opacity:.3}55%{opacity:1;filter:none}100%{opacity:1}}
+@keyframes tx3{0%{opacity:.1;filter:contrast(1.8) brightness(1.8) hue-rotate(-20deg)}18%{opacity:.85}30%{opacity:.3}55%{opacity:1;filter:none}100%{opacity:1}}
+@keyframes tx4{0%{opacity:.1;filter:contrast(1.8) brightness(1.8) hue-rotate(-20deg)}18%{opacity:.85}30%{opacity:.3}55%{opacity:1;filter:none}100%{opacity:1}}
+@keyframes tx5{0%{opacity:.1;filter:contrast(1.8) brightness(1.8) hue-rotate(-20deg)}18%{opacity:.85}30%{opacity:.3}55%{opacity:1;filter:none}100%{opacity:1}}
+@keyframes tx6{0%{opacity:.1;filter:contrast(1.8) brightness(1.8) hue-rotate(-20deg)}18%{opacity:.85}30%{opacity:.3}55%{opacity:1;filter:none}100%{opacity:1}}
+@keyframes tx7{0%{opacity:.1;filter:contrast(1.8) brightness(1.8) hue-rotate(-20deg)}18%{opacity:.85}30%{opacity:.3}55%{opacity:1;filter:none}100%{opacity:1}}
+@keyframes tx8{0%{opacity:.1;filter:contrast(1.8) brightness(1.8) hue-rotate(-20deg)}18%{opacity:.85}30%{opacity:.3}55%{opacity:1;filter:none}100%{opacity:1}}
+.fx-escutando{animation:tx1 .55s steps(7,end)}
+.fx-lendo{animation:tx2 .55s steps(7,end)}
+.fx-pensando{animation:tx3 .55s steps(7,end)}
+.fx-trabalhando{animation:tx4 .55s steps(7,end)}
+.fx-falando{animation:tx5 .55s steps(7,end)}
+.fx-erro{animation:tx6 .55s steps(7,end)}
+.fx-pronto{animation:tx7 .55s steps(7,end)}
+.fx-esperando{animation:tx8 .55s steps(7,end)}
+@keyframes pulso{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1.2)}}
+.pulso{animation:pulso 1.4s ease-in-out infinite}
+@keyframes anel{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.5);opacity:0}}
+.anel{animation:anel 1.2s ease-out infinite}
+@keyframes onda{0%,100%{transform:scaleY(.2)}50%{transform:scaleY(1)}}
+.onda{animation:onda .9s ease-in-out infinite;transform-origin:bottom}
+@keyframes varre{0%{top:-10%}100%{top:110%}}
+.varre{animation:varre 2.2s linear infinite}
+@keyframes pisca{0%,100%{opacity:.25}50%{opacity:1}}
+.pisca{animation:pisca 1.1s ease-in-out infinite}
+@keyframes rola{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
+.rola{animation:rola 6s linear infinite}
+@keyframes holo{0%,100%{opacity:.82}50%{opacity:1}}
+.holo{animation:holo 2.4s ease-in-out infinite}
+@keyframes cursor{0%,49%{opacity:1}50%,100%{opacity:0}}
+.cursor{animation:cursor 1s step-end infinite}
+@keyframes entra{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:none}}
+.entra{animation:entra .3s ease-out}
+@keyframes luz{0%{background-position:-200px 0}100%{background-position:200px 0}}
+.luz{background:linear-gradient(90deg,transparent,rgba(111,243,255,.9),transparent) no-repeat;background-size:200px 1px;animation:luz 3.5s linear infinite}
+@media (prefers-reduced-motion: reduce){.halo,.corrente,.faisca,.pulso,.anel,.onda,.varre,.pisca,.rola,.holo,.cursor,.luz,.entra,[class^="fx-"]{animation:none !important}}
+.trilho{background:linear-gradient(180deg,#22272A,#141719);border:1px solid #0A0C0D;border-radius:4px;box-shadow:inset 0 1px 0 rgba(255,255,255,.09),inset 0 -1px 0 rgba(0,0,0,.6),0 6px 12px rgba(0,0,0,.6)}
+.campo{box-sizing:border-box;width:100%;height:32px;padding:0 10px;border:1px solid #07090A;border-radius:3px;background:linear-gradient(180deg,#05080A,#0B1013);box-shadow:inset 0 2px 4px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.06);color:#E6F1F3;font-family:'IBM Plex Sans',sans-serif;font-size:13px;outline:none}
+.campo:focus{border-color:rgba(111,243,255,.6);box-shadow:inset 0 2px 4px rgba(0,0,0,.8),0 0 0 1px rgba(111,243,255,.25)}
+.chave{width:46px;height:21px;padding:0;border:0;flex:0 0 auto;cursor:pointer;background:url(./assets/c720b3aecaa3c8cefe683b40e2905e54.webp) center/100% 100% no-repeat;filter:drop-shadow(0 2px 2px rgba(0,0,0,.6));transition:filter .15s}
+.chave[aria-checked="true"]{background-image:url(./assets/06963d13ba568248bfca6c03653f15fc.webp);filter:drop-shadow(0 0 5px rgba(255,165,58,.55)) drop-shadow(0 2px 2px rgba(0,0,0,.6))}
+.chave:hover{filter:brightness(1.15) drop-shadow(0 2px 2px rgba(0,0,0,.6))}
+.chave:focus-visible{outline:2px solid #6FF3FF;outline-offset:3px}
+.encaixe{position:relative;width:44px;height:45px;padding:0;border:0;cursor:pointer;background:url(./assets/aa1c931a78e5ce2ab14f62f6763fb02f.webp) center/100% 100% no-repeat;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6));transition:filter .15s,transform .08s}
+.encaixe[aria-pressed="true"]{background-image:url(./assets/c7ed81cf64ba0319e10a1a23271326a8.webp)}
+.encaixe:hover{filter:brightness(1.2) drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+.encaixe:active{transform:translateY(1px)}
+.encaixe:focus-visible{outline:2px solid #6FF3FF;outline-offset:2px}
+.trilho-prog{position:relative;box-sizing:border-box;height:14px;border-style:solid;border-width:7px 9px;border-image:url(./assets/a27f360a33ff8b483780d5fd713c76b2.webp) 51 66 51 66 fill stretch}
+.cabo-h,.cabo-v{position:absolute;z-index:-1;pointer-events:none;box-shadow:0 3px 4px rgba(0,0,0,.7)}
+.cabo-h{background:linear-gradient(180deg,rgba(255,255,255,.18) 0 1px,#16191C 1px 4.5px,#0A0C0D 4.5px 5.2px,rgba(255,220,170,.55) 5.2px 6.2px,#B06A1E 6.2px 8.8px,#0A0C0D 8.8px 9.5px,rgba(255,255,255,.14) 9.5px 10.5px,#2B3034 10.5px 14px)}
+.cabo-v{background:linear-gradient(90deg,rgba(255,255,255,.18) 0 1px,#16191C 1px 4.5px,#0A0C0D 4.5px 5.2px,rgba(255,220,170,.55) 5.2px 6.2px,#B06A1E 6.2px 8.8px,#0A0C0D 8.8px 9.5px,rgba(255,255,255,.14) 9.5px 10.5px,#2B3034 10.5px 14px)}
+.reticencias{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</helmet>
+<div class="casco app" style="position: relative; min-height: 100vh; box-sizing: border-box; color: #E6F1F3; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+  <header style="position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 5px 16px; background: linear-gradient(180deg, rgba(8,12,15,0.97), rgba(8,12,15,0.88)); border-bottom: 1px solid rgba(111,243,255,0.28); box-shadow: 0 3px 16px rgba(0,0,0,0.65)">
+    <div class="placa" role="img" aria-label="Ponte de Comando, Sara" style="position: relative; height: 46px; display: flex; align-items: center; gap: 10px">
+      <span aria-hidden="true" class="visor-nome"></span>
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6FF3FF" stroke-width="1.6" style="position: relative; flex: 0 0 auto; filter: drop-shadow(0 0 4px rgba(111,243,255,0.8))"><circle cx="12" cy="12" r="9.5"></circle><circle cx="12" cy="12" r="5"></circle><circle cx="12" cy="12" r="1.6" fill="#FFA53A" stroke="none" style="filter: drop-shadow(0 0 3px #FFA53A)"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"></path></svg>
+      <span aria-hidden="true" style="position: relative; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.22em; color: #CFE3E8; white-space: nowrap; text-shadow: 0 0 6px rgba(111,243,255,0.25)">PONTE DE COMANDO</span>
+      <span aria-hidden="true" style="position: relative; width: 1px; height: 14px; flex: 0 0 auto; background: rgba(111,243,255,0.45); box-shadow: 0 0 4px rgba(111,243,255,0.6)"></span>
+      <span aria-hidden="true" style="position: relative; margin-right: -0.22em; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.22em; color: #6FF3FF; white-space: nowrap; text-shadow: 0 0 8px rgba(111,243,255,0.75)">SARA</span>
+    </div>
+    <div style="position: relative; display: flex; align-items: center; gap: 8px">
+      <button class="metal" onClick="{{ pasta.alternarMenu }}" aria-expanded="{{ pasta.menuAberto }}" aria-label="Pasta de trabalho: {{ pasta.atual }}. Trocar" title="Trocar a pasta de trabalho" style="display: flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; color: #B8FAFF">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>PASTA
+      </button>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8FA9B1">{{ pasta.atual }}<span>{{ pasta.meio }}</span><span style="color: #6FF3FF">{{ pasta.projeto }}</span></span>
+      <sc-if value="{{ pasta.menu }}" hint-placeholder-val="{{ false }}">
+        <div role="menu" aria-label="Pasta de trabalho" style="position: absolute; left: 0; top: 36px; z-index: 60; min-width: 300px; padding: 6px; display: flex; flex-direction: column; gap: 4px; background: rgba(4,9,12,0.98); border: 1px solid rgba(111,243,255,0.4); box-shadow: 0 10px 28px rgba(0,0,0,0.75), 0 0 18px -8px rgba(111,243,255,0.7)">
+          <span style="padding: 4px 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8FA9B1">aberta agora: <span style="color: #E6F1F3">{{ pasta.atual }}</span></span>
+          <button class="metal" role="menuitem" onClick="{{ pasta.trocar }}" style="min-height: 30px; padding: 0 10px; text-align: left; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; color: #E6F1F3">Escolher outra pasta…</button>
+          <sc-if value="{{ pasta.foraDoPadrao }}" hint-placeholder-val="{{ false }}">
+            <button class="metal" role="menuitem" onClick="{{ pasta.padrao }}" style="min-height: 30px; padding: 0 10px; text-align: left; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; color: #9BF7D6">Voltar para A:\Claude (padrão)</button>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+    <div style="flex: 1 1 auto"></div>
+    <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center">
+      <sc-for list="{{ chipsTopo }}" as="c" hint-placeholder-count="3">
+        <button class="metal" onClick="{{ c.acao }}" aria-label="{{ c.dica }}" style="display: flex; align-items: center; gap: 7px; min-height: 30px; padding: 0 12px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.12em; color: {{ c.cor }}">
+          <span class="led" style="background: {{ c.cor }}; box-shadow: 0 0 6px {{ c.cor }}"></span>{{ c.rotulo }}
+        </button>
+      </sc-for>
+    </div>
+    <div aria-hidden="true" class="luz" style="position: absolute; left: 0; right: 0; bottom: -1px; height: 1px"></div>
+  </header>
+
+  <div class="cresce linha-app" ref="{{ linhaRef }}" style="position: relative; isolation: isolate; flex: 1 1 auto; display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px; padding: 12px; height: 892px">
+
+    <sc-if value="{{ navCheia }}" hint-placeholder-val="{{ true }}">
+    <nav aria-label="Explorador" class="rolagem" style="flex: 1 1 240px; max-width: 290px; display: flex; flex-direction: column; gap: 10px; padding: 14px; margin: -14px -12px">
+
+      <section aria-label="Arquivos" data-moldura="1" class="caixa" style="flex: 1 1 160px; min-height: 150px; padding: 34px 34px 34px; display: flex; flex-direction: column; gap: 2px">
+        <div class="fundo" aria-hidden="true"></div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px">
+          <span style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.22em; color: #6FF3FF">ARQUIVOS</span>
+          <button class="metal" onClick="{{ criar.arquivos.alternar }}" aria-expanded="{{ criar.arquivos.expandido }}" aria-label="Criar pasta ou arquivo" title="Nova pasta ou arquivo" style="position: relative; z-index: 3; width: 26px; height: 22px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+        </div>
+        <sc-if value="{{ criar.arquivos.aberto }}" hint-placeholder-val="{{ false }}">
+          <div role="group" aria-label="Criar na arquivos" style="position: relative; z-index: 3; display: flex; flex-direction: column; gap: 6px; margin: 0 0 8px; padding: 8px; background: rgba(3,8,11,0.9); border: 1px solid rgba(111,243,255,0.28)">
+            <div style="display: flex; gap: 4px">
+              <button class="metal" onClick="{{ criar.arquivos.tipoPasta }}" aria-pressed="{{ criar.arquivos.ehPasta }}" style="flex: 1 1 0; min-height: 24px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.12em; color: {{ criar.arquivos.corPasta }}">PASTA</button>
+              <button class="metal" onClick="{{ criar.arquivos.tipoArquivo }}" aria-pressed="{{ criar.arquivos.ehArquivo }}" style="flex: 1 1 0; min-height: 24px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.12em; color: {{ criar.arquivos.corArquivo }}">ARQUIVO</button>
+            </div>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8FA9B1">em {{ criar.arquivos.destino }}</span>
+            <input class="campo" aria-label="Nome" placeholder="{{ criar.arquivos.dica }}" value="{{ criar.arquivos.nome }}" onChange="{{ criar.arquivos.digitar }}" onKeyDown="{{ criar.arquivos.tecla }}" style="height: 28px; font-size: 12px">
+            <sc-if value="{{ criar.arquivos.temErro }}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #FF9A8C">{{ criar.arquivos.erro }}</span></sc-if>
+            <div style="display: flex; gap: 4px">
+              <button class="metal" onClick="{{ criar.arquivos.confirmar }}" style="flex: 1 1 0; min-height: 26px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; color: #9BF7D6">CRIAR</button>
+              <button class="metal" onClick="{{ criar.arquivos.cancelar }}" style="flex: 0 0 auto; min-height: 26px; padding: 0 10px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; color: #B8D3D8">CANCELAR</button>
+            </div>
+          </div>
+        </sc-if>
+        <div class="lista" style="flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 1px">
+          <sc-for list="{{ arvore }}" as="f" hint-placeholder-count="7">
+            <button class="linha" onClick="{{ f.acao }}" aria-expanded="{{ f.expandido }}" style="display: flex; align-items: center; gap: 8px; min-height: 25px; padding: 0 6px 0 {{ f.recuo }}; border: 0; border-left: 2px solid {{ f.marca }}; background: {{ f.fundo }}; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{ f.cor }}; text-align: left">
+              <span style="color: {{ f.corIcone }}; width: 10px">{{ f.icone }}</span>{{ f.nome }}
+            </button>
+          </sc-for>
+        </div>
+        <div class="fr fr-lateral" aria-hidden="true"></div>
+      </section>
+
+      <section aria-label="Biblioteca" data-moldura="1" data-liga="1" data-liga-acima="0.42" class="caixa" style="flex: 0 0 auto; padding: 31px 34px 34px 34px; display: flex; flex-direction: column; gap: 4px">
+        <div class="fundo" aria-hidden="true"></div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px 40px">
+          <span style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.22em; color: #6FF3FF">BIBLIOTECA</span>
+          <span style="flex: 1 1 auto"></span>
+          <button class="metal" onClick="{{ criar.biblioteca.alternar }}" aria-expanded="{{ criar.biblioteca.expandido }}" aria-label="Criar pasta ou arquivo na Biblioteca" title="Nova pasta ou arquivo" style="position: relative; z-index: 3; width: 26px; height: 22px; margin-right: 6px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+          <button class="metal" onClick="{{ abrir.biblioteca }}" aria-label="Abrir a Biblioteca num painel" style="position: relative; z-index: 3; width: 26px; height: 22px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg></button>
+        </div>
+        <sc-if value="{{ criar.biblioteca.aberto }}" hint-placeholder-val="{{ false }}">
+          <div role="group" aria-label="Criar na biblioteca" style="position: relative; z-index: 3; display: flex; flex-direction: column; gap: 6px; margin: 0 0 8px; padding: 8px; background: rgba(3,8,11,0.9); border: 1px solid rgba(111,243,255,0.28)">
+            <div style="display: flex; gap: 4px">
+              <button class="metal" onClick="{{ criar.biblioteca.tipoPasta }}" aria-pressed="{{ criar.biblioteca.ehPasta }}" style="flex: 1 1 0; min-height: 24px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.12em; color: {{ criar.biblioteca.corPasta }}">PASTA</button>
+              <button class="metal" onClick="{{ criar.biblioteca.tipoArquivo }}" aria-pressed="{{ criar.biblioteca.ehArquivo }}" style="flex: 1 1 0; min-height: 24px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.12em; color: {{ criar.biblioteca.corArquivo }}">ARQUIVO</button>
+            </div>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8FA9B1">em {{ criar.biblioteca.destino }}</span>
+            <input class="campo" aria-label="Nome" placeholder="{{ criar.biblioteca.dica }}" value="{{ criar.biblioteca.nome }}" onChange="{{ criar.biblioteca.digitar }}" onKeyDown="{{ criar.biblioteca.tecla }}" style="height: 28px; font-size: 12px">
+            <sc-if value="{{ criar.biblioteca.temErro }}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #FF9A8C">{{ criar.biblioteca.erro }}</span></sc-if>
+            <div style="display: flex; gap: 4px">
+              <button class="metal" onClick="{{ criar.biblioteca.confirmar }}" style="flex: 1 1 0; min-height: 26px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; color: #9BF7D6">CRIAR</button>
+              <button class="metal" onClick="{{ criar.biblioteca.cancelar }}" style="flex: 0 0 auto; min-height: 26px; padding: 0 10px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; color: #B8D3D8">CANCELAR</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-for list="{{ biblioteca }}" as="b" hint-placeholder-count="3">
+          <button class="metal" onClick="{{ b.escolher }}" aria-pressed="{{ b.alvo }}" style="display: flex; justify-content: space-between; align-items: center; min-height: 25px; padding: 0 10px; color: #E6F1F3; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px">
+            <span>{{ b.nome }}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8FA9B1">{{ b.qtd }}</span>
+          </button>
+        </sc-for>
+        <div class="fr fr-biblioteca" aria-hidden="true"></div>
+      </section>
+
+      <section aria-label="Skills" data-moldura="1" data-liga="1" class="caixa" style="flex: 0 0 auto; padding: 34px 34px 36px 34px; display: flex; flex-direction: column; gap: 4px">
+        <div class="fundo" aria-hidden="true"></div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+          <span style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.22em; color: #6FF3FF">SKILLS</span>
+          <span style="display: flex; align-items: center; gap: 8px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #FFA53A">140</span>
+          <button class="metal" onClick="{{ abrir.skills }}" aria-label="Abrir as Skills num painel" style="position: relative; z-index: 3; width: 26px; height: 22px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg></button></span>
+        </div>
+        <span style="font-size: 12px; color: #8FA9B1; margin-top: 2px">usadas agora</span>
+        <sc-for list="{{ skillsAgora }}" as="s" hint-placeholder-count="3">
+          <span class="reticencias" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #E6F1F3; padding-right: 30px">› {{ s.nome }}</span>
+        </sc-for>
+        <div class="fr fr-skills" aria-hidden="true"></div>
+        <span class="faisca f2" aria-hidden="true" style="right: 26px; bottom: 26px; animation-delay: -4s"></span>
+      </section>
+
+      <section aria-label="Conexões" data-moldura="1" data-liga="1" class="caixa" style="flex: 0 0 auto; padding: 32px 34px 33px 34px; display: flex; flex-direction: column; gap: 4px">
+        <div class="fundo" aria-hidden="true"></div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px 30px">
+          <span style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.22em; color: #6FF3FF">CONEXÕES</span>
+          <button class="metal" onClick="{{ abrir.conexoes }}" aria-label="Abrir as Conexões num painel" style="position: relative; z-index: 3; width: 26px; height: 22px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg></button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 8px">
+          <sc-for list="{{ conexoesResumo }}" as="c" hint-placeholder-count="6">
+            <button class="linha" onClick="{{ abrir.conexoes }}" aria-label="{{ c.nome }}: {{ c.estado }}" title="{{ c.estado }}" style="display: flex; align-items: center; gap: 7px; min-height: 24px; padding: 0 4px; border: 0; background: transparent; color: {{ c.corNome }}; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; text-align: left; white-space: nowrap; min-width: 0">
+              <span class="led" style="background: {{ c.cor }}; box-shadow: 0 0 7px {{ c.cor }}"></span><span class="reticencias">{{ c.nome }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div class="fr fr-conexoes" aria-hidden="true"></div>
+      </section>
+    </nav>
+    </sc-if>
+
+    <sc-if value="{{ navTrilho }}" hint-placeholder-val="{{ false }}">
+    <nav aria-label="Atalhos" class="trilho" style="flex: 0 0 64px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 0">
+      <sc-for list="{{ trilho }}" as="t" hint-placeholder-count="5">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 3px">
+          <button class="encaixe" onClick="{{ t.acao }}" aria-label="{{ t.nome }}" aria-pressed="{{ t.aberto }}" title="{{ t.nome }}" style="color: {{ t.cor }}">
+          <sc-if value="{{ t.ehArvore }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></sc-if>
+          <sc-if value="{{ t.ehConversas }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2"></path></svg></sc-if>
+          <sc-if value="{{ t.ehBiblioteca }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h5v14H4zM10 5h4v14h-4zM15 6l4-1 2 13-4 1z"></path></svg></sc-if>
+          <sc-if value="{{ t.ehSkills }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8h8v8H8zM10 2v4M14 2v4M10 18v4M14 18v4M2 10h4M2 14h4M18 10h4M18 14h4"></path></svg></sc-if>
+          <sc-if value="{{ t.ehConexoes }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7V3M15 7V3M7 7h10v4a5 5 0 0 1-10 0zM12 16v5"></path></svg></sc-if>
+          </button>
+          <span aria-hidden="true" style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 9px; letter-spacing: 0.06em; color: {{ t.cor }}">{{ t.curto }}</span>
+        </div>
+      </sc-for>
+    </nav>
+    </sc-if>
+
+    <main data-principal="1" data-moldura="1" class="caixa cresce" style="flex: 999 1 520px; min-width: 0; padding: 46px 52px 54px 50px; display: flex; flex-direction: column">
+      <div class="halo" aria-hidden="true"></div>
+      <div class="fundo-azul" aria-hidden="true">
+        <div style="position: absolute; left: -20%; right: -20%; bottom: -10px; height: 46%; background-image: linear-gradient(rgba(111,243,255,0.14) 1px, transparent 1px), linear-gradient(90deg, rgba(111,243,255,0.14) 1px, transparent 1px); background-size: 56px 56px; transform: perspective(420px) rotateX(62deg); transform-origin: bottom; -webkit-mask-image: linear-gradient(to top, #000 10%, transparent 90%); mask-image: linear-gradient(to top, #000 10%, transparent 90%)"></div>
+      </div>
+      <div class="fr fr-painel" aria-hidden="true"></div>
+      <div class="corrente" aria-hidden="true" style="top: 24px; left: 70px; right: 70px"></div>
+      <div class="corrente" aria-hidden="true" style="bottom: 19px; left: 70px; right: 70px; animation-delay: -2.7s; animation-duration: 7s"></div>
+      <span class="faisca f1" aria-hidden="true" style="right: 34px; bottom: 30px"></span>
+      <span class="faisca f2" aria-hidden="true" style="right: 46px; bottom: 26px; animation-delay: -3s"></span>
+      <span class="faisca f3" aria-hidden="true" style="left: 30px; top: 168px; animation-delay: -5s"></span>
+      <img src="./assets/67b98744cb1b842add20b1431bd68ae8.webp" alt="" aria-hidden="true" style="position: absolute; left: 50%; top: 0; width: 92px; height: 22px; transform: translateX(-50%); z-index: 3">
+      <span aria-hidden="true" style="position: absolute; left: 50%; top: 3px; transform: translateX(-50%); z-index: 4; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; line-height: 16px; letter-spacing: 0.16em; color: #6FF3FF; text-shadow: 0 0 8px rgba(111,243,255,0.7); white-space: nowrap">{{ tituloAba }}</span>
+
+      <sc-if value="{{ modoConversa }}" hint-placeholder-val="{{ true }}">
+        <div style="position: relative; z-index: 3; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(111,243,255,0.14)">
+          <div role="tablist" aria-label="Conversas abertas" class="lista" style="flex: 1 1 auto; min-width: 0; display: flex; gap: 4px; overflow-x: auto; padding: 8px 8px 9px; margin: -6px -6px -5px">
+            <sc-for list="{{ abasSessao }}" as="s" hint-placeholder-count="2">
+              <div style="position: relative; display: flex; flex: 0 1 220px; min-width: 120px">
+                <button role="tab" class="metal" onClick="{{ s.ir }}" aria-selected="{{ s.sel }}" title="{{ s.dica }}" style="flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 30px 0 10px; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; color: {{ s.cor }}; box-shadow: {{ s.sombra }}; text-align: left">
+                  <span class="{{ s.ledClasse }}" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto; background: {{ s.led }}; box-shadow: 0 0 6px {{ s.led }}"></span>
+                  <span class="reticencias">{{ s.titulo }}</span>
+                </button>
+                <button class="linha" onClick="{{ s.fechar }}" aria-label="Fechar a conversa {{ s.titulo }}" style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; padding: 0; border: 0; border-radius: 2px; background: transparent; color: #8FA9B1; display: flex; align-items: center; justify-content: center"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+              </div>
+            </sc-for>
+            <button class="metal" onClick="{{ novaConversa }}" aria-label="Nova conversa" title="Nova conversa" style="flex: 0 0 32px; height: 32px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+          </div>
+          <button class="metal" onClick="{{ abrir.conversas }}" aria-pressed="{{ conversasAberto }}" title="Conversas anteriores" style="flex: 0 0 auto; display: flex; align-items: center; gap: 7px; min-height: 32px; padding: 0 12px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.14em; color: #B8FAFF">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2"></path></svg>HISTÓRICO
+          </button>
+          <a href="Fluxo.dc.html" class="metal" style="flex: 0 0 auto; display: flex; align-items: center; gap: 7px; min-height: 32px; padding: 0 12px; box-sizing: border-box; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.14em; color: #B8FAFF; text-decoration: none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 6h5v5H5zM14 13h5v5h-5zM10 8.5h4.5v4.5"></path></svg>FLUXO
+          </a>
+        </div>
+        <div style="position: relative; z-index: 1; margin: -4px 0 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8FA9B1" class="reticencias">{{ sessao.meta }}</div>
+
+        <div class="lista" ref="{{ lista }}" style="position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 6px; display: flex; flex-direction: column; gap: 14px; max-width: 900px; width: 100%; margin: 0 auto; box-sizing: border-box">
+          <sc-if value="{{ conversaVazia }}" hint-placeholder-val="{{ false }}">
+            <div style="margin: auto; text-align: center; display: flex; flex-direction: column; gap: 6px; color: #8FA9B1; font-size: 14px">
+              <span style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.24em; color: #6FF3FF">CONVERSA NOVA</span>
+              <span>Pode falar. Eu leio a pasta do projeto quando precisar.</span>
+            </div>
+          </sc-if>
+          <sc-for list="{{ mensagens }}" as="m" hint-placeholder-count="3">
+            <sc-if value="{{ m.ehAlex }}" hint-placeholder-val="{{ true }}">
+              <div class="{{ m.classe }}" style="align-self: flex-end; max-width: 78%; padding: 12px 16px; background: rgba(111,243,255,0.05); border: 1px solid rgba(111,243,255,0.3); font-size: 15px; line-height: 1.55; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%)">
+                <span style="white-space: pre-wrap">{{ m.texto }}</span><span style="display: block; margin-top: 6px; font-size: 11px; color: #8FA9B1; font-family: 'JetBrains Mono', monospace">{{ m.hora }}</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ m.ehSara }}" hint-placeholder-val="{{ false }}">
+              <div class="{{ m.classe }}" style="max-width: 86%; padding: 14px 18px; background: rgba(255,165,58,0.04); border: 1px solid rgba(255,165,58,0.38); font-size: 15px; line-height: 1.6; clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px)">
+                <span style="display: block; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.24em; color: #FFA53A; margin-bottom: 4px">SARA</span><span style="white-space: pre-wrap">{{ m.texto }}</span><span style="display: block; margin-top: 6px; font-size: 11px; color: #8FA9B1; font-family: 'JetBrains Mono', monospace">{{ m.hora }}</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ m.ehAtiv }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: 7px; padding-left: 16px; border-left: 1px solid rgba(111,243,255,0.35)">
+                <sc-for list="{{ m.itens }}" as="a" hint-placeholder-count="3">
+                  <div style="display: flex; align-items: center; gap: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+                    <span style="color: {{ a.cor }}; text-shadow: 0 0 8px {{ a.cor }}">{{ a.marca }}</span>
+                    <span style="color: #E6F1F3">{{ a.acao }}</span>
+                    <span style="color: #8FA9B1">{{ a.alvo }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </sc-for>
+          <sc-if value="{{ trabalhandoAqui }}" hint-placeholder-val="{{ false }}">
+            <div class="entra" style="display: flex; align-items: center; gap: 10px; padding-left: 16px; border-left: 1px solid rgba(255,165,58,0.5); font-family: 'JetBrains Mono', monospace; font-size: 12px">
+              <span class="pisca" style="color: #FFA53A">◆</span>
+              <span style="color: #E6F1F3">{{ legendaAqui }}</span><span class="cursor" style="display: inline-block; width: 7px; height: 13px; background: #FFA53A"></span>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="position: relative; z-index: 3; margin-top: 14px; max-width: 900px; width: 100%; margin-left: auto; margin-right: auto; display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px">
+            <label for="msg" style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.22em; color: #8FA9B1">MENSAGEM PARA A SARA</label>
+            <div role="group" aria-label="Modelo e velocidade desta conversa" style="display: flex; flex-wrap: wrap; gap: 6px">
+              <sc-for list="{{ chipsConversa }}" as="c" hint-placeholder-count="3">
+                <button class="metal" onClick="{{ c.acao }}" aria-label="{{ c.dica }}" title="{{ c.dica }}" style="display: flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.12em; color: {{ c.cor }}">
+                  <span class="led" style="width: 6px; height: 6px; background: {{ c.cor }}; box-shadow: 0 0 6px {{ c.cor }}"></span><span style="color: #8FA9B1">{{ c.nome }}</span>{{ c.valor }}
+                </button>
+              </sc-for>
+            </div>
+          </div>
+          <div class="caixa" style="display: flex; gap: 8px; align-items: center; padding: 22px 25px">
+            <div class="fundo" aria-hidden="true" style="inset: 9px; background: rgba(3,8,11,0.96)"></div>
+            <button class="metal" aria-label="Anexar arquivo" style="position: relative; z-index: 3; width: 34px; height: 34px; padding: 0; color: #B8D3D8; display: flex; align-items: center; justify-content: center; flex: 0 0 auto">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5 5 0 0 1-7.1-7.1l8.6-8.6a3.4 3.4 0 0 1 4.8 4.8l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4l7.9-7.9"></path></svg>
+            </button>
+            <input id="msg" type="text" autocomplete="off" placeholder="Escreva e aperte Enter, ou toque no microfone" value="{{ texto }}" onChange="{{ digitar }}" onKeyDown="{{ tecla }}" onFocus="{{ focar }}" onBlur="{{ desfocar }}" style="position: relative; z-index: 3; flex: 1 1 200px; min-width: 0; height: 34px; padding: 0 6px; border: 0; background: transparent; color: #E6F1F3; font-family: 'IBM Plex Sans', sans-serif; font-size: 15px; outline: none">
+            <button class="metal" aria-label="Falar com a Sara" aria-pressed="{{ mic.ligado }}" onClick="{{ alternarMic }}" style="position: relative; z-index: 3; width: 34px; height: 34px; padding: 0; color: {{ mic.cor }}; display: flex; align-items: center; justify-content: center; flex: 0 0 auto">
+              <sc-if value="{{ mic.on }}" hint-placeholder-val="{{ false }}">
+                <span class="anel" aria-hidden="true" style="position: absolute; inset: 2px; border: 1px solid #6FF3FF; pointer-events: none"></span>
+              </sc-if>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg>
+            </button>
+            <sc-if value="{{ meuCiclo }}" hint-placeholder-val="{{ false }}">
+              <button class="parar" onClick="{{ parar }}" style="position: relative; z-index: 3; height: 34px; min-width: 104px; padding: 0 16px; color: #FFB4A6; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.16em; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 0 0 auto">
+                PARAR
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12"></rect></svg>
+              </button>
+            </sc-if>
+            <sc-if value="{{ livreAqui }}" hint-placeholder-val="{{ true }}">
+              <button class="ambar" onClick="{{ enviar }}" style="position: relative; z-index: 3; height: 34px; min-width: 104px; padding: 0 16px; color: #1C0E02; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.16em; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 0 0 auto">
+                ENVIAR
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+              </button>
+            </sc-if>
+            <div class="fr fr-botao" aria-hidden="true"></div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ modoAmpliado }}" hint-placeholder-val="{{ false }}">
+        <div style="position: relative; z-index: 3; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid rgba(111,243,255,0.14)">
+          <button class="metal" onClick="{{ voltarConversa }}" style="display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 12px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.14em; color: #B8FAFF">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>VOLTAR À CONVERSA
+          </button>
+          <span style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: 0.22em; color: #E6F1F3">{{ amp.titulo }}</span>
+          <span style="margin-left: auto; display: flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8FA9B1">
+            <span class="{{ amp.ledClasse }}" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: {{ amp.led }}; box-shadow: 0 0 6px {{ amp.led }}"></span>{{ amp.status }}
+          </span>
+        </div>
+
+        <sc-if value="{{ amp.ehSkills }}" hint-placeholder-val="{{ false }}">
+          <div style="position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+              <input class="campo" type="search" aria-label="Buscar skill" placeholder="Buscar skill" value="{{ amp.busca }}" onChange="{{ amp.buscar }}" style="max-width: 320px">
+              <sc-for list="{{ categorias }}" as="c" hint-placeholder-count="6">
+                <button class="metal" onClick="{{ c.escolher }}" aria-pressed="{{ c.ativo }}" style="min-height: 28px; padding: 0 10px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.06em; color: {{ c.cor }}; box-shadow: {{ c.sombra }}">{{ c.nome }}</button>
+              </sc-for>
+            </div>
+            <div class="lista" style="flex: 1 1 auto; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; align-content: start; padding-right: 4px">
+              <sc-for list="{{ skills }}" as="s" hint-placeholder-count="6">
+                <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px solid rgba(111,243,255,0.14); background: linear-gradient(180deg, rgba(111,243,255,0.04), rgba(111,243,255,0.01))">
+                  <span style="display: flex; justify-content: space-between; gap: 8px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #E6F1F3">{{ s.nome }}</span><span style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.1em; color: #FFA53A">{{ s.categoria }}</span></span>
+                  <span style="font-size: 13px; line-height: 1.5; color: #B8D3D8">{{ s.desc }}</span>
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; color: #7F9AA3; white-space: pre-wrap">{{ s.detalhe }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ amp.ehBiblioteca }}" hint-placeholder-val="{{ false }}">
+          <div class="lista" style="position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-content: start">
+            <sc-for list="{{ estantes }}" as="g" hint-placeholder-count="3">
+              <div style="display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid rgba(111,243,255,0.14); background: rgba(111,243,255,0.02)">
+                <span style="display: flex; justify-content: space-between; margin-bottom: 6px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.2em; color: #6FF3FF"><span>{{ g.nome }}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0; color: #FFA53A">{{ g.qtd }}</span></span>
+                <sc-for list="{{ g.itens }}" as="i" hint-placeholder-count="4">
+                  <button class="linha" style="display: flex; align-items: center; gap: 8px; min-height: 30px; padding: 0 8px; border: 0; background: transparent; color: #D5E3E6; font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; text-align: left"><span style="color: #6FF3FF">›</span><span class="reticencias">{{ i }}</span></button>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ amp.ehConexoes }}" hint-placeholder-val="{{ false }}">
+          <div class="lista" style="position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; align-content: start">
+            <sc-for list="{{ conexoes }}" as="c" hint-placeholder-count="7">
+              <div style="display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 0 14px; border: 1px solid rgba(111,243,255,0.14); background: rgba(111,243,255,0.025)">
+                <span class="led" style="width: 8px; height: 8px; background: {{ c.cor }}; box-shadow: 0 0 8px {{ c.cor }}"></span>
+                <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto"><span style="font-size: 14px; color: {{ c.corNome }}">{{ c.nome }}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: {{ c.corTexto }}">{{ c.estado }}</span></span>
+                <sc-if value="{{ c.temChave }}" hint-placeholder-val="{{ true }}">
+                  <button class="chave" role="switch" aria-checked="{{ c.ligado }}" aria-label="Ligar ou desligar {{ c.nome }}" onClick="{{ c.alternar }}"></button>
+                </sc-if>
+                <sc-if value="{{ c.autorizar }}" hint-placeholder-val="{{ false }}">
+                  <button class="metal" style="min-height: 28px; padding: 0 10px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.1em; color: #FFA53A">AUTORIZAR</button>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ amp.ehConversas }}" hint-placeholder-val="{{ false }}">
+          <div style="position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px">
+            <input class="campo" type="search" aria-label="Buscar nas conversas" placeholder="Buscar nas conversas" value="{{ amp.busca }}" onChange="{{ amp.buscar }}" style="max-width: 360px">
+            <div class="lista" style="flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px">
+              <sc-for list="{{ grupos }}" as="g" hint-placeholder-count="2">
+                <span style="margin: 10px 0 4px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.2em; color: #7F9AA3">{{ g.nome }}</span>
+                <sc-for list="{{ g.itens }}" as="s" hint-placeholder-count="3">
+                  <button class="linha" onClick="{{ s.abrirEVoltar }}" style="display: grid; grid-template-columns: minmax(0, 1fr) 170px 80px 70px; align-items: center; gap: 12px; min-height: 36px; padding: 0 12px; border: 0; border-left: 2px solid {{ s.marca }}; background: {{ s.fundo }}; text-align: left; font-family: 'IBM Plex Sans', sans-serif">
+                    <span class="reticencias" style="font-size: 14px; color: {{ s.cor }}">{{ s.titulo }}</span>
+                    <span class="reticencias" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8FA9B1">{{ s.projeto }}</span>
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8FA9B1">{{ s.hora }}</span>
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #B8D3D8; text-align: right">{{ s.tokens }}</span>
+                  </button>
+                </sc-for>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ amp.ehArquivos }}" hint-placeholder-val="{{ false }}">
+          <div style="position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; display: flex; gap: 14px">
+            <div class="lista" style="flex: 0 0 260px; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; padding-right: 8px; border-right: 1px solid rgba(111,243,255,0.14)">
+              <sc-for list="{{ arvore }}" as="f" hint-placeholder-count="7">
+                <button class="linha" onClick="{{ f.acaoAmpliado }}" aria-expanded="{{ f.expandido }}" style="display: flex; align-items: center; gap: 8px; min-height: 26px; padding: 0 6px 0 {{ f.recuo }}; border: 0; border-left: 2px solid {{ f.marca }}; background: {{ f.fundo }}; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{ f.cor }}; text-align: left">
+                  <span style="color: {{ f.corIcone }}; width: 10px">{{ f.icone }}</span>{{ f.nome }}
+                </button>
+              </sc-for>
+            </div>
+            <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+              <span class="reticencias" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8FA9B1">{{ arquivo.caminho }} · {{ arquivo.rodape }}</span>
+              <div class="lista" style="flex: 1 1 auto; min-height: 0; overflow: auto; padding: 12px 0; border: 1px solid rgba(111,243,255,0.16); background: rgba(3,8,11,0.75); font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 22px; font-variant-ligatures: none">
+                <sc-for list="{{ arquivo.linhas }}" as="l" hint-placeholder-count="6">
+                  <div style="display: flex; gap: 16px; padding: 0 16px">
+                    <span style="width: 22px; text-align: right; color: #4E6670; flex: 0 0 auto">{{ l.n }}</span>
+                    <span style="color: {{ l.cor }}; white-space: pre-wrap">{{ l.t }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </sc-if>
+    </main>
+
+    <sc-for list="{{ paineis }}" as="p" hint-placeholder-count="0">
+      <section aria-label="{{ p.titulo }}" data-moldura="1" data-liga="1" class="caixa" style="flex: 0 0 {{ p.largura }}; width: {{ p.largura }}; min-height: 0; padding: 34px; display: flex; flex-direction: column; gap: 10px">
+        <div class="fundo" aria-hidden="true"></div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+          <span style="display: flex; align-items: center; gap: 8px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.22em; color: #6FF3FF"><span class="led" style="background: #6FF3FF; box-shadow: 0 0 6px #6FF3FF"></span>{{ p.titulo }}</span>
+          <span style="display: flex; gap: 5px">
+          <button class="metal" onClick="{{ p.ampliar }}" aria-label="Ampliar o painel {{ p.titulo }}" title="Ampliar" style="position: relative; z-index: 3; width: 26px; height: 24px; padding: 0; color: #6FF3FF; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"></path></svg></button>
+          <button class="metal" onClick="{{ p.fechar }}" aria-label="Fechar o painel {{ p.titulo }}" style="position: relative; z-index: 3; width: 26px; height: 24px; padding: 0; color: #B8D3D8; display: flex; align-items: center; justify-content: center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+          </span>
+        </div>
+        <img src="./assets/1da14ae98cd94ee85a016a146aeaf3dc.webp" alt="" aria-hidden="true" style="display: block; width: 100%; height: auto; margin: -2px 0 2px; opacity: 0.9">
+
+        <sc-if value="{{ p.ehConversas }}" hint-placeholder-val="{{ false }}">
+          <div style="flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px">
+            <input class="campo" type="search" aria-label="Buscar nas conversas" placeholder="Buscar nas conversas" value="{{ p.busca }}" onChange="{{ p.buscar }}">
+            <button class="metal" onClick="{{ novaConversa }}" style="min-height: 30px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.14em; color: #B8FAFF">+ NOVA CONVERSA</button>
+            <div class="lista" style="flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding-right: 4px">
+              <sc-for list="{{ p.grupos }}" as="g" hint-placeholder-count="2">
+                <span style="margin: 8px 0 4px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.2em; color: #7F9AA3">{{ g.nome }}</span>
+                <sc-for list="{{ g.itens }}" as="s" hint-placeholder-count="3">
+                  <button class="linha" onClick="{{ s.abrir }}" aria-current="{{ s.atual }}" style="display: flex; flex-direction: column; align-items: stretch; gap: 2px; padding: 7px 10px; border: 0; border-left: 2px solid {{ s.marca }}; background: {{ s.fundo }}; text-align: left; color: #E6F1F3; font-family: 'IBM Plex Sans', sans-serif">
+                    <span class="reticencias" style="font-size: 13px; color: {{ s.cor }}">{{ s.titulo }}</span>
+                    <span class="reticencias" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8FA9B1">{{ s.meta }}</span>
+                  </button>
+                </sc-for>
+              </sc-for>
+              <sc-if value="{{ p.nada }}" hint-placeholder-val="{{ false }}">
+                <span style="padding: 10px; font-size: 13px; color: #8FA9B1">Nada com esse nome.</span>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ p.ehSkills }}" hint-placeholder-val="{{ false }}">
+          <div style="flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px">
+            <input class="campo" type="search" aria-label="Buscar skill" placeholder="Buscar skill" value="{{ p.busca }}" onChange="{{ p.buscar }}">
+            <div style="display: flex; flex-wrap: wrap; gap: 5px">
+              <sc-for list="{{ p.categorias }}" as="c" hint-placeholder-count="6">
+                <button class="metal" onClick="{{ c.escolher }}" aria-pressed="{{ c.ativo }}" style="min-height: 24px; padding: 0 8px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.06em; color: {{ c.cor }}; box-shadow: {{ c.sombra }}">{{ c.nome }}</button>
+              </sc-for>
+            </div>
+            <div class="lista" style="flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding-right: 4px">
+              <sc-for list="{{ p.skills }}" as="s" hint-placeholder-count="6">
+                <button class="linha" onClick="{{ s.alternar }}" aria-expanded="{{ s.aberta }}" style="display: flex; flex-direction: column; align-items: stretch; gap: 3px; padding: 7px 10px; border: 0; border-left: 2px solid {{ s.marca }}; background: {{ s.fundo }}; text-align: left; font-family: 'IBM Plex Sans', sans-serif">
+                  <span style="display: flex; justify-content: space-between; gap: 8px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #E6F1F3">{{ s.nome }}</span><span style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.08em; color: #7F9AA3">{{ s.categoria }}</span></span>
+                  <span style="font-size: 12px; line-height: 1.45; color: #8FA9B1">{{ s.desc }}</span>
+                  <sc-if value="{{ s.mostrar }}" hint-placeholder-val="{{ false }}">
+                    <span style="margin-top: 4px; padding-top: 6px; border-top: 1px solid rgba(111,243,255,0.14); font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; color: #B8D3D8; white-space: pre-wrap">{{ s.detalhe }}</span>
+                  </sc-if>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ p.ehBiblioteca }}" hint-placeholder-val="{{ false }}">
+          <div class="lista" style="flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding-right: 4px">
+            <sc-for list="{{ p.estantes }}" as="g" hint-placeholder-count="3">
+              <span style="display: flex; justify-content: space-between; margin: 8px 0 4px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.2em; color: #7F9AA3"><span>{{ g.nome }}</span><span style="font-family: 'JetBrains Mono', monospace; letter-spacing: 0; color: #FFA53A">{{ g.qtd }}</span></span>
+              <sc-for list="{{ g.itens }}" as="i" hint-placeholder-count="4">
+                <button class="linha" style="display: flex; align-items: center; gap: 8px; min-height: 28px; padding: 0 10px; border: 0; background: transparent; color: #D5E3E6; font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; text-align: left"><span style="color: #6FF3FF">›</span><span class="reticencias">{{ i }}</span></button>
+              </sc-for>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ p.ehConexoes }}" hint-placeholder-val="{{ false }}">
+          <div class="lista" style="flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 4px">
+            <sc-for list="{{ conexoes }}" as="c" hint-placeholder-count="7">
+              <div style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border: 1px solid rgba(111,243,255,0.10); background: rgba(111,243,255,0.025)">
+                <span class="led" style="background: {{ c.cor }}; box-shadow: 0 0 7px {{ c.cor }}"></span>
+                <span style="display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto"><span style="font-size: 13px; color: {{ c.corNome }}">{{ c.nome }}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: {{ c.corTexto }}">{{ c.estado }}</span></span>
+                <sc-if value="{{ c.temChave }}" hint-placeholder-val="{{ true }}">
+                  <button class="chave" role="switch" aria-checked="{{ c.ligado }}" aria-label="Ligar ou desligar {{ c.nome }}" onClick="{{ c.alternar }}"></button>
+                </sc-if>
+                <sc-if value="{{ c.autorizar }}" hint-placeholder-val="{{ false }}">
+                  <button class="metal" style="min-height: 26px; padding: 0 10px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.1em; color: #FFA53A">AUTORIZAR</button>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ p.ehArvore }}" hint-placeholder-val="{{ false }}">
+          <div class="lista" style="flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 1px">
+            <sc-for list="{{ arvore }}" as="f" hint-placeholder-count="7">
+              <button class="linha" onClick="{{ f.acao }}" aria-expanded="{{ f.expandido }}" style="display: flex; align-items: center; gap: 8px; min-height: 26px; padding: 0 6px 0 {{ f.recuo }}; border: 0; border-left: 2px solid {{ f.marca }}; background: {{ f.fundo }}; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{ f.cor }}; text-align: left">
+                <span style="color: {{ f.corIcone }}; width: 10px">{{ f.icone }}</span>{{ f.nome }}
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ p.ehArquivo }}" hint-placeholder-val="{{ false }}">
+          <div style="flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 8px">
+            <span class="reticencias" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8FA9B1">{{ arquivo.caminho }}</span>
+            <div class="lista" style="flex: 1 1 auto; min-height: 0; overflow: auto; padding: 10px 0; border: 1px solid rgba(111,243,255,0.16); background: rgba(3,8,11,0.75); font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 21px; font-variant-ligatures: none">
+              <sc-for list="{{ arquivo.linhas }}" as="l" hint-placeholder-count="6">
+                <div style="display: flex; gap: 12px; padding: 0 12px">
+                  <span style="width: 18px; text-align: right; color: #4E6670; flex: 0 0 auto">{{ l.n }}</span>
+                  <span style="color: {{ l.cor }}; white-space: pre-wrap">{{ l.t }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7F9AA3">{{ arquivo.rodape }}</span>
+          </div>
+        </sc-if>
+
+        <div class="fr fr-lateral" aria-hidden="true"></div>
+      </section>
+    </sc-for>
+
+    <aside aria-label="Sara e consumo" class="rolagem" style="flex: 0 1 300px; max-width: 300px; display: flex; flex-direction: column; gap: 6px; padding: 20px 14px 14px; margin: -20px -12px -14px">
+
+      <section aria-label="Retrato da Sara" style="position: relative; display: flex; flex-direction: column; gap: 7px">
+        <button class="retrato" data-moldura="1" data-liga="1" data-liga-y="0.38" onClick="{{ proximo }}" aria-label="Retrato da Sara, estado {{ e.rotulo }}. Clique para ver o próximo estado" style="position: relative; display: block; width: 100%; aspect-ratio: 800 / 1017; padding: 0; border: 0; background: transparent; cursor: pointer; filter: drop-shadow(0 0 14px {{ e.brilho }}) drop-shadow(0 8px 12px rgba(0,0,0,0.7))">
+          <div class="{{ e.fx }}" style="position: absolute; left: 11.75%; top: 9.14%; width: 76.5%; height: 81.71%; overflow: hidden; background: #14181C">
+            <video src="./assets/61926cbf3759014a85a07a28a306b879.mp4" poster="./assets/d2c797fb83405f7d534f92395c670718.jpg" autoplay="" muted="" loop="" playsinline="" preload="auto" ref="{{ video }}" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 0%; opacity: {{ e.opEsp }}; transition: opacity .35s; filter: {{ e.filtro }}"></video>
+            <video src="./assets/59727c0ff45b6dc696a6ab25c27dafdd.mp4" autoplay="" muted="" loop="" playsinline="" preload="auto" ref="{{ video }}" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 0%; opacity: {{ e.opAna }}; transition: opacity .35s; filter: {{ e.filtro }}"></video>
+            <div aria-hidden="true" style="position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.2) 0px, rgba(0,0,0,0.2) 1px, transparent 1px, transparent 3px); pointer-events: none"></div>
+            <div aria-hidden="true" style="position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 58%, rgba(2,4,6,0.7) 100%); pointer-events: none"></div>
+            <sc-if value="{{ e.orelhaViva }}" hint-placeholder-val="{{ false }}">
+              <div aria-hidden="true" class="pulso" style="position: absolute; left: 61%; top: 21%; width: 9%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, {{ e.corOrelha }} 0%, rgba(111,243,255,0.2) 45%, transparent 70%)"></div>
+            </sc-if>
+            <sc-if value="{{ e.varrendo }}" hint-placeholder-val="{{ false }}">
+              <div aria-hidden="true" class="varre" style="position: absolute; left: 0; right: 0; height: 9%; background: linear-gradient(180deg, transparent, rgba(255,165,58,0.3), transparent); border-bottom: 1px solid rgba(255,165,58,0.7)"></div>
+            </sc-if>
+            <sc-if value="{{ e.lendo }}" hint-placeholder-val="{{ false }}">
+              <div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 60% 35% at 30% 38%, rgba(111,243,255,0.16), transparent 70%); mix-blend-mode: screen"></div>
+              <div aria-hidden="true" class="holo" style="position: absolute; left: 9%; width: 36%; top: 37%; height: 22%; overflow: hidden; border: 1px solid rgba(111,243,255,0.55); background: linear-gradient(180deg, rgba(20,90,110,0.30), rgba(8,40,48,0.18)); box-shadow: 0 0 22px rgba(111,243,255,0.30), inset 0 0 18px rgba(111,243,255,0.18); opacity: 0.62; transform: perspective(520px) rotateX(8deg) rotateY(22deg); transform-origin: left center">
+                <div class="rola" style="display: flex; flex-direction: column; gap: 5px; padding: 8px">
+                  <sc-for list="{{ linhas }}" as="l" hint-placeholder-count="16">
+                    <span style="display: block; height: 3px; width: {{ l.w }}; background: rgba(111,243,255,0.75)"></span>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ e.pensando }}" hint-placeholder-val="{{ false }}">
+              <div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 60% 35% at 30% 38%, rgba(111,243,255,0.13), transparent 70%); mix-blend-mode: screen"></div>
+              <div aria-hidden="true" class="holo" style="position: absolute; left: 9%; width: 34%; top: 38%; height: 20%; border: 1px solid rgba(111,243,255,0.55); background: linear-gradient(180deg, rgba(20,90,110,0.28), rgba(8,40,48,0.16)); box-shadow: 0 0 22px rgba(111,243,255,0.3), inset 0 0 16px rgba(111,243,255,0.16); opacity: 0.62; transform: perspective(520px) rotateX(8deg) rotateY(22deg); transform-origin: left center; display: flex; align-items: flex-end; gap: 4px; padding: 8px; box-sizing: border-box">
+                <span style="flex: 1 1 0; height: 40%; background: rgba(111,243,255,0.7)"></span>
+                <span style="flex: 1 1 0; height: 75%; background: rgba(111,243,255,0.7)"></span>
+                <span style="flex: 1 1 0; height: 55%; background: rgba(255,165,58,0.85)"></span>
+                <span style="flex: 1 1 0; height: 90%; background: rgba(111,243,255,0.7)"></span>
+                <span style="flex: 1 1 0; height: 30%; background: rgba(111,243,255,0.7)"></span>
+                <span class="pisca" style="position: absolute; right: 8px; top: 8px; width: 6px; height: 6px; border-radius: 50%; background: #FFA53A"></span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ e.falando }}" hint-placeholder-val="{{ false }}">
+              <div aria-hidden="true" style="position: absolute; left: 10%; right: 10%; bottom: 4%; height: 20px; display: flex; align-items: flex-end; gap: 3px">
+                <sc-for list="{{ barras }}" as="b" hint-placeholder-count="20">
+                  <span class="onda" style="flex: 1 1 0; height: 100%; background: #FFA53A; opacity: 0.85; box-shadow: 0 0 6px #FFA53A; animation-delay: {{ b.atraso }}"></span>
+                </sc-for>
+              </div>
+            </sc-if>
+            <span aria-hidden="true" style="position: absolute; right: 14%; top: 4%; display: flex; align-items: center; gap: 5px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(230,241,243,0.85)"><span class="pisca" style="width: 5px; height: 5px; border-radius: 50%; background: #FF6B5A"></span>CANAL 01 · AO VIVO</span>
+          </div>
+          <img src="./assets/40121a1b92478c55b90c910bf44ffdac.webp" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none">
+          <span style="position: absolute; left: 27.62%; top: 93.75%; width: 43.75%; height: 4.72%; display: flex; align-items: center; justify-content: center; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; color: {{ e.cor }}; text-shadow: 0 0 8px {{ e.cor }}; white-space: nowrap">{{ e.placa }}</span>
+        </button>
+
+        <p aria-live="polite" style="margin: 0; padding: 5px 10px; background: rgba(5,9,13,0.85); border-left: 2px solid {{ e.cor }}; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B8D3D8; min-height: 18px">› {{ e.legenda }}</p>
+
+      </section>
+
+      <section aria-label="Consumo de tokens" data-moldura="1" data-liga="1" data-liga-y="0.3" class="caixa" style="flex: 0 0 auto; padding: 34px 38px 38px 38px; display: flex; flex-direction: column; gap: 9px">
+        <div class="fundo" aria-hidden="true"></div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between; margin: 0 14px 0 34px">
+          <span style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.22em; color: #6FF3FF">CONSUMO</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8FA9B1">exemplo</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px">
+          <div style="display: flex; justify-content: space-between; font-size: 12px"><span style="color: #B8D3D8">Contexto usado</span><span style="font-family: 'JetBrains Mono', monospace; color: #E6F1F3">62%</span></div>
+          <div class="trilho-prog" aria-hidden="true"><span style="position: absolute; left: -2px; top: -3px; width: 62%; height: 6px; background: linear-gradient(90deg, #6FF3FF, #FFA53A); box-shadow: 0 0 8px rgba(111,243,255,0.8)"></span></div>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8FA9B1; white-space: nowrap">184k entrada · 21k saída · <span style="color: #FFA53A">US$ 1,90</span></span>
+        </div>
+        <sc-for list="{{ consumo }}" as="c" hint-placeholder-count="3">
+          <div style="display: flex; flex-direction: column; gap: 3px">
+            <div style="display: flex; justify-content: space-between; font-size: 12px"><span style="color: #E6F1F3">{{ c.nome }} <span style="color: #8FA9B1; font-size: 11px">{{ c.cargo }}</span></span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #B8D3D8">{{ c.tokens }}</span></div>
+            <div style="height: 2px; background: rgba(111,243,255,0.1)"><div style="width: {{ c.largura }}; height: 100%; background: {{ c.cor }}; box-shadow: 0 0 6px {{ c.cor }}"></div></div>
+          </div>
+        </sc-for>
+        <div class="fr fr-consumo" aria-hidden="true"></div>
+      </section>
+    </aside>
+
+    <sc-for list="{{ rotas }}" as="r" hint-placeholder-count="0">
+      <span aria-hidden="true" class="{{ r.classe }}" style="left: {{ r.x }}; top: {{ r.y }}; width: {{ r.w }}; height: {{ r.h }}"></span>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"estadoInicial":{"editor":"enum","options":["esperando","escutando","lendo","pensando","trabalhando","erro","pronto"],"default":"esperando","section":"Retrato"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  medir() {
+    const L = this._linha; if (!L || !L.getBoundingClientRect) return;
+    const B = L.getBoundingClientRect();
+    const rel = (r) => ({ l: r.left - B.left, t: r.top - B.top, r: r.right - B.left, b: r.bottom - B.top, w: r.width, h: r.height });
+    const molduras = Array.from(L.querySelectorAll('[data-moldura]')).map((el) => ({ el, R: rel(el.getBoundingClientRect()) })).filter((o) => o.R.w > 40 && o.R.h > 40);
+    const ENTRA = 18;
+    const H = (x1, x2, y) => ({ classe: 'cabo-h', x: Math.min(x1, x2) + 'px', y: (y - 7) + 'px', w: Math.abs(x2 - x1) + 'px', h: '14px' });
+    const V = (x, y1, y2) => ({ classe: 'cabo-v', x: (x - 7) + 'px', y: Math.min(y1, y2) + 'px', w: '14px', h: Math.abs(y2 - y1) + 'px' });
+    const rotas = [];
+    molduras.forEach(({ el, R: T }) => {
+      if (!el.hasAttribute('data-liga')) return;
+      const acima = el.getAttribute('data-liga-acima');
+      if (acima) {
+        const cima = molduras.find((o) => o.el !== el && Math.abs(o.R.b - T.t) <= 30 && o.R.l < T.r && o.R.r > T.l);
+        if (cima) { const x = Math.round(T.l + T.w * parseFloat(acima)); rotas.push(V(x, Math.round(cima.R.b - ENTRA), Math.round(T.t + ENTRA))); }
+      }
+      const y = Math.round(T.t + T.h * parseFloat(el.getAttribute('data-liga-y') || '0.5'));
+      let melhor = null;
+      molduras.forEach((o) => {
+        if (o.el === el || o.R.t + 30 > y || o.R.b - 30 < y) return;
+        const dir = o.R.l - T.r, esq = T.l - o.R.r;
+        if (dir >= -2 && dir <= 40 && (!melhor || dir < melhor.dist)) melhor = { dist: dir, x1: Math.round(T.r - ENTRA), x2: Math.round(o.R.l + ENTRA) };
+        if (esq >= -2 && esq <= 40 && (!melhor || esq < melhor.dist)) melhor = { dist: esq, x1: Math.round(o.R.r - ENTRA), x2: Math.round(T.l + ENTRA) };
+      });
+      if (melhor) rotas.push(H(melhor.x1, melhor.x2, y));
+    });
+    const chave = JSON.stringify(rotas);
+    if (chave !== this._chaveRotas) { this._chaveRotas = chave; this.setState({ rotas }); }
+  }
+  componentDidMount() {
+    this._linhaRef = (el) => { this._linha = el; };
+    this._medir = () => { if (this._raf) cancelAnimationFrame(this._raf); this._raf = requestAnimationFrame(() => this.medir()); };
+    setTimeout(this._medir, 60); setTimeout(this._medir, 700);
+    this._onResize = () => { this.setState({ w: window.innerWidth }); this._medir(); };
+    window.addEventListener('resize', this._onResize);
+    this._onResize();
+  }
+  componentDidUpdate() {
+    if (this._medir) this._medir();
+    const st = this.state || {};
+    const chave = (st.sessao || 'landing') + ':' + (((st.extra || {})[st.sessao || 'landing'] || []).length) + ':' + (st.rodandoEm || '') + ':' + (st.ampliado || '');
+    if (this._lista && chave !== this._ultimo) { this._lista.scrollTop = this._lista.scrollHeight; }
+    this._ultimo = chave;
+  }
+  componentWillUnmount() {
+    (this._timers || []).forEach((t) => clearTimeout(t));
+    if (this._onResize) window.removeEventListener('resize', this._onResize);
+  }
+  renderVals() {
+    const st = this.state || {};
+    const ORDEM = ['esperando', 'escutando', 'lendo', 'pensando', 'trabalhando', 'erro', 'pronto'];
+    const E = {
+      esperando:   { rotulo: 'Esperando',   cor: '#6FF3FF', video: 'esp', legenda: 'Por aqui. Pode falar quando quiser.' },
+      escutando:   { rotulo: 'Escutando',   cor: '#6FF3FF', video: 'esp', corOrelha: 'rgba(111,243,255,0.95)', legenda: 'Ouvindo você…', orelhaViva: true },
+      lendo:       { rotulo: 'Lendo',       cor: '#6FF3FF', video: 'ana', legenda: 'Lendo os arquivos do projeto', lendo: true },
+      pensando:    { rotulo: 'Analisando',  cor: '#FFA53A', video: 'ana', legenda: 'Hmm, deixa eu ver…', pensando: true },
+      trabalhando: { rotulo: 'Trabalhando', cor: '#FFA53A', video: 'ana', legenda: 'Chamando quem precisa', varrendo: true },
+      erro:        { rotulo: 'Erro',        cor: '#FF6B5A', video: 'esp', legenda: 'Um comando falhou. Vou ver por quê.', filtro: 'saturate(0.45) hue-rotate(-12deg) brightness(0.9)' },
+      pronto:      { rotulo: 'Pronto',      cor: '#9BF7D6', video: 'esp', legenda: 'Pronto. Quer dar uma olhada?' }
+    };
+    const atual = st.estado || this.props.estadoInicial || 'esperando';
+    const base = E[atual] || E.esperando;
+    const brilhos = { '#6FF3FF': 'rgba(111,243,255,0.22)', '#FFA53A': 'rgba(255,165,58,0.28)', '#FF6B5A': 'rgba(255,107,90,0.3)', '#9BF7D6': 'rgba(155,247,214,0.25)' };
+    const e = Object.assign({ orelhaViva: false, varrendo: false, pensando: false, lendo: false, filtro: 'none', corOrelha: 'rgba(255,165,58,0.95)' }, base, {
+      fx: 'fx-' + atual,
+      placa: 'SARA · ' + base.rotulo.toUpperCase(),
+      brilho: brilhos[base.cor] || 'rgba(111,243,255,0.2)',
+      opEsp: base.video === 'esp' ? '1' : '0',
+      opAna: base.video === 'ana' ? '1' : '0'
+    });
+    const limpar = () => { (this._timers || []).forEach((t) => clearTimeout(t)); this._timers = []; };
+    const ir = (k, extra) => { limpar(); this.setState(Object.assign({ estado: k, rodandoEm: null }, extra || {})); };
+    if (!this._video) {
+      this._video = (el) => { if (!el) return; el.muted = true; const p = el.play && el.play(); if (p && p.catch) p.catch(() => {}); };
+      this._listaRef = (el) => { this._lista = el; };
+    }
+    const hora = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+
+    // ---------- conversas (sessões) ----------
+    const AT = (marca, cor, acao, alvo) => ({ marca, cor, acao, alvo });
+    const OK = '#9BF7D6', TR = '#FFA53A';
+    const SESSOES = [
+      { id: 'landing', quando: 'HOJE', hora: '16:02', titulo: 'Landing do curso da Mirian', projeto: 'curso-mirian', tokens: '133k', msgs: [
+        { t: 'alex', texto: 'Sara, faz uma landing para o curso da Mirian. Quero ver duas propostas de visual antes.', hora: 'ALEX · áudio transcrito · 00:18' },
+        { t: 'ativ', itens: [AT('✓', OK, 'Li a memória', 'drive-curso-apometria.md'), AT('✓', OK, 'Helena', 'duas direções de visual'), AT('◆', TR, 'Lia', 'montando as telas A e B…'), AT('◆', TR, 'Rui', 'escrevendo o texto do topo…')] },
+        { t: 'sara', texto: 'Li a memória do Drive da Mirian e chamei a Helena para a direção visual. Ela trouxe duas linhas: uma editorial calma, em tons de linho, e uma mais luminosa, para a imersão. A Lia está montando as duas telas agora, e o Rui escreve o texto do topo. Te mostro lado a lado quando ficarem prontas.', hora: 'SARA · 16:04' }
+      ] },
+      { id: 'estudio', quando: 'HOJE', hora: '14:40', titulo: 'Molduras e o Estúdio da Sara', projeto: '00-empresa', tokens: '412k', msgs: [
+        { t: 'alex', texto: 'Veja qual moldura fica melhor.', hora: 'ALEX · 14:40' },
+        { t: 'ativ', itens: [AT('✓', OK, 'Tirei o verde', 'moldura-retrato-gemini-v2.png'), AT('✓', OK, 'Medi as molduras', 'medir.py')] },
+        { t: 'sara', texto: 'Fico com o conjunto do Gemini: o retrato, o painel largo e o kit saíram no mesmo metal. Juntos parecem uma máquina só.', hora: 'SARA · 14:42' }
+      ] },
+      { id: 'empresa', quando: 'HOJE', hora: '11:15', titulo: 'Empresa: Sara CEO e Taylor', projeto: '00-empresa', tokens: '298k', msgs: [
+        { t: 'alex', texto: 'Pensa como uma empresa. Cada pasta com um arquivo falando como funciona o fluxo.', hora: 'ALEX · 11:15' },
+        { t: 'sara', texto: 'Montei a diretoria, os sete setores e os 34 funcionários com nome. Cada setor tem um LEIA-ME com o fluxo.', hora: 'SARA · 11:52' }
+      ] },
+      { id: 'patricia', quando: 'ONTEM', hora: '18:20', titulo: 'Site da Patrícia: troca de foto', projeto: 'patricia-della-torre', tokens: '64k', msgs: [
+        { t: 'alex', texto: 'Troca a foto do topo do site da Patrícia pela nova.', hora: 'ALEX · 18:20' },
+        { t: 'sara', texto: 'Troquei e já subi a versão. A anterior fica guardada se quiser voltar.', hora: 'SARA · 18:31' }
+      ] },
+      { id: 'souls', quando: 'ONTEM', hora: '21:05', titulo: 'SoulsCraft: estradas e mapa', projeto: 'minecraft', tokens: '120k', msgs: [
+        { t: 'alex', texto: 'Põe estradas e um mapa no SoulsCraft.', hora: 'ALEX · 21:05' },
+        { t: 'sara', texto: 'Passei para o Taylor, que é coisa da máquina. Ele já adicionou os mods sem tirar nada seu.', hora: 'SARA · 21:40' }
+      ] },
+      { id: 'artemis', quando: 'ESTA SEMANA', hora: 'seg 10:30', titulo: 'Edition Artemis: documento-mãe', projeto: 'edition-artemis', tokens: '356k', msgs: [
+        { t: 'alex', texto: 'Organiza os prompts e as pastas antes de codar.', hora: 'ALEX · 10:30' },
+        { t: 'sara', texto: 'O P00 está pronto, com as decisões marcadas para você escolher.', hora: 'SARA · 11:10' }
+      ] },
+      { id: 'valores', quando: 'ESTA SEMANA', hora: 'dom 15:00', titulo: 'Valores: o instalador', projeto: 'valores', tokens: '88k', msgs: [
+        { t: 'alex', texto: 'Gera o instalador do Valores.', hora: 'ALEX · 15:00' },
+        { t: 'sara', texto: 'Instalador de 2,4 MB na Área de Trabalho.', hora: 'SARA · 15:20' }
+      ] }
+    ];
+    const novas = st.novas || [];
+    const todas = novas.concat(SESSOES);
+    const extra = st.extra || {};
+    const idSessao = st.sessao || 'landing';
+    const sessaoObj = todas.find((s) => s.id === idSessao) || SESSOES[0];
+    const listaMsgs = (sessaoObj.msgs || []).concat(extra[sessaoObj.id] || []);
+    const titulos = st.titulos || {};
+    const tituloSessao = titulos[sessaoObj.id] || sessaoObj.titulo;
+    const mensagens = listaMsgs.map((m, i) => ({
+      ehAlex: m.t === 'alex', ehSara: m.t === 'sara', ehAtiv: m.t === 'ativ',
+      texto: m.texto || '', hora: m.hora || '', itens: m.itens || [],
+      classe: i >= (sessaoObj.msgs || []).length ? 'entra' : ''
+    }));
+
+    const RESPOSTAS = [
+      'Beleza, deixa comigo. Já chamei quem precisa e te mostro assim que tiver algo.',
+      'Hmm, boa. Vou olhar isso com calma e volto com duas opções.',
+      'Fechado. Começo agora e te aviso quando ficar pronto.'
+    ];
+    const rodandoEm = st.rodandoEm || null;
+    const rodando = !!rodandoEm;
+    const FUNDO = { estudio: 'Lia montando o Fluxo dos agentes' };
+    const enviar = () => {
+      const t = (st.texto || '').trim();
+      if (!t) return;
+      limpar();
+      const id = sessaoObj.id;
+      const minhas = (extra[id] || []).concat([{ t: 'alex', texto: t, hora: 'ALEX · ' + hora() }]);
+      const novosTitulos = Object.assign({}, titulos);
+      if (sessaoObj.nova && !titulos[id]) novosTitulos[id] = t.length > 42 ? t.slice(0, 40) + '…' : t;
+      this.setState({ extra: Object.assign({}, extra, { [id]: minhas }), titulos: novosTitulos, texto: '', estado: 'pensando', rodandoEm: id, mic: false });
+      const resposta = RESPOSTAS[minhas.length % RESPOSTAS.length];
+      this._timers.push(setTimeout(() => this.setState({ estado: 'trabalhando' }), 2600));
+      this._timers.push(setTimeout(() => {
+        const s2 = this.state || {}; const ex = s2.extra || {};
+        this.setState({ estado: 'pronto', rodandoEm: null, extra: Object.assign({}, ex, { [id]: (ex[id] || []).concat([{ t: 'sara', texto: resposta, hora: 'SARA · ' + hora() }]) }) });
+      }, 5200));
+      this._timers.push(setTimeout(() => { if (!(this.state || {}).rodandoEm) this.setState({ estado: 'esperando' }); }, 9200));
+    };
+    const sessoesAbertas = st.sessoesAbertas || ['landing', 'estudio'];
+    const abrirSessao = (id, extraSt) => this.setState(Object.assign({ sessao: id, sessoesAbertas: sessoesAbertas.indexOf(id) >= 0 ? sessoesAbertas : sessoesAbertas.concat([id]) }, extraSt || {}));
+    const novaConversa = () => {
+      const id = 'nova-' + (novas.length + 1);
+      this.setState({ novas: [{ id, nova: true, quando: 'HOJE', hora: hora(), titulo: 'Conversa nova', projeto: 'curso-mirian', tokens: '0', msgs: [] }].concat(novas), sessao: id, sessoesAbertas: sessoesAbertas.concat([id]), ampliado: null });
+    };
+
+    // ---------- painéis ----------
+    const w = st.w || 1440;
+    const largo = w >= 1800;
+    const max = largo ? 2 : 1;
+    const abertos = (st.paineis || []).slice(-max);
+    const ampliado = st.ampliado || null;
+    const abrir = (tipo) => () => {
+      if (tipo === ampliado) return;
+      const lista = (st.paineis || []).filter((x) => x !== tipo).concat([tipo]);
+      this.setState({ paineis: lista.slice(-2) });
+    };
+    const ampliar = (tipo) => () => {
+      const alvo = tipo === 'arquivo' ? 'arvore' : tipo;
+      this.setState({ ampliado: alvo, paineis: (st.paineis || []).filter((x) => x !== tipo && x !== alvo && !(alvo === 'arvore' && x === 'arquivo')) });
+    };
+    const fechar = (tipo) => () => this.setState({ paineis: (st.paineis || []).filter((x) => x !== tipo) });
+    const navCheia = abertos.length === 0 || (largo && abertos.length === 1);
+    const busca = st.busca || {};
+    const buscar = (tipo) => (ev) => this.setState({ busca: Object.assign({}, busca, { [tipo]: ev.target.value }) });
+
+    // árvore de arquivos
+    const NOS = (st.nosReais && st.nosReais.slice()) || [
+      { id: 'raiz', nome: 'curso-mirian', pasta: true, nivel: 0 },
+      { id: 'design', nome: 'design', pasta: true, nivel: 1, pai: 'raiz' },
+      { id: 'brief', nome: 'brief.md', nivel: 2, pai: 'design' },
+      { id: 'telas', nome: 'telas', pasta: true, nivel: 2, pai: 'design' },
+      { id: 'telaA', nome: 'tela-A.html', nivel: 3, pai: 'telas' },
+      { id: 'telaB', nome: 'tela-B.html', nivel: 3, pai: 'telas' },
+      { id: 'conteudo', nome: 'conteudo', pasta: true, nivel: 1, pai: 'raiz' },
+      { id: 'topo', nome: 'texto-do-topo.md', nivel: 2, pai: 'conteudo' },
+      { id: 'site', nome: 'site', pasta: true, nivel: 1, pai: 'raiz' },
+      { id: 'index', nome: 'index.astro', nivel: 2, pai: 'site' },
+      { id: 'leia', nome: 'LEIA-ME.md', nivel: 1, pai: 'raiz' }
+    ];
+    (st.novos || []).forEach((n) => { const k = NOS.findIndex((x) => x.id === n.pai); NOS.splice(k + 1, 0, n); });
+    const porId = {}; NOS.forEach((n) => { porId[n.id] = n; });
+    const abertas = st.abertas || { raiz: true, design: true };
+    const aberto = st.aberto || 'brief';
+    const arquivoAberto = abertos.indexOf('arquivo') >= 0;
+    const visivel = (n) => { let p = n.pai; while (p) { if (!abertas[p]) return false; p = porId[p].pai; } return true; };
+    const caminho = (n) => { const partes = [n.nome]; let p = n.pai; while (p) { partes.unshift(porId[p].nome); p = porId[p].pai; } return partes.join('\\'); };
+
+    // pasta de trabalho: padrão A:\Claude; trocar e voltar chamam a ponte do programa quando existir
+    const PADRAO = 'A:\\Claude';
+    const ponte = (typeof window !== 'undefined' && window.ponte) || null;
+    const pastaAtual = st.pastaTrabalho || PADRAO;
+    const pasta = {
+      atual: pastaAtual, meio: pastaAtual === PADRAO ? '\\03-projetos\\' : '', projeto: pastaAtual === PADRAO ? 'curso-mirian' : '',
+      menu: !!st.menuPasta, menuAberto: st.menuPasta ? 'true' : 'false', foraDoPadrao: pastaAtual !== PADRAO,
+      alternarMenu: () => this.setState({ menuPasta: !st.menuPasta }),
+      trocar: () => {
+        if (ponte && ponte.trocarPasta) { Promise.resolve(ponte.trocarPasta()).then((p) => { if (p) this.setState({ pastaTrabalho: p, menuPasta: false }); else this.setState({ menuPasta: false }); }); return; }
+        this.setState({ pastaTrabalho: 'B:\\3 - BIBLIOTECA', menuPasta: false });
+      },
+      padrao: () => { if (ponte && ponte.voltarPadrao) ponte.voltarPadrao(); this.setState({ pastaTrabalho: PADRAO, menuPasta: false }); }
+    };
+    // criar pasta ou arquivo
+    const PROIBIDO = /[\\/:*?"<>|]/;
+    const RESERVADO = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
+    const cr = st.criar || {};
+    const alvoArq = porId[st.alvo] && porId[st.alvo].pasta ? st.alvo : 'raiz';
+    const ESTANTES = ['Cérebro', 'Alexandria', 'Memória'];
+    const alvoBib = st.alvoBib || 'Cérebro';
+    const validar = (nome, irmaos) => {
+      const n = (nome || '').trim();
+      if (!n) return 'Escreva um nome.';
+      if (n === '.' || n === '..' || PROIBIDO.test(n)) return 'Esse nome não pode: sem \\ / : * ? " < > |';
+      if (RESERVADO.test(n)) return 'O Windows reserva esse nome.';
+      if (/[. ]$/.test(n)) return 'Não pode terminar com ponto ou espaço.';
+      if (irmaos.some((x) => x.toLowerCase() === n.toLowerCase())) return 'Já existe um item com esse nome aqui.';
+      return '';
+    };
+    const formCriar = (onde) => {
+      const c = cr[onde] || {};
+      const ehPasta = c.tipo !== 'arquivo';
+      const set = (patch) => this.setState({ criar: Object.assign({}, cr, { [onde]: Object.assign({}, c, patch) }) });
+      const destino = onde === 'arquivos' ? caminho(porId[alvoArq]) + '\\' : 'Biblioteca\\' + alvoBib + '\\';
+      const irmaos = onde === 'arquivos' ? NOS.filter((x) => x.pai === alvoArq).map((x) => x.nome) : ((st.bibNovos || {})[alvoBib] || []);
+      const confirmar = () => {
+        const nome = (c.nome || '').trim(); const erro = validar(nome, irmaos);
+        if (erro) { set({ erro }); return; }
+        const feito = () => {
+          if (onde === 'arquivos') {
+            const pai = porId[alvoArq];
+            const novo = { id: 'novo-' + Date.now(), nome, pasta: ehPasta, nivel: pai.nivel + 1, pai: alvoArq };
+            this.setState({ novos: (st.novos || []).concat([novo]), abertas: Object.assign({}, abertas, { [alvoArq]: true }), criar: Object.assign({}, cr, { [onde]: { tipo: c.tipo } }) });
+          } else {
+            const bn = Object.assign({}, st.bibNovos || {}); bn[alvoBib] = (bn[alvoBib] || []).concat([nome]);
+            this.setState({ bibNovos: bn, criar: Object.assign({}, cr, { [onde]: { tipo: c.tipo } }) });
+          }
+        };
+        if (ponte && (ehPasta ? ponte.criarPasta : ponte.criarArquivo)) {
+          Promise.resolve((ehPasta ? ponte.criarPasta : ponte.criarArquivo)(destino, nome)).then(feito, (e) => set({ erro: String((e && e.message) || e) }));
+        } else feito();
+      };
+      return {
+        aberto: !!c.aberto, expandido: c.aberto ? 'true' : 'false',
+        alternar: () => set({ aberto: !c.aberto, erro: '' }),
+        ehPasta: String(ehPasta), ehArquivo: String(!ehPasta),
+        corPasta: ehPasta ? '#6FF3FF' : '#8FA9B1', corArquivo: ehPasta ? '#8FA9B1' : '#6FF3FF',
+        tipoPasta: () => set({ tipo: 'pasta', erro: '' }), tipoArquivo: () => set({ tipo: 'arquivo', erro: '' }),
+        dica: ehPasta ? 'nome da pasta' : 'nome do arquivo, ex.: notas.md',
+        destino, nome: c.nome || '', erro: c.erro || '', temErro: !!c.erro,
+        digitar: (ev) => set({ nome: ev.target.value, erro: '' }),
+        tecla: (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); confirmar(); } else if (ev.key === 'Escape') set({ aberto: false, erro: '' }); },
+        confirmar, cancelar: () => set({ aberto: false, nome: '', erro: '' })
+      };
+    };
+    const criar = { arquivos: formCriar('arquivos'), biblioteca: formCriar('biblioteca') };
+    const arvore = NOS.filter(visivel).map((n) => {
+      const sel = !n.pasta && n.id === aberto && arquivoAberto;
+      return {
+        nome: n.nome, recuo: (6 + n.nivel * 14) + 'px',
+        icone: n.pasta ? (abertas[n.id] ? '▾' : '▸') : '·',
+        corIcone: n.pasta ? '#6FF3FF' : (sel ? '#FFA53A' : '#8FA9B1'),
+        cor: sel ? '#FFA53A' : (n.pasta ? '#E6F1F3' : '#B8D3D8'),
+        fundo: sel ? 'rgba(255,165,58,0.08)' : 'transparent',
+        marca: sel ? '#FFA53A' : 'transparent',
+        expandido: n.pasta ? (abertas[n.id] ? 'true' : 'false') : null,
+        acao: n.pasta
+          ? () => this.setState({ abertas: Object.assign({}, abertas, { [n.id]: !abertas[n.id] }), alvo: n.id })
+          : () => { const lista = (st.paineis || []).filter((x) => x !== 'arquivo').concat(['arquivo']); this.setState({ aberto: n.id, paineis: lista.slice(-2), estado: 'lendo' }); },
+        acaoAmpliado: n.pasta
+          ? () => this.setState({ abertas: Object.assign({}, abertas, { [n.id]: !abertas[n.id] }) })
+          : () => this.setState({ aberto: n.id, estado: 'lendo' })
+      };
+    });
+    const CONTEUDO = st.conteudoReal || {
+      brief: ['# Brief · landing do curso', '', 'Para quem: as alunas do curso da Mirian', 'Objetivo: inscrição na imersão', '', '## Duas direções de visual (Helena)', '- editorial calma, tons de linho', '- mais luminosa, para a imersão', '', 'Prazo: [DEFINIR]'],
+      telaA: ['<!-- Tela A · editorial calma -->', '<!-- a Lia está montando -->'],
+      telaB: ['<!-- Tela B · luminosa -->', '<!-- a Lia está montando -->'],
+      topo: ['# Texto do topo', '', '(o Rui está escrevendo)'],
+      index: ['---', '// página da landing (Astro)', '---'],
+      leia: ['# curso-mirian', '', 'design/   as telas e o brief', 'conteudo/ os textos', 'site/     o código da página']
+    };
+    const linhasArq = (CONTEUDO[aberto] || ['(vazio)']).map((t, i) => ({ n: i + 1, t, cor: t.startsWith('#') ? '#6FF3FF' : (t.startsWith('-') ? '#FFC56E' : (t.startsWith('<!--') || t.startsWith('//') || t.startsWith('(') ? '#6E8790' : '#D5E3E6')) }));
+
+    // conversas: grupos filtrados
+    const q = (busca.conversas || '').toLowerCase();
+    const ordemGrupos = ['HOJE', 'ONTEM', 'ESTA SEMANA'];
+    const grupos = ordemGrupos.map((g) => ({
+      nome: g,
+      itens: todas.filter((s) => s.quando === g && (!q || (titulos[s.id] || s.titulo).toLowerCase().indexOf(q) >= 0 || s.projeto.indexOf(q) >= 0)).map((s) => {
+        const at = s.id === sessaoObj.id;
+        return { titulo: titulos[s.id] || s.titulo, meta: s.hora + ' · ' + s.projeto + ' · ' + s.tokens, atual: at ? 'true' : 'false', marca: at ? '#FFA53A' : 'transparent', fundo: at ? 'rgba(255,165,58,0.07)' : 'transparent', cor: at ? '#FFA53A' : '#E6F1F3',
+          projeto: s.projeto, hora: s.hora, tokens: s.tokens,
+          abrir: () => abrirSessao(s.id), abrirEVoltar: () => abrirSessao(s.id, { ampliado: null }) };
+      })
+    })).filter((g) => g.itens.length);
+
+    // skills
+    const SKILLS = [
+      ['frontend-design', 'Design', 'Direção visual para telas novas, sem cara de modelo pronto.', 'Lia, Helena'],
+      ['artifact-design', 'Design', 'Como desenhar as páginas publicadas e o contrato delas.', 'Lia'],
+      ['better-accessibility', 'Design', 'Foco, teclado, leitor de tela e contraste.', 'Otto'],
+      ['ai-image-generator', 'Design', 'Gera imagem pelo Gemini ou pelo GPT com o método de 5 partes.', 'Bia'],
+      ['copywriting', 'Conteúdo', 'Texto de página que convence, do título ao botão.', 'Rui'],
+      ['humanizar-texto', 'Conteúdo', 'Tira a cara de texto de máquina.', 'Rui'],
+      ['desenhar-sistema', 'Engenharia', 'Arquitetura com as contas à vista antes do código.', 'Caio'],
+      ['auditar-seguranca', 'Engenharia', 'O portão antes de instalar código de fora.', 'Heitor'],
+      ['systematic-debugging', 'Engenharia', 'Depuração em passos, sem chute.', 'Vera'],
+      ['deep-dive', 'Pesquisa', 'Pesquisa a fundo, com cada fonte citada.', 'Iris'],
+      ['pixel-art-jogos', 'Jogos', 'Sprites, cenários e animação em pixel art.', 'Nico'],
+      ['sara', 'Diretoria', 'As duas salas: diário e trabalho.', 'Sara']
+    ];
+    const cat = st.catSkill || 'Todas';
+    const qs = (busca.skills || '').toLowerCase();
+    const skillAberta = st.skillAberta || '';
+    const cats = ['Todas', 'Design', 'Engenharia', 'Conteúdo', 'Pesquisa', 'Jogos'];
+    const sombraAtiva = (c) => 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 0 10px -3px ' + c + ', 0 0 0 1px ' + c + '55, 0 2px 4px rgba(0,0,0,0.55)';
+    const categorias = cats.map((c) => ({ nome: c, ativo: c === cat ? 'true' : 'false', cor: c === cat ? '#6FF3FF' : '#AFC3C8', sombra: c === cat ? sombraAtiva('#6FF3FF') : 'inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.55)', escolher: () => this.setState({ catSkill: c }) }));
+    const skills = SKILLS.filter((s) => (cat === 'Todas' || s[1] === cat) && (!qs || s[0].indexOf(qs) >= 0 || s[2].toLowerCase().indexOf(qs) >= 0)).map((s) => {
+      const ab = s[0] === skillAberta;
+      return { nome: s[0], categoria: s[1].toUpperCase(), desc: s[2], aberta: ab ? 'true' : 'false', mostrar: ab, marca: ab ? '#6FF3FF' : 'transparent', fundo: ab ? 'rgba(111,243,255,0.06)' : 'transparent',
+        detalhe: 'quem usa: ' + s[3] + '\nonde fica: ~/.claude/skills/' + s[0], alternar: () => this.setState({ skillAberta: ab ? '' : s[0] }) };
+    });
+
+    // biblioteca
+    const estantes = [
+      { nome: 'CÉREBRO', qtd: '228 notas', itens: ['Efeitos e método reutilizáveis', 'Proporção planejada em design', 'Trilha de aprendizado', 'Método P00 e os agentes'] },
+      { nome: 'ALEXANDRIA', qtd: '12 estantes', itens: ['Sobrevivência', 'Saúde', 'Mecânica', 'Computação'] },
+      { nome: 'MEMÓRIA', qtd: '50', itens: ['Monitor ultrawide', 'Responder em português', 'Nada encosta na moldura', 'Programa com a Sara em avatar'] }
+    ];
+
+    // conexões
+    const conexoesBase = [
+      { id: 'gh', nome: 'GitHub', on: true }, { id: 'gd', nome: 'Drive', on: true }, { id: 'cv', nome: 'Canva', on: true, pausa: true },
+      { id: 'gm', nome: 'Gmail', on: true }, { id: 'px', nome: 'PixelLab', on: true }, { id: 'ge', nome: 'Gemini API', on: true, semCota: true }, { id: 'cf', nome: 'Cloudflare', autorizar: true }
+    ];
+    const conOff = st.conOff || {};
+    const conexoes = conexoesBase.map((c) => {
+      const ligado = !c.autorizar && c.on && !conOff[c.id];
+      const estado = c.autorizar ? 'precisa autorizar' : (!ligado ? 'desligado' : (c.semCota ? 'ligado · sem cota de imagem' : (c.pausa ? 'em pausa' : 'ligado')));
+      const cor = !ligado ? '#3A4A50' : ((c.pausa || c.semCota) ? '#FFA53A' : '#6FF3FF');
+      return {
+        nome: c.nome, estado, cor, ligado: ligado ? 'true' : 'false', temChave: !c.autorizar, autorizar: !!c.autorizar,
+        corNome: ligado ? '#E6F1F3' : '#8FA9B1', corTexto: (c.pausa || c.semCota) && ligado ? '#FFA53A' : '#7F9AA3',
+        trilho: ligado ? 'linear-gradient(180deg,#0E3B43,#145864)' : 'linear-gradient(180deg,#07090A,#111518)',
+        brilho: ligado ? 'inset 0 2px 3px rgba(0,0,0,0.6), 0 0 8px -2px rgba(111,243,255,0.7)' : 'inset 0 2px 3px rgba(0,0,0,0.8)',
+        pos: ligado ? '19px' : '1px',
+        alternar: () => this.setState({ conOff: Object.assign({}, conOff, { [c.id]: !conOff[c.id] }) })
+      };
+    });
+    const conexoesResumo = conexoes.slice(0, 6);
+
+    const NOMES = { conversas: 'CONVERSAS', skills: 'SKILLS', biblioteca: 'BIBLIOTECA', conexoes: 'CONEXÕES', arvore: 'ARQUIVOS', arquivo: 'ARQUIVO' };
+    const paineis = abertos.map((tipo) => ({
+      tipo, titulo: NOMES[tipo], largura: abertos.length === 2 ? '330px' : (largo ? '400px' : '360px'), fechar: fechar(tipo), ampliar: ampliar(tipo),
+      ehConversas: tipo === 'conversas', ehSkills: tipo === 'skills', ehBiblioteca: tipo === 'biblioteca', ehConexoes: tipo === 'conexoes', ehArvore: tipo === 'arvore', ehArquivo: tipo === 'arquivo',
+      busca: busca[tipo] || '', buscar: buscar(tipo),
+      grupos, nada: tipo === 'conversas' && grupos.length === 0,
+      categorias, skills, estantes
+    }));
+
+    const ICONES = {
+      arvore: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      conversas: 'M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2',
+      biblioteca: 'M4 5h5v14H4zM10 5h4v14h-4zM15 6l4-1 2 13-4 1z',
+      skills: 'M8 8h8v8H8zM10 2v4M14 2v4M10 18v4M14 18v4M2 10h4M2 14h4M18 10h4M18 14h4',
+      conexoes: 'M9 7V3M15 7V3M7 7h10v4a5 5 0 0 1-10 0zM12 16v5'
+    };
+    const ocupada = (id) => rodandoEm === id || !!FUNDO[id];
+    const abasSessao = sessoesAbertas.map((id) => {
+      const s = todas.find((x) => x.id === id) || SESSOES[0];
+      const sel = id === sessaoObj.id; const oc = ocupada(id);
+      return { titulo: titulos[id] || s.titulo, dica: (titulos[id] || s.titulo) + ' · ' + s.projeto + (oc ? ' · trabalhando' : ''), sel: sel ? 'true' : 'false',
+        cor: sel ? '#FFFFFF' : '#AFC3C8', sombra: sel ? sombraAtiva('#6FF3FF') : 'inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.55)',
+        led: oc ? '#FFA53A' : (sel ? '#6FF3FF' : '#33403F'), ledClasse: oc ? 'pisca' : '',
+        ir: () => this.setState({ sessao: id, ampliado: null }),
+        fechar: () => { const resto = sessoesAbertas.filter((x) => x !== id); if (!resto.length) { novaConversa(); return; } this.setState({ sessoesAbertas: resto, sessao: sel ? resto[resto.length - 1] : sessaoObj.id }); } };
+    });
+    const ocupadaAtual = ocupada(sessaoObj.id);
+    const chaveAmp = ampliado === 'arvore' ? 'arvore' : ampliado;
+    const amp = { titulo: ampliado ? NOMES[ampliado] : '', ehSkills: ampliado === 'skills', ehBiblioteca: ampliado === 'biblioteca', ehConexoes: ampliado === 'conexoes', ehConversas: ampliado === 'conversas', ehArquivos: ampliado === 'arvore',
+      busca: busca[chaveAmp] || '', buscar: buscar(chaveAmp), led: ocupadaAtual ? '#FFA53A' : '#6FF3FF', ledClasse: ocupadaAtual ? 'pisca' : '',
+      status: 'conversa: ' + tituloSessao + (ocupadaAtual ? ' · trabalhando' : ' · esperando') };
+    const CURTOS = { arvore: 'ARQUIVOS', conversas: 'CONVERSAS', biblioteca: 'BIBLIO', skills: 'SKILLS', conexoes: 'CONEXÕES' };
+    const trilho = ['arvore', 'conversas', 'biblioteca', 'skills', 'conexoes'].map((tipo) => {
+      const on = abertos.indexOf(tipo) >= 0;
+      return { nome: NOMES[tipo], curto: CURTOS[tipo], ehArvore: tipo === 'arvore', ehConversas: tipo === 'conversas', ehBiblioteca: tipo === 'biblioteca', ehSkills: tipo === 'skills', ehConexoes: tipo === 'conexoes', aberto: on ? 'true' : 'false', acao: on ? fechar(tipo) : abrir(tipo),
+        cor: on ? '#6FF3FF' : '#AFC3C8', led: on ? '#6FF3FF' : '#33403F', sombra: on ? sombraAtiva('#6FF3FF') : 'inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.55)' };
+    });
+
+    // estados, topo
+    const CURTO = { esperando: 'Esperando', escutando: 'Ouvindo', lendo: 'Lendo', pensando: 'Pensando', trabalhando: 'Fazendo', erro: 'Erro', pronto: 'Pronto' };
+    const estados = ORDEM.map((k) => {
+      const ativo = k === atual; const c = E[k].cor;
+      return { rotulo: CURTO[k], ativo: ativo ? 'true' : 'false', pick: () => ir(k), texto: ativo ? c : '#AFC3C8',
+        ledFundo: ativo ? 'radial-gradient(circle at 35% 35%, #FFFFFF 0 18%, ' + c + ' 45%, ' + c + ' 100%)' : 'radial-gradient(circle at 35% 35%, #5A6668 0 18%, #27302F 60%)',
+        ledBrilho: ativo ? '0 0 6px ' + c + ', 0 0 2px ' + c : 'inset 0 -1px 1px rgba(0,0,0,0.6)',
+        sombra: ativo ? sombraAtiva(c) : 'inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.55)' };
+    });
+    const MODELOS = ['OPUS', 'SONNET', 'HAIKU'];
+    const ESFORCOS = ['BAIXO', 'MÉDIO', 'ALTO', 'MÁXIMO'];
+    const diario = !!st.diario;
+    // modelo, esforço e velocidade valem por conversa (cada aba guarda o seu)
+    const cfgs = st.cfgs || {};
+    const cfg = Object.assign({ m: 0, e: 2, r: false }, cfgs[sessaoObj.id] || {});
+    const mudaCfg = (patch) => this.setState({ cfgs: Object.assign({}, cfgs, { [sessaoObj.id]: Object.assign({}, cfg, patch) }) });
+    const chipsConversa = [
+      { nome: 'MODELO', valor: MODELOS[cfg.m], cor: '#B8FAFF', dica: 'Trocar o modelo desta conversa', acao: () => mudaCfg({ m: (cfg.m + 1) % MODELOS.length }) },
+      { nome: 'ESFORÇO', valor: ESFORCOS[cfg.e], cor: '#FFA53A', dica: 'Trocar o esforço desta conversa', acao: () => mudaCfg({ e: (cfg.e + 1) % ESFORCOS.length }) },
+      { nome: 'VELOCIDADE', valor: cfg.r ? 'RÁPIDA' : 'NORMAL', cor: cfg.r ? '#9BF7D6' : '#8FA9B1', dica: cfg.r ? 'Voltar à velocidade normal' : 'Usar o modo rápido nesta conversa', acao: () => mudaCfg({ r: !cfg.r }) }
+    ];
+    const chipsTopo = [
+      { rotulo: diario ? 'SALA · DIÁRIO' : 'SALA · TRABALHO', cor: diario ? '#C9A7FF' : '#B8FAFF', dica: 'Trocar de sala', acao: () => this.setState({ diario: !diario }) }
+    ];
+    const micOn = !!st.mic;
+    const ws = ['82%', '64%', '90%', '40%', '76%', '58%', '88%', '30%', '70%', '84%', '52%', '66%', '92%', '44%', '78%', '60%'];
+    return {
+      rotas: st.rotas || [], linhaRef: this._linhaRef || ((el) => { this._linha = el; }),
+      e, estados, rodando, chipsTopo, chipsConversa, arvore, conexoes, conexoesResumo, paineis, trilho, mensagens,
+      navCheia, navTrilho: !navCheia, parado: !rodando,
+      abasSessao, meuCiclo: rodandoEm === sessaoObj.id, livreAqui: rodandoEm !== sessaoObj.id,
+      trabalhandoAqui: rodandoEm === sessaoObj.id || !!FUNDO[sessaoObj.id], legendaAqui: rodandoEm === sessaoObj.id ? e.legenda : (FUNDO[sessaoObj.id] || ''),
+      modoConversa: !ampliado, modoAmpliado: !!ampliado, amp, tituloAba: ampliado ? NOMES[ampliado] : 'CONVERSA',
+      voltarConversa: () => this.setState({ ampliado: null }), categorias, skills, estantes, grupos,
+      conversaVazia: mensagens.length === 0,
+      conversasAberto: abertos.indexOf('conversas') >= 0 ? 'true' : 'false',
+      sessao: { titulo: tituloSessao, meta: (sessaoObj.quando === 'HOJE' ? 'hoje' : sessaoObj.quando.toLowerCase()) + ' · ' + sessaoObj.hora + ' · ' + sessaoObj.projeto },
+      abrir: { conversas: abrir('conversas'), skills: abrir('skills'), biblioteca: abrir('biblioteca'), conexoes: abrir('conexoes') },
+      novaConversa,
+      linhas: ws.concat(ws).map((x) => ({ w: x })),
+      video: this._video, lista: this._listaRef,
+      texto: st.texto || '',
+      digitar: (ev) => this.setState({ texto: ev.target.value }),
+      tecla: (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); enviar(); } },
+      focar: () => { if (!rodando && atual === 'esperando') this.setState({ estado: 'escutando' }); },
+      desfocar: () => { if (atual === 'escutando' && !micOn) this.setState({ estado: 'esperando' }); },
+      mic: { on: micOn, ligado: micOn ? 'true' : 'false', cor: micOn ? '#6FF3FF' : '#B8D3D8' },
+      alternarMic: () => (micOn ? ir('esperando', { mic: false }) : ir('escutando', { mic: true })),
+      enviar, parar: () => { limpar(); this.setState({ estado: 'esperando', rodandoEm: null }); },
+      proximo: () => ir(ORDEM[(ORDEM.indexOf(atual) + 1) % ORDEM.length]),
+      arquivo: { caminho: caminho(porId[aberto]), linhas: linhasArq, rodape: linhasArq.length + ' linhas · só leitura' },
+      biblioteca: [['Cérebro', 228, ' notas'], ['Alexandria', 12, ' estantes'], ['Memória', 50, '']].map(([nome, n, suf]) => ({ nome, qtd: (n + ((st.bibNovos || {})[nome] || []).length) + suf, alvo: String(alvoBib === nome && !!(cr.biblioteca || {}).aberto), escolher: (cr.biblioteca || {}).aberto ? () => this.setState({ alvoBib: nome }) : abrir('biblioteca') })),
+      pasta, criar,
+      skillsAgora: st.skillsReais || [{ nome: 'frontend-design' }, { nome: 'copywriting' }],
+      consumo: st.consumoReal || [
+        { nome: 'Helena', cargo: 'direção', tokens: '38k', largura: '42%', cor: '#9BF7D6' },
+        { nome: 'Lia', cargo: 'telas', tokens: '71k', largura: '78%', cor: '#FFA53A' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

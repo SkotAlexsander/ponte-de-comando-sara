@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Ponte de Comando — miniatura no canto</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#04070A}
+a{color:#6FF3FF}
+.sim{height:34px;padding:0 14px;border:1px solid rgba(111,243,255,0.4);background:#05090D;color:#B8FAFF;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:0.16em}
+.sim:hover{background:rgba(111,243,255,0.1)}.sim:focus-visible,.mini-bt:focus-visible,.aviso-bt:focus-visible{outline:2px solid #6FF3FF;outline-offset:2px}
+.mini{position:absolute;right:24px;bottom:72px;width:340px;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.mini-retrato{position:relative;width:184px;aspect-ratio:800/1017}
+.mini-bts{position:absolute;top:calc(9.14% + 8px);right:calc(11.75% + 8px);z-index:2;display:flex;flex-direction:column;gap:16px;opacity:0;transition:opacity .15s}
+.mini:hover .mini-bts,.mini:focus-within .mini-bts{opacity:1}
+.metal{background:linear-gradient(180deg,#474D52 0%,#2E3337 46%,#202427 100%);border:1px solid #0A0C0D;border-radius:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.55),0 2px 4px rgba(0,0,0,.55);text-shadow:0 1px 0 rgba(0,0,0,.65);transition:filter .15s,transform .08s;cursor:pointer}
+.metal:hover{filter:brightness(1.18)}
+.metal:active{background:linear-gradient(180deg,#1C1F22,#2A2E32);box-shadow:inset 0 2px 6px rgba(0,0,0,.8);transform:translateY(1px)}
+.led{display:inline-block;width:6px;height:6px;border-radius:50%;flex:0 0 auto;box-shadow:inset 0 -1px 1px rgba(0,0,0,.5)}
+.mini-bt{position:relative;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:#B8FAFF;padding:0}
+.mini-bt::before,.aviso-bt::before{content:'';position:absolute;inset:-8px}
+.mini-bt .led{position:absolute;top:3px;right:3px;width:4px;height:4px}
+.linha{max-width:340px;box-sizing:border-box;padding:6px 10px;background:rgba(5,9,13,0.9);border-right:2px solid;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:16px;color:#B8D3D8;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 4px 14px rgba(0,0,0,0.6)}
+.aviso{position:relative;isolation:isolate;width:340px;box-sizing:border-box;padding:26px 30px 28px;animation:entra .35s cubic-bezier(.2,.9,.3,1.2)}
+.aviso-fundo{position:absolute;inset:9px;z-index:-1;background:linear-gradient(180deg,rgba(6,20,22,0.97),rgba(4,12,14,0.97))}
+.aviso-moldura{position:absolute;inset:0;box-sizing:border-box;border-style:solid;border-width:17px;border-image:url(./assets/d837fc7db557d249d2fca02ae16de29f.webp) 50 stretch;pointer-events:none;z-index:2;filter:drop-shadow(0 4px 6px rgba(0,0,0,.6))}
+.aviso-erro{animation:entra .35s cubic-bezier(.2,.9,.3,1.2),treme .36s ease-in-out .38s 1}
+@keyframes treme{0%,100%{transform:none}20%{transform:translateX(-2px)}40%{transform:translateX(2px)}60%{transform:translateX(-2px)}80%{transform:translateX(1px)}}
+.aviso-pronto::after{content:'';position:absolute;inset:6px;z-index:1;pointer-events:none;opacity:0;box-shadow:0 0 12px 3px rgba(155,247,214,.65),inset 0 0 10px rgba(155,247,214,.35);animation:halo 1.3s ease-out .35s 1}
+@keyframes halo{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+@keyframes entra{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+.aviso-bt{position:relative;box-sizing:border-box;height:30px;padding:0 12px;gap:7px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:0.16em;text-decoration:none;display:inline-flex;align-items:center}
+.chama{animation:chama 1.6s ease-in-out infinite}
+@keyframes chama{0%,100%{filter:drop-shadow(0 0 6px rgba(155,247,214,0.35)) drop-shadow(0 6px 10px rgba(0,0,0,.7))}50%{filter:drop-shadow(0 0 18px rgba(155,247,214,0.85)) drop-shadow(0 6px 10px rgba(0,0,0,.7))}}
+.varre{animation:varre 2.2s linear infinite}
+@keyframes varre{from{top:-10%}to{top:100%}}
+.pisca{animation:pisca 1.2s ease-in-out infinite}
+@keyframes pisca{0%,100%{opacity:.35}50%{opacity:1}}
+.bloco{position:absolute;background:#1B2024;border-radius:4px}
+@media (prefers-reduced-motion:reduce){.chama,.varre,.pisca,.aviso,.aviso-erro{animation:none}.aviso-pronto::after{animation:none;opacity:0}.mini-bts,.metal{transition:none}}
+</style>
+</helmet>
+<div style="position: relative; width: 1680px; height: 880px; overflow: hidden; background: radial-gradient(ellipse at 30% 20%, #1C2A33 0%, #0B1116 55%, #06090C 100%); color: #E6F1F3; font-family: 'IBM Plex Sans', system-ui, sans-serif">
+
+  <!-- um programa qualquer aberto (genérico) -->
+  <div aria-hidden="true" style="position: absolute; left: 40px; top: 32px; width: 1600px; height: 768px; background: #121619; border: 1px solid #262D32; border-radius: 8px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); overflow: hidden">
+    <div style="height: 40px; background: #0D1013; border-bottom: 1px solid #22292E; display: flex; align-items: center; gap: 10px; padding: 0 14px">
+      <span style="width: 180px; height: 24px; background: #1B2024; border-radius: 6px"></span>
+      <span style="width: 140px; height: 24px; background: #15191C; border-radius: 6px"></span>
+      <span style="flex: 1 1 auto"></span>
+      <span style="width: 10px; height: 2px; background: #59636A"></span><span style="width: 10px; height: 10px; border: 1.5px solid #59636A; box-sizing: border-box"></span><span style="font-size: 14px; color: #59636A">✕</span>
+    </div>
+    <div style="height: 40px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #1D2328"><span style="width: 560px; height: 26px; background: #0D1013; border-radius: 13px"></span></div>
+    <div style="position: relative; height: 688px">
+      <span class="bloco" style="left: 160px; top: 60px; width: 620px; height: 40px"></span>
+      <span class="bloco" style="left: 160px; top: 120px; width: 480px; height: 16px; background: #171C20"></span>
+      <span class="bloco" style="left: 160px; top: 146px; width: 520px; height: 16px; background: #171C20"></span>
+      <span class="bloco" style="left: 160px; top: 200px; width: 1280px; height: 300px; background: #161B1E"></span>
+      <span class="bloco" style="left: 160px; top: 530px; width: 400px; height: 120px"></span>
+      <span class="bloco" style="left: 600px; top: 530px; width: 400px; height: 120px"></span>
+      <span class="bloco" style="left: 1040px; top: 530px; width: 400px; height: 120px"></span>
+    </div>
+  </div>
+  <!-- barra de tarefas genérica -->
+  <div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 48px; background: rgba(10,14,17,0.96); border-top: 1px solid #1D252A; display: flex; align-items: center; justify-content: center; gap: 10px">
+    <span style="width: 30px; height: 30px; background: #1E262B; border-radius: 6px"></span><span style="width: 30px; height: 30px; background: #1E262B; border-radius: 6px"></span><span style="width: 30px; height: 30px; background: #2A3A40; border-radius: 6px; box-shadow: inset 0 -2px 0 #6FF3FF"></span><span style="width: 30px; height: 30px; background: #1E262B; border-radius: 6px"></span>
+  </div>
+
+  <!-- painel da simulação (só na prévia) -->
+  <div role="group" aria-label="Simular" style="position: absolute; left: 72px; top: 104px; width: 360px; box-sizing: border-box; padding: 16px 18px; background: rgba(4,7,10,0.92); border: 1px solid rgba(111,243,255,0.35)">
+    <div style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.24em; color: #6FF3FF">PRÉVIA · MINIATURA NO CANTO</div>
+    <p style="margin: 8px 0 12px; font-size: 13px; line-height: 20px; color: #B8D3D8">No programa de verdade, esta janelinha fica por cima de qualquer programa e não aparece na barra de tarefas. Passe o mouse nela para ver os botões.</p>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px">
+      <button class="sim" onClick="{{ comecar }}">COMEÇAR UMA TAREFA</button>
+      <button class="sim" onClick="{{ falhar }}" style="color: #FF9A8C; border-color: rgba(255,107,90,0.45)">SIMULAR ERRO</button>
+    </div>
+  </div>
+
+  <!-- A MINIATURA -->
+  <div class="mini" role="complementary" aria-label="Sara em miniatura">
+    <div class="mini-retrato">
+      <button onClick="{{ abrir }}" aria-label="Abrir a Ponte de Comando. Sara: {{ rotulo }}" class="{{ classeRetrato }}" style="position: absolute; inset: 0; padding: 0; border: 0; background: transparent; cursor: pointer; filter: drop-shadow(0 0 10px {{ brilho }}) drop-shadow(0 6px 10px rgba(0,0,0,0.7))">
+        <span style="position: absolute; left: 11.75%; top: 9.14%; width: 76.5%; height: 81.71%; overflow: hidden; background: #14181C">
+          <video src="./assets/61926cbf3759014a85a07a28a306b879.mp4" poster="./assets/d2c797fb83405f7d534f92395c670718.jpg" autoplay="" muted="" loop="" playsinline="" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 0%; opacity: {{ opEsp }}; transition: opacity .35s; filter: {{ filtro }}"></video>
+          <video src="./assets/59727c0ff45b6dc696a6ab25c27dafdd.mp4" autoplay="" muted="" loop="" playsinline="" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 0%; opacity: {{ opAna }}; transition: opacity .35s"></video>
+          <span aria-hidden="true" style="position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.2) 0px, rgba(0,0,0,0.2) 1px, transparent 1px, transparent 3px)"></span>
+          <sc-if value="{{ trabalhando }}" hint-placeholder-val="{{ false }}">
+            <span aria-hidden="true" class="varre" style="position: absolute; left: 0; right: 0; height: 10%; background: linear-gradient(180deg, transparent, rgba(255,165,58,0.3), transparent); border-bottom: 1px solid rgba(255,165,58,0.7)"></span>
+          </sc-if>
+        </span>
+        <img src="./assets/40121a1b92478c55b90c910bf44ffdac.webp" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none">
+        <span aria-hidden="true" style="position: absolute; left: 27.62%; top: 93.75%; width: 43.75%; height: 4.72%; display: flex; align-items: center; justify-content: center; gap: 5px">
+          <span class="{{ classeLed }}" style="width: 6px; height: 6px; border-radius: 50%; background: {{ cor }}; box-shadow: 0 0 6px {{ cor }}, 0 0 2px {{ cor }}"></span>
+        </span>
+      </button>
+      <div class="mini-bts">
+        <button class="mini-bt metal" onClick="{{ abrir }}" aria-label="Abrir a Ponte de Comando" title="Abrir"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"></path></svg></button>
+        <button class="mini-bt metal" onClick="{{ alternarSom }}" aria-pressed="{{ somLigado }}" aria-label="{{ somRotulo }}" title="{{ somRotulo }}">
+          <span class="led" aria-hidden="true" style="background: {{ ledSom }}; box-shadow: {{ ledSomBrilho }}"></span>
+          <sc-if value="{{ comSom }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></sc-if>
+          <sc-if value="{{ semSom }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7F9AA3" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 0 1 9.3-5M18 8c0 7 3 9 3 9H9M10.3 21a1.94 1.94 0 0 0 3.4 0M2 2l20 20"></path></svg></sc-if>
+        </button>
+      </div>
+    </div>
+
+    <sc-if value="{{ semAviso }}">
+      <div class="linha" aria-live="polite" style="border-right-color: {{ cor }}"><span style="color: {{ cor }}">SARA · {{ rotuloCaixa }}</span> · {{ legenda }}</div>
+    </sc-if>
+    <sc-if value="{{ temAviso }}">
+      <div class="{{ classeAviso }}" role="status">
+        <div class="aviso-fundo" aria-hidden="true"></div>
+        <div style="display: flex; align-items: center; gap: 8px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.22em; color: {{ cor }}"><span class="{{ classeLedAviso }}" aria-hidden="true" style="background: {{ cor }}; box-shadow: 0 0 6px {{ cor }}, 0 0 2px {{ cor }}"></span>{{ avisoTopo }}<span style="flex: 1 1 auto"></span><span style="font-family: 'JetBrains Mono', monospace; font-weight: 400; letter-spacing: 0; color: #7F9AA3">{{ hora }}</span></div>
+        <div style="margin-top: 8px; font-size: 15px; line-height: 22px; font-weight: 600; color: #E6F1F3">{{ avisoTitulo }}</div>
+        <div style="margin-top: 4px; font-size: 13px; line-height: 20px; color: #B8D3D8">{{ avisoTexto }}</div>
+        <div style="display: flex; gap: 16px; margin-top: 14px">
+          <a class="aviso-bt metal" href="Main.dc.html" style="color: {{ cor }}"><span class="led" aria-hidden="true" style="background: {{ cor }}; box-shadow: 0 0 6px {{ cor }}"></span>{{ avisoAcao }}</a>
+          <button class="aviso-bt metal" onClick="{{ dispensar }}" style="color: #B8D3D8">DEPOIS</button>
+        </div>
+        <div class="aviso-moldura" aria-hidden="true"></div>
+      </div>
+    </sc-if>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1680,"height":880}}'>
+const PASSOS = ['Lendo a memória do curso', 'Helena escolhendo a direção', 'Lia montando a tela A', 'Lia montando a tela B', 'Rui escrevendo o topo', 'Otto revisando as telas'];
+const ESTADO = {
+  esperando:   { rotulo: 'Esperando',   cor: '#6FF3FF', brilho: 'rgba(111,243,255,0.25)', video: 'esp' },
+  trabalhando: { rotulo: 'Trabalhando', cor: '#FFA53A', brilho: 'rgba(255,165,58,0.35)', video: 'ana' },
+  pronto:      { rotulo: 'Pronto',      cor: '#9BF7D6', brilho: 'rgba(155,247,214,0.35)', video: 'esp' },
+  erro:        { rotulo: 'Erro',        cor: '#FF6B5A', brilho: 'rgba(255,107,90,0.35)', video: 'esp' }
+};
+const hora = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+class Component extends DCLogic {
+  componentWillUnmount() { (this._timers || []).forEach(clearTimeout); }
+  limpar() { (this._timers || []).forEach(clearTimeout); this._timers = []; }
+  depois(ms, fn) { this._timers = this._timers || []; this._timers.push(setTimeout(fn, ms)); }
+  som(tipo) {
+    const st = this.state || {};
+    if (st.mudo) return;
+    try {
+      const C = this._ctx || (this._ctx = new (window.AudioContext || window.webkitAudioContext)());
+      const notas = tipo === 'erro' ? [523, 392] : [784, 1175];
+      notas.forEach((f, i) => {
+        const o = C.createOscillator(), g = C.createGain(), t = C.currentTime + i * 0.14;
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+        o.connect(g).connect(C.destination); o.start(t); o.stop(t + 0.5);
+      });
+    } catch (e) {}
+  }
+  comecar() {
+    this.limpar();
+    this.setState({ estado: 'trabalhando', passo: 0, aviso: false });
+    PASSOS.forEach((_, i) => { if (i) this.depois(i * 1300, () => this.setState({ passo: i })); });
+    this.depois(PASSOS.length * 1300, () => { this.setState({ estado: 'pronto', aviso: true, hora: hora() }); this.som('pronto'); });
+  }
+  falhar() {
+    this.limpar();
+    this.setState({ estado: 'trabalhando', passo: 2, aviso: false });
+    this.depois(1800, () => { this.setState({ estado: 'erro', aviso: true, hora: hora() }); this.som('erro'); });
+  }
+  renderVals() {
+    const st = this.state || {};
+    const k = st.estado || 'esperando', E = ESTADO[k], mudo = !!st.mudo;
+    const legenda = k === 'trabalhando' ? PASSOS[st.passo || 0] : (k === 'erro' ? 'Preciso de você' : (k === 'pronto' ? 'Trabalho pronto' : 'Por aqui'));
+    const erro = k === 'erro';
+    return {
+      rotulo: E.rotulo, rotuloCaixa: E.rotulo.toUpperCase(), cor: E.cor, brilho: E.brilho, legenda,
+      classeAviso: erro ? 'aviso aviso-erro' : 'aviso aviso-pronto',
+      classeLedAviso: erro ? 'led pisca' : 'led',
+      opEsp: E.video === 'esp' ? '1' : '0', opAna: E.video === 'ana' ? '1' : '0',
+      filtro: erro ? 'saturate(0.45) hue-rotate(-12deg) brightness(0.9)' : 'none',
+      trabalhando: k === 'trabalhando',
+      classeRetrato: st.aviso && k === 'pronto' ? 'chama' : '',
+      classeLed: k === 'trabalhando' ? 'pisca' : '',
+      temAviso: !!st.aviso, semAviso: !st.aviso, hora: st.hora || '',
+      avisoTopo: erro ? 'SARA · PRECISO DE VOCÊ' : 'SARA · PRONTO',
+      avisoTitulo: erro ? 'Alex, travei numa parte.' : 'Alex, seu trabalho está pronto.',
+      avisoTexto: erro ? 'Landing do curso da Mirian: a Lia não conseguiu abrir a tela A no notebook. Quer que eu tente de outro jeito?' : 'Landing do curso da Mirian: as telas A e B e o texto do topo estão prontos para você ver.',
+      avisoAcao: erro ? 'VER O ERRO' : 'VER AGORA',
+      comecar: () => this.comecar(), falhar: () => this.falhar(),
+      dispensar: () => { this.limpar(); this.setState({ aviso: false, estado: 'esperando' }); },
+      abrir: () => { window.location.href = 'Main.dc.html'; },
+      comSom: !mudo, semSom: mudo, ledSom: mudo ? '#33403F' : '#9BF7D6', ledSomBrilho: mudo ? 'inset 0 -1px 1px rgba(0,0,0,.6)' : '0 0 5px #9BF7D6', somLigado: String(!mudo), somRotulo: mudo ? 'Ligar o som do aviso' : 'Silenciar o som do aviso',
+      alternarSom: () => this.setState({ mudo: !mudo })
+    };
+  }
+}
+</script>
+</body>
+</html>

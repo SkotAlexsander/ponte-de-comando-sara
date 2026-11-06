@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Ponte de Comando — fluxo dos agentes</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#04070A}
+.palco{position:relative;width:100vw;height:100vh;overflow:hidden;background-color:#04070A;background-image:radial-gradient(rgba(111,243,255,0.14) 1px,transparent 1px);background-size:24px 24px}
+.prancha{position:absolute;left:50%;top:50%;width:1680px;height:880px}
+.janela{position:absolute;left:0;top:178px;width:1680px;height:614px;overflow:hidden;outline:none}
+.janela[data-move="1"]{cursor:grab}.janela[data-move="1"]:active{cursor:grabbing}
+.janela:focus-visible{box-shadow:inset 0 0 0 1px rgba(111,243,255,0.55)}
+.quadro{position:absolute;left:0;top:-178px;width:1680px;height:880px;transform-origin:840px 485px;transition:transform .2s ease-out;pointer-events:none}
+.quadro.arrastando{transition:none}
+.canto.aceso{width:10px;height:10px;filter:drop-shadow(0 0 3px #FFA53A)}
+.pulso-nada{display:none}
+.pulso-a{stroke-dasharray:16 100;stroke-dashoffset:16;animation:passaA 1.1s cubic-bezier(.45,0,.25,1) 1 forwards}
+.pulso-b{stroke-dasharray:16 100;stroke-dashoffset:16;animation:passaB 1.1s cubic-bezier(.45,0,.25,1) 1 forwards}
+@keyframes passaA{0%{stroke-dashoffset:16;opacity:1}88%{opacity:1}100%{stroke-dashoffset:-100;opacity:0}}
+@keyframes passaB{0%{stroke-dashoffset:16;opacity:1}88%{opacity:1}100%{stroke-dashoffset:-100;opacity:0}}
+.galho.recebeu-a{animation:galhoA 1.1s ease-out 1}.galho.recebeu-b{animation:galhoB 1.1s ease-out 1}
+@keyframes galhoA{0%,100%{opacity:.55;box-shadow:none}30%{opacity:1;background:#FFD9A8;box-shadow:0 0 8px #FFA53A}}
+@keyframes galhoB{0%,100%{opacity:.55;box-shadow:none}30%{opacity:1;background:#FFD9A8;box-shadow:0 0 8px #FFA53A}}
+.ag{position:relative}
+.ag[aria-pressed="true"]::before,.ag[aria-pressed="true"]::after{content:'';position:absolute;width:10px;height:10px;pointer-events:none;filter:drop-shadow(0 0 3px #6FF3FF)}
+.ag[aria-pressed="true"]::before{left:-3px;top:-3px;border-left:2px solid #6FF3FF;border-top:2px solid #6FF3FF}
+.ag[aria-pressed="true"]::after{right:-3px;bottom:-3px;border-right:2px solid #6FF3FF;border-bottom:2px solid #6FF3FF}
+.modo,.botao,.acao,.voltar{position:relative}
+.modo::before,.botao::before,.acao::before,.voltar::before,.linha-sessao::before{content:'';position:absolute;left:0;right:0;top:50%;height:44px;transform:translateY(-50%)}
+.linha-sessao{display:flex;align-items:center;gap:10px;width:100%;position:relative;min-height:38px;padding:0 12px;box-sizing:border-box;border:1px solid #1E2A2F;background:rgba(5,9,13,0.6);color:inherit;font:inherit;font-size:13px;text-align:left;cursor:pointer;transition:border-color .15s,background-color .15s}
+.linha-sessao:hover{border-color:rgba(111,243,255,0.5);background:rgba(111,243,255,0.05)}
+.linha-sessao:focus-visible{outline:2px solid #6FF3FF;outline-offset:2px}
+a{color:#6FF3FF}a:hover{color:#B8FAFF}
+.no{position:absolute;pointer-events:auto;box-sizing:border-box;padding:12px 14px;display:flex;align-items:center;gap:12px;font:inherit;font-size:14px;line-height:20px;color:inherit;text-align:left;transition:filter .15s,transform .15s}
+button.no{cursor:pointer}
+.no:hover{filter:brightness(1.18);transform:translateY(-1px)}
+.no:focus-visible,.ag:focus-visible,.acao:focus-visible{outline:2px solid #6FF3FF;outline-offset:3px}
+.nome{font-family:'Rajdhani',sans-serif;font-size:18px;letter-spacing:0.14em}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11px}
+.rotulo{position:absolute;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:16px;color:#7F9AA3}
+.etapa{position:absolute;width:160px;text-align:center;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:0.22em}
+.canto{position:absolute;width:12px;height:12px;pointer-events:none}
+.botao{display:flex;align-items:center;justify-content:center;height:36px;border:0;background:transparent;color:#6FF3FF;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:0.12em}
+.botao:hover{color:#B8FAFF;background:rgba(111,243,255,0.08)}
+.botao:focus-visible{outline:2px solid #6FF3FF;outline-offset:2px}
+.modo{height:30px;padding:0 14px;border:0;background:transparent;color:#7F9AA3;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.18em}
+.modo[aria-pressed="true"]{background:rgba(111,243,255,0.14);color:#B8FAFF;box-shadow:inset 0 0 0 1px rgba(111,243,255,0.5),0 0 12px -4px rgba(111,243,255,0.8)}
+.modo:hover{color:#B8FAFF}.modo:focus-visible{outline:2px solid #6FF3FF;outline-offset:2px}
+.corre{stroke-dasharray:8 14;animation:corre 1.1s linear infinite}
+@keyframes corre{to{stroke-dashoffset:-22}}
+.lista-ag{position:absolute;left:396px;top:0;width:620px;height:712px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(111,243,255,0.35) transparent}
+.tronco{position:absolute;left:-20px;width:1.5px;background:#6FF3FF;opacity:.55}
+.galho{position:absolute;left:-20px;top:50%;width:20px;height:1.5px;background:#6FF3FF;opacity:.55}
+.ag{width:100%;height:50px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 14px;background:#05090D;border:1px solid #2A363B;color:inherit;font:inherit;text-align:left;cursor:pointer;transition:filter .15s,border-color .15s}
+.ag:hover{filter:brightness(1.2);border-color:rgba(111,243,255,0.5)}
+.ag[aria-pressed="true"]{background:#071017}
+.led{width:9px;height:9px;border-radius:50%;flex:0 0 auto;display:inline-block}
+.led-vivo{width:9px;height:9px;border-radius:50%;flex:0 0 auto;display:inline-block;animation:pulsa 1.4s ease-in-out infinite}
+@keyframes pulsa{0%,100%{opacity:.55}50%{opacity:1}}
+.setor{flex:0 0 auto;padding:2px 8px;border:1px solid;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:10px;letter-spacing:0.18em;opacity:.85}
+.reticencias{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.titulo-painel{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:0.24em;color:#6FF3FF}
+.chip{display:inline-flex;align-items:center;gap:8px;height:26px;padding:0 10px;border:1px solid rgba(111,243,255,0.3);font-family:'JetBrains Mono',monospace;font-size:11px;color:#B8D3D8}
+.acao{display:inline-flex;align-items:center;height:38px;padding:0 16px;border:1px solid rgba(111,243,255,0.45);background:transparent;color:#B8FAFF;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.18em;text-decoration:none;cursor:pointer}
+.acao:hover{background:rgba(111,243,255,0.08)}
+@media (prefers-reduced-motion:reduce){.corre{animation:none;opacity:0}.no,.ag,.quadro,.linha-sessao{transition:none}.led-vivo{animation:none}.pulso-a,.pulso-b{animation:none;display:none}.galho.recebeu-a,.galho.recebeu-b{animation:none}}
+</style>
+</helmet>
+<div class="palco" style="color: #E6F1F3; font-family: 'IBM Plex Sans', system-ui, sans-serif">
+<div class="prancha" style="transform: {{ prancha }}">
+
+<div style="position: absolute; left: 64px; top: 56px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 30px; letter-spacing: 0.24em; color: #E6F1F3; text-shadow: 0 0 14px rgba(111,243,255,0.5)">FLUXO DOS AGENTES</div>
+<div style="position: absolute; left: 64px; top: 96px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #7F9AA3">{{ subtitulo }}</div>
+
+<div role="group" aria-label="Modo de ver" style="position: absolute; left: 880px; top: 62px; display: flex; align-items: center; gap: 4px; height: 40px; padding: 0 4px; box-sizing: border-box; border: 1px solid rgba(111,243,255,0.35); background: #05090D">
+<button class="modo" onClick="{{ irEtapas }}" aria-pressed="{{ modoEtapas }}">ETAPAS</button>
+<button class="modo" onClick="{{ irMapa }}" aria-pressed="{{ modoMapa }}">MAPA</button>
+</div>
+<a href="Main.dc.html" class="voltar" style="position: absolute; left: 1136px; top: 62px; display: flex; align-items: center; height: 40px; padding: 0 14px; box-sizing: border-box; border: 1px solid rgba(111,243,255,0.35); font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.18em; color: #B8FAFF; text-decoration: none">← CONVERSA</a>
+<sc-if value="{{ ehEtapas }}">
+<div role="group" aria-label="Zoom do quadro" style="position: absolute; left: 1300px; top: 62px; display: flex; align-items: center; gap: 2px; padding: 0 4px; height: 40px; box-sizing: border-box; border: 1px solid rgba(111,243,255,0.35); background: #05090D">
+<button class="botao" aria-label="Diminuir zoom" onClick="{{ menos }}" style="width: 44px; font-size: 18px">−</button>
+<span aria-live="polite" style="min-width: 48px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #E6F1F3">{{ zoomTexto }}</span>
+<button class="botao" aria-label="Aumentar zoom" onClick="{{ mais }}" style="width: 44px; font-size: 18px">+</button>
+<button class="botao" onClick="{{ ajustar }}" aria-label="Ajustar o quadro à tela" style="height: 30px; padding: 0 12px; border: 1px solid rgba(111,243,255,0.25); color: #B8FAFF; font-size: 13px">AJUSTAR</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ ehEtapas }}">
+<svg aria-hidden="true" width="1680" height="40" style="position: absolute; left: 0; top: 126px; overflow: visible; pointer-events: none">
+<line x1="166" y1="10" x2="410" y2="10" stroke="#9BF7D6" stroke-width="1.5" opacity="0.7"></line>
+<line x1="430" y1="10" x2="850" y2="10" stroke="#9BF7D6" stroke-width="1.5" opacity="0.7"></line>
+<line x1="870" y1="10" x2="1294" y2="10" stroke="#2A363B" stroke-width="1.5" opacity="0.7"></line>
+<line x1="1314" y1="10" x2="1538" y2="10" stroke="#2A363B" stroke-width="1.5" opacity="0.7"></line>
+<circle cx="156" cy="10" r="5" fill="#9BF7D6" stroke="#9BF7D6" stroke-width="1.6" style="filter: drop-shadow(0 0 5px #9BF7D6)"></circle>
+<circle cx="420" cy="10" r="5" fill="#9BF7D6" stroke="#9BF7D6" stroke-width="1.6" style="filter: drop-shadow(0 0 5px #9BF7D6)"></circle>
+<circle cx="860" cy="10" r="5" fill="#FFA53A" stroke="#FFA53A" stroke-width="1.6" style="filter: drop-shadow(0 0 5px #FFA53A)"></circle>
+<circle cx="1304" cy="10" r="5" fill="#04070A" stroke="#4A5E66" stroke-width="1.6"></circle>
+<circle cx="1548" cy="10" r="5" fill="#04070A" stroke="#4A5E66" stroke-width="1.6"></circle>
+</svg>
+<div class="etapa" style="left: 76px; top: 146px; color: #9BF7D6"><span style="opacity: 0.6">01</span> PEDIDO</div>
+<div class="etapa" style="left: 340px; top: 146px; color: #9BF7D6"><span style="opacity: 0.6">02</span> COORDENA</div>
+<div class="etapa" style="left: 780px; top: 146px; color: #FFA53A"><span style="opacity: 0.6">03</span> PRODUZ</div>
+<div class="etapa" style="left: 1224px; top: 146px; color: #7F9AA3"><span style="opacity: 0.6">04</span> REVISA</div>
+<div class="etapa" style="left: 1468px; top: 146px; color: #7F9AA3"><span style="opacity: 0.6">05</span> ENTREGA</div>
+<div class="janela" role="group" aria-label="Quadro das etapas. Com zoom acima de 100%, arraste ou use as setas para mover" tabindex="0" data-move="{{ podeMover }}" onPointerDown="{{ arrastar.inicio }}" onPointerMove="{{ arrastar.move }}" onPointerUp="{{ arrastar.fim }}" onPointerCancel="{{ arrastar.fim }}" onKeyDown="{{ arrastar.tecla }}">
+<div class="{{ quadroClasse }}" style="transform: {{ quadroTransform }}">
+<div aria-hidden="true" style="position: absolute; left: 600px; top: 208px; width: 520px; height: 232px; box-sizing: border-box; border: 1px solid rgba(111,243,255,0.18); background: rgba(111,243,255,0.03)"><span class="canto" style="left: -1px; top: -1px; border-left: 2px solid #6FF3FF; border-top: 2px solid #6FF3FF"></span><span class="canto" style="right: -1px; bottom: -1px; border-right: 2px solid #6FF3FF; border-bottom: 2px solid #6FF3FF"></span></div><div style="position: absolute; left: 614px; top: 220px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.24em; color: #6FF3FF">DESIGN</div>
+<div aria-hidden="true" style="position: absolute; left: 600px; top: 496px; width: 520px; height: 232px; box-sizing: border-box; border: 1px solid rgba(255,165,58,0.18); background: rgba(255,165,58,0.03)"><span class="canto" style="left: -1px; top: -1px; border-left: 2px solid #FFA53A; border-top: 2px solid #FFA53A"></span><span class="canto" style="right: -1px; bottom: -1px; border-right: 2px solid #FFA53A; border-bottom: 2px solid #FFA53A"></span></div><div style="position: absolute; left: 614px; top: 508px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.24em; color: #FFA53A">CONTEÚDO</div>
+<div aria-hidden="true" style="position: absolute; left: 1192px; top: 352px; width: 224px; height: 232px; box-sizing: border-box; border: 1px solid rgba(155,247,214,0.18); background: rgba(155,247,214,0.03)"><span class="canto" style="left: -1px; top: -1px; border-left: 2px solid #9BF7D6; border-top: 2px solid #9BF7D6"></span><span class="canto" style="right: -1px; bottom: -1px; border-right: 2px solid #9BF7D6; border-bottom: 2px solid #9BF7D6"></span></div><div style="position: absolute; left: 1206px; top: 364px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.24em; color: #9BF7D6">REVISÃO</div>
+<svg aria-hidden="true" width="1680" height="880" viewBox="0 0 1680 880" style="position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none"><defs><marker id="seta-ci" orient="auto" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" refX="7" refY="4" overflow="visible"><path d="M0 0 L7 4 L0 8 Z" fill="#6FF3FF"></path></marker><marker id="seta-am" orient="auto" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" refX="7" refY="4" overflow="visible"><path d="M0 0 L7 4 L0 8 Z" fill="#FFA53A"></path></marker><marker id="seta-cz" orient="auto" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" refX="7" refY="4" overflow="visible"><path d="M0 0 L7 4 L0 8 Z" fill="#4A5E66"></path></marker></defs>
+<path d="M 248 468 L 306 468" fill="none" stroke="#6FF3FF" stroke-width="2" stroke-linejoin="round" style="filter: drop-shadow(0 0 4px #6FF3FF)" marker-end="url(#seta-ci)"></path>
+<path d="M 528 468 L 564 468 L 564 320 L 614 320" fill="none" stroke="#6FF3FF" stroke-width="2" stroke-linejoin="round" style="filter: drop-shadow(0 0 4px #6FF3FF)" marker-end="url(#seta-ci)"></path>
+<path d="M 564 468 L 564 608 L 614 608" fill="none" stroke="#FFA53A" stroke-width="2" stroke-linejoin="round" opacity="0.45" marker-end="url(#seta-am)"></path>
+<path class="corre" d="M 564 468 L 564 608 L 614 608" fill="none" stroke="#FFD9A8" stroke-width="2.4" stroke-linecap="round" style="filter: drop-shadow(0 0 5px #FFA53A)"></path>
+<path d="M 820 320 L 894 320" fill="none" stroke="#FFA53A" stroke-width="2" stroke-linejoin="round" opacity="0.45" marker-end="url(#seta-am)"></path>
+<path class="corre" d="M 820 320 L 894 320" fill="none" stroke="#FFD9A8" stroke-width="2.4" stroke-linecap="round" style="filter: drop-shadow(0 0 5px #FFA53A)"></path>
+<path d="M 820 608 L 894 608" fill="none" stroke="#4A5E66" stroke-width="2" stroke-linejoin="round" stroke-dasharray="6 6" marker-end="url(#seta-cz)"></path>
+<path d="M 1100 320 L 1156 320 L 1156 448 L 1206 448" fill="none" stroke="#4A5E66" stroke-width="2" stroke-linejoin="round" stroke-dasharray="6 6" marker-end="url(#seta-cz)"></path>
+<path d="M 1100 608 L 1156 608 L 1156 488 L 1206 488" fill="none" stroke="#4A5E66" stroke-width="2" stroke-linejoin="round" stroke-dasharray="6 6" marker-end="url(#seta-cz)"></path>
+<path d="M 1416 468 L 1474 468" fill="none" stroke="#4A5E66" stroke-width="2" stroke-linejoin="round" stroke-dasharray="6 6" marker-end="url(#seta-cz)"></path>
+<path d="M 420 616 L 420 542" fill="none" stroke="#6FF3FF" stroke-width="2" stroke-dasharray="4 5" opacity="0.75" marker-end="url(#seta-ci)"></path>
+<path class="{{ pulso.alex_sara }}" d="M 248 468 L 306 468" pathLength="100" fill="none" stroke="#FFF1DC" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 4px #FFA53A) drop-shadow(0 0 9px rgba(255,165,58,0.7))"></path>
+<path class="{{ pulso.sara_helena }}" d="M 528 468 L 564 468 L 564 320 L 614 320" pathLength="100" fill="none" stroke="#FFF1DC" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 4px #FFA53A) drop-shadow(0 0 9px rgba(255,165,58,0.7))"></path>
+<path class="{{ pulso.sara_rui }}" d="M 528 468 L 564 468 L 564 608 L 614 608" pathLength="100" fill="none" stroke="#FFF1DC" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 4px #FFA53A) drop-shadow(0 0 9px rgba(255,165,58,0.7))"></path>
+<path class="{{ pulso.helena_lia }}" d="M 820 320 L 894 320" pathLength="100" fill="none" stroke="#FFF1DC" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 4px #FFA53A) drop-shadow(0 0 9px rgba(255,165,58,0.7))"></path>
+<path class="{{ pulso.lia_otto }}" d="M 1100 320 L 1156 320 L 1156 448 L 1206 448" pathLength="100" fill="none" stroke="#FFF1DC" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 4px #FFA53A) drop-shadow(0 0 9px rgba(255,165,58,0.7))"></path>
+<path class="{{ pulso.otto_entrega }}" d="M 1416 468 L 1474 468" pathLength="100" fill="none" stroke="#FFF1DC" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 4px #FFA53A) drop-shadow(0 0 9px rgba(255,165,58,0.7))"></path>
+<circle cx="312" cy="468" r="4.5" fill="#04070A" stroke="#6FF3FF" stroke-width="1.6"></circle>
+<circle cx="620" cy="320" r="4.5" fill="#04070A" stroke="#6FF3FF" stroke-width="1.6"></circle>
+<circle cx="620" cy="608" r="4.5" fill="#04070A" stroke="#FFA53A" stroke-width="1.6"></circle>
+<circle cx="900" cy="320" r="4.5" fill="#04070A" stroke="#FFA53A" stroke-width="1.6"></circle>
+<circle cx="900" cy="608" r="4.5" fill="#04070A" stroke="#4A5E66" stroke-width="1.6"></circle>
+<circle cx="1212" cy="448" r="4.5" fill="#04070A" stroke="#4A5E66" stroke-width="1.6"></circle>
+<circle cx="1212" cy="488" r="4.5" fill="#04070A" stroke="#4A5E66" stroke-width="1.6"></circle>
+<circle cx="1480" cy="468" r="4.5" fill="#04070A" stroke="#4A5E66" stroke-width="1.6"></circle>
+<circle cx="420" cy="536" r="4.5" fill="#04070A" stroke="#6FF3FF" stroke-width="1.6"></circle>
+</svg>
+<div class="no" style="left: 64px; top: 420px; width: 184px; height: 96px; background: #05090D; border: 1px solid rgba(230,241,243,0.45); box-shadow: 0 0 16px -6px rgba(230,241,243,0.6)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E6F1F3" stroke-width="1.5" aria-hidden="true" style="flex: 0 0 auto"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg><span><b class="nome">ALEX</b><br><span style="color: #7F9AA3">pediu por áudio</span><br><span class="mono" style="color: #9BF7D6">✓ enviado 16:02</span></span></div>
+<button class="no" onClick="{{ abreSara }}" aria-label="Ver a sessão no mapa" style="left: 312px; top: 400px; width: 216px; height: 136px; background: #0A0805; border: 1px solid #FFA53A; box-shadow: 0 0 28px -6px rgba(255,165,58,0.85), inset 0 0 22px -12px rgba(255,165,58,0.9)"><span style="position: relative; width: 60px; height: 60px; overflow: hidden; border: 1px solid #FFA53A; flex: 0 0 auto; background: #1A1C1E"><img src="./assets/d2c797fb83405f7d534f92395c670718.jpg" alt="" style="position: absolute; left: -35px; top: -17px; width: 134px; height: 168px; max-width: none"></span><span><b class="nome" style="font-size: 20px; letter-spacing: 0.18em; color: #FFA53A">SARA</b><br><span style="color: #E6F1F3">CEO · coordena</span><br><span class="mono" style="color: #FFA53A">◆ distribuindo</span></span></button>
+<div class="no" style="left: 312px; top: 616px; width: 216px; height: 72px; background: transparent; border: 1px dashed rgba(111,243,255,0.5)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6FF3FF" stroke-width="1.5" aria-hidden="true" style="flex: 0 0 auto"><ellipse cx="12" cy="6" rx="7" ry="3"></ellipse><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"></path></svg><span><b class="nome" style="font-size: 15px; color: #6FF3FF">MEMÓRIA</b><br><span class="mono" style="color: #B8D3D8">drive-curso-apometria</span></span></div>
+<button class="no" onClick="{{ abreHelena }}" aria-label="Ver os detalhes de Helena no mapa" style="left: 620px; top: 260px; width: 200px; height: 120px; background: #05090D; border: 1px solid #6FF3FF; box-shadow: 0 0 18px -6px rgba(111,243,255,0.8)"><span style="min-width: 0"><b class="nome" style="color: #E6F1F3">HELENA</b><br><span style="color: #7F9AA3">diretora de arte</span><br><span class="mono" style="color: #9BF7D6">✓ feito · 38k</span></span><span aria-hidden="true" style="position: absolute; left: 14px; right: 14px; bottom: 10px; height: 3px; background: rgba(111,243,255,0.1)"><span style="display: block; width: 48%; height: 100%; background: #9BF7D6; box-shadow: 0 0 6px #9BF7D6"></span></span></button>
+<button class="no" onClick="{{ abreLia }}" aria-label="Ver os detalhes de Lia no mapa" style="left: 900px; top: 260px; width: 200px; height: 120px; background: #0A0805; border: 1px solid #FFA53A; box-shadow: 0 0 22px -6px rgba(255,165,58,0.85)"><span aria-hidden="true" class="canto aceso" style="left: -3px; top: -3px; border-left: 2px solid #FFA53A; border-top: 2px solid #FFA53A"></span><span aria-hidden="true" class="canto aceso" style="right: -3px; top: -3px; border-right: 2px solid #FFA53A; border-top: 2px solid #FFA53A"></span><span aria-hidden="true" class="canto aceso" style="left: -3px; bottom: -3px; border-left: 2px solid #FFA53A; border-bottom: 2px solid #FFA53A"></span><span aria-hidden="true" class="canto aceso" style="right: -3px; bottom: -3px; border-right: 2px solid #FFA53A; border-bottom: 2px solid #FFA53A"></span><span style="min-width: 0"><b class="nome" style="color: #E6F1F3">LIA</b><br><span style="color: #7F9AA3">interface · 2 telas</span><br><span class="mono" style="color: #FFA53A">◆ agora · 71k</span></span><span aria-hidden="true" style="position: absolute; left: 14px; right: 14px; bottom: 10px; height: 3px; background: rgba(111,243,255,0.1)"><span style="display: block; width: 89%; height: 100%; background: #FFA53A; box-shadow: 0 0 6px #FFA53A"></span></span></button>
+<button class="no" onClick="{{ abreRui }}" aria-label="Ver os detalhes de Rui no mapa" style="left: 620px; top: 548px; width: 200px; height: 120px; background: #0A0805; border: 1px solid #FFA53A; box-shadow: 0 0 22px -6px rgba(255,165,58,0.85)"><span aria-hidden="true" class="canto aceso" style="left: -3px; top: -3px; border-left: 2px solid #FFA53A; border-top: 2px solid #FFA53A"></span><span aria-hidden="true" class="canto aceso" style="right: -3px; top: -3px; border-right: 2px solid #FFA53A; border-top: 2px solid #FFA53A"></span><span aria-hidden="true" class="canto aceso" style="left: -3px; bottom: -3px; border-left: 2px solid #FFA53A; border-bottom: 2px solid #FFA53A"></span><span aria-hidden="true" class="canto aceso" style="right: -3px; bottom: -3px; border-right: 2px solid #FFA53A; border-bottom: 2px solid #FFA53A"></span><span style="min-width: 0"><b class="nome" style="color: #E6F1F3">RUI</b><br><span style="color: #7F9AA3">redator</span><br><span class="mono" style="color: #FFA53A">◆ agora · 24k</span></span><span aria-hidden="true" style="position: absolute; left: 14px; right: 14px; bottom: 10px; height: 3px; background: rgba(111,243,255,0.1)"><span style="display: block; width: 30%; height: 100%; background: #FFA53A; box-shadow: 0 0 6px #FFA53A"></span></span></button>
+<button class="no" onClick="{{ abreIgor }}" aria-label="Ver a fila do Conteúdo no mapa" style="left: 900px; top: 548px; width: 200px; height: 120px; background: #05090D; border: 1px dashed #3A4A50; align-items: flex-start"><span><b class="nome" style="font-size: 15px; line-height: 18px; color: #B8D3D8">NA FILA · 4</b><br><span class="mono" style="color: #7F9AA3; line-height: 16px">○ Rui · perguntas<br>○ Igor · busca<br>○ Bia · posts<br>○ Dora · PDF</span></span></button>
+<button class="no" onClick="{{ abreOtto }}" aria-label="Ver os detalhes de Otto no mapa" style="left: 1212px; top: 408px; width: 184px; height: 120px; background: #05090D; border: 1px solid #3A4A50; box-shadow: none"><span style="min-width: 0"><b class="nome" style="color: #B8D3D8">OTTO</b><br><span style="color: #7F9AA3">revisor · 2 telas</span><br><span class="mono" style="color: #7F9AA3">○ esperando a vez</span></span></button>
+<button class="no" onClick="{{ abreGuto }}" aria-label="Ver os detalhes da entrega no mapa" style="left: 1480px; top: 420px; width: 136px; height: 96px; background: #05090D; border: 1px dashed #3A4A50"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7F9AA3" stroke-width="1.5" aria-hidden="true" style="flex: 0 0 auto"><path d="M4 12l5 5L20 6"></path></svg><span><b class="nome" style="font-size: 15px; color: #B8D3D8">ENTREGA</b><br><span style="color: #7F9AA3">para você</span></span></button>
+<div class="rotulo" style="left: 564px; top: 284px; width: 56px; text-align: center">direção</div>
+<div class="rotulo" style="left: 568px; top: 618px; width: 52px; text-align: center">texto</div>
+<div class="rotulo" style="left: 820px; top: 296px; width: 80px; text-align: center">telas A e B</div>
+<div class="rotulo" style="left: 824px; top: 584px; width: 72px; text-align: center">depois</div>
+<div class="rotulo" style="left: 432px; top: 568px; width: 40px; text-align: left">lê</div>
+<div class="rotulo" style="left: 1160px; top: 372px; width: 32px; text-align: left">telas</div>
+<div class="rotulo" style="left: 1160px; top: 564px; width: 32px; text-align: left">texto</div>
+<div class="rotulo" style="left: 1416px; top: 444px; width: 64px; text-align: center">aprovada</div>
+</div>
+</div>
+<div style="position: absolute; left: 64px; top: 808px; display: flex; gap: 28px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B8D3D8"><span><span style="color: #9BF7D6">✓</span> concluído</span><span><span style="color: #FFA53A">◆</span> trabalhando agora</span><span><span style="color: #7F9AA3">○</span> esperando a vez</span><span><span style="color: #FFD9A8">━ ━</span> passando agora</span><span><span style="color: #6FF3FF">- - -</span> leitura da memória</span><span style="color: #7F9AA3">clique num cartão para ver no mapa</span></div>
+</sc-if>
+
+<sc-if value="{{ ehMapa }}">
+
+<div style="position: absolute; left: 0; top: 140px; width: 1680px; height: 712px">
+  <button class="no mae" onClick="{{ abreSara }}" aria-pressed="{{ saraAtiva }}" style="left: 64px; top: 304px; width: 296px; height: 104px; background: #0A0805; border: 1px solid #FFA53A; box-shadow: 0 0 28px -6px rgba(255,165,58,0.85), inset 0 0 22px -12px rgba(255,165,58,0.9)">
+    <span style="position: relative; width: 56px; height: 56px; overflow: hidden; border: 1px solid #FFA53A; flex: 0 0 auto; background: #1A1C1E"><img src="./assets/d2c797fb83405f7d534f92395c670718.jpg" alt="" style="position: absolute; left: -33px; top: -16px; width: 125px; height: 157px; max-width: none"></span>
+    <span style="min-width: 0"><b class="nome" style="font-size: 18px; color: #FFA53A">SARA</b> <span class="mono" style="color: #FFA53A">◆ coordena</span><br>
+    <span style="color: #E6F1F3">Landing do curso da Mirian</span><br>
+    <span class="mono" style="color: #7F9AA3">Opus 5.5 · {{ contextoTexto }} no contexto</span></span>
+  </button>
+  <svg aria-hidden="true" width="60" height="10" style="position: absolute; left: 360px; top: 351px; overflow: visible"><path d="M 0 5 L 52 5" stroke="#6FF3FF" stroke-width="1.5" style="filter: drop-shadow(0 0 3px #6FF3FF)"></path><circle cx="0" cy="5" r="4" fill="#04070A" stroke="#FFA53A" stroke-width="1.5"></circle></svg>
+
+  <div class="lista-ag" role="list" aria-label="Agentes desta sessão">
+    <div style="min-height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 16px 24px 16px 36px">
+      <sc-for list="{{ agentes }}" as="a" hint-placeholder-count="11">
+        <div role="listitem" style="position: relative">
+          <span aria-hidden="true" class="tronco" style="top: {{ a.troncoTopo }}; bottom: {{ a.troncoBase }}"></span>
+          <span aria-hidden="true" class="{{ a.classeGalho }}"></span>
+          <button class="ag" onClick="{{ a.abrir }}" aria-pressed="{{ a.ativo }}" aria-label="{{ a.rotulo }}" style="border-color: {{ a.borda }}; box-shadow: {{ a.brilho }}">
+            <span aria-hidden="true" class="{{ a.classeLed }}" style="background: {{ a.cor }}; box-shadow: {{ a.ledBrilho }}"></span>
+            <span style="flex: 1 1 auto; min-width: 0">
+              <span class="reticencias" style="display: block; font-size: 13px; color: #E6F1F3"><b style="font-weight: 600">{{ a.nome }}:</b> {{ a.tarefa }}</span>
+              <span class="mono" style="display: block; color: #7F9AA3">{{ a.linha2 }}</span>
+            </span>
+            <span class="setor" style="color: {{ a.corSetor }}; border-color: {{ a.corSetor }}">{{ a.setor }}</span>
+          </button>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <section aria-label="Detalhes" style="position: absolute; left: 1032px; top: 16px; width: 584px; height: 680px; box-sizing: border-box; padding: 24px 28px; background: rgba(5,9,13,0.92); border: 1px solid rgba(111,243,255,0.3); box-shadow: 0 0 24px -10px rgba(111,243,255,0.6)">
+    <span class="canto" style="left: -1px; top: -1px; border-left: 2px solid #6FF3FF; border-top: 2px solid #6FF3FF"></span>
+    <span class="canto" style="right: -1px; bottom: -1px; border-right: 2px solid #6FF3FF; border-bottom: 2px solid #6FF3FF"></span>
+    <sc-if value="{{ semDetalhe }}">
+      <div class="titulo-painel">SESSÃO</div>
+      <div style="margin-top: 10px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: 0.08em; color: #E6F1F3">Landing do curso da Mirian</div>
+      <div class="mono" style="margin-top: 4px; font-size: 12px; color: #7F9AA3">{{ totalAgentes }} agentes · {{ totalTokens }} · clique num agente para ver os detalhes</div>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 16px">
+        <sc-for list="{{ resumo }}" as="r" hint-placeholder-count="4">
+          <div style="padding: 8px 12px; border: 1px solid {{ r.borda }}; background: rgba(5,9,13,0.6)">
+            <div style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 24px; color: {{ r.cor }}; text-shadow: 0 0 10px {{ r.cor }}">{{ r.n }}</div>
+            <div class="mono" style="color: #B8D3D8">{{ r.rotulo }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div class="titulo-painel" style="margin-top: 20px">POR SETOR</div>
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px">
+        <sc-for list="{{ setores }}" as="s" hint-placeholder-count="4">
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 13px"><span style="color: {{ s.cor }}; font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: 0.18em">{{ s.nome }}</span><span class="mono" style="color: #B8D3D8">{{ s.texto }}</span></div>
+            <div style="height: 4px; margin-top: 6px; background: rgba(111,243,255,0.08)"><div style="width: {{ s.largura }}; height: 100%; background: {{ s.cor }}; box-shadow: 0 0 6px {{ s.cor }}"></div></div>
+          </div>
+        </sc-for>
+      </div>
+      <div class="titulo-painel" style="margin-top: 18px">TRABALHANDO AGORA</div>
+      <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px">
+        <sc-for list="{{ agora }}" as="a" hint-placeholder-count="3">
+          <button class="linha-sessao" onClick="{{ a.abrir }}" aria-label="{{ a.rotulo }}">
+            <span aria-hidden="true" class="led-vivo" style="background: #FFA53A; box-shadow: 0 0 8px #FFA53A"></span>
+            <span class="reticencias" style="flex: 1 1 auto; min-width: 0"><b style="font-weight: 600; color: #E6F1F3">{{ a.nome }}:</b> <span style="color: #B8D3D8">{{ a.passo }}</span></span>
+            <span class="mono" style="flex: 0 0 auto; color: #7F9AA3">{{ a.tempoTexto }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div class="titulo-painel" style="margin-top: 16px">A SEGUIR</div>
+      <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px">
+        <sc-for list="{{ aSeguir }}" as="a" hint-placeholder-count="2">
+          <button class="linha-sessao" onClick="{{ a.abrir }}" aria-label="{{ a.rotulo }}">
+            <span aria-hidden="true" class="led" style="background: #4A5E66"></span>
+            <span class="reticencias" style="flex: 1 1 auto; min-width: 0"><b style="font-weight: 600; color: #E6F1F3">{{ a.nome }}:</b> <span style="color: #B8D3D8">{{ a.tarefa }}</span></span>
+            <span class="mono" style="flex: 0 0 auto; color: #7F9AA3">{{ a.passoCurto }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ temDetalhe }}">
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <div class="titulo-painel" style="color: {{ d.corSetor }}">{{ d.setor }} · {{ d.cargo }}</div>
+        <button class="botao" onClick="{{ fechar }}" aria-label="Fechar os detalhes" style="width: 36px; height: 32px; font-size: 16px">✕</button>
+      </div>
+      <div style="margin-top: 6px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.06em; color: #E6F1F3">{{ d.nome }}: {{ d.tarefa }}</div>
+      <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap">
+        <span class="chip" style="color: {{ d.cor }}; border-color: {{ d.cor }}"><span aria-hidden="true" class="{{ d.classeLed }}" style="background: {{ d.cor }}; box-shadow: {{ d.ledBrilho }}"></span>{{ d.estadoTexto }}</span>
+        <span class="chip">Opus 5.5</span>
+        <span class="chip">{{ d.tempoTexto }}</span>
+        <span class="chip">{{ d.tokensTexto }}</span>
+      </div>
+      <div class="titulo-painel" style="margin-top: 22px">O PEDIDO DA SARA</div>
+      <p style="margin: 8px 0 0; font-size: 14px; line-height: 22px; color: #E6F1F3">{{ d.pedido }}</p>
+      <div class="titulo-painel" style="margin-top: 20px">AGORA</div>
+      <p style="margin: 8px 0 0; font-size: 14px; line-height: 22px; color: #B8D3D8">{{ d.passo }}</p>
+      <div class="titulo-painel" style="margin-top: 20px">CONTEXTO USADO</div>
+      <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px">
+        <div style="flex: 1 1 auto; height: 6px; background: rgba(111,243,255,0.08)"><div style="width: {{ d.largura }}; height: 100%; background: linear-gradient(90deg, #6FF3FF, #FFA53A); box-shadow: 0 0 8px rgba(111,243,255,0.7)"></div></div>
+        <span class="mono" style="color: #B8D3D8">{{ d.largura }}</span>
+      </div>
+      <div class="titulo-painel" style="margin-top: 20px">ARQUIVOS</div>
+      <sc-if value="{{ d.temArquivos }}">
+        <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px">
+          <sc-for list="{{ d.arquivos }}" as="f" hint-placeholder-count="2">
+            <span class="mono" style="font-size: 12px; color: #6FF3FF">› {{ f.nome }}</span>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ d.semArquivos }}">
+        <div class="mono" style="margin-top: 8px; font-size: 12px; color: #7F9AA3">nenhum ainda</div>
+      </sc-if>
+      <div style="position: absolute; left: 28px; right: 28px; bottom: 24px; display: flex; gap: 10px">
+        <a href="Main.dc.html" class="acao">ABRIR A CONVERSA</a>
+        <sc-if value="{{ d.rodando }}"><button class="acao" onClick="{{ d.parar }}" style="color: #FFA53A; border-color: rgba(255,165,58,0.5)">PAUSAR</button></sc-if>
+        <sc-if value="{{ d.pausado }}"><button class="acao" onClick="{{ d.parar }}">CONTINUAR</button></sc-if>
+      </div>
+    </sc-if>
+  </section>
+</div>
+</sc-if>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1680,"height":880}}'>
+
+const AGENTES = [{"id": "helena", "nome": "Helena", "cargo": "diretora de arte", "setor": "DESIGN", "tarefa": "Duas direções de visual", "estado": "feito", "seg": 372, "tokens": 38.4, "pedido": "Duas linhas de visual para a landing do curso: uma editorial calma e uma luminosa, para a imersão.", "passo": "Entregou as duas direções, com paleta, tipografia e três referências cada.", "arquivos": ["design/direcoes.md", "design/paletas.png"]}, {"id": "lia-a", "nome": "Lia", "cargo": "interface", "setor": "DESIGN", "tarefa": "Tela A · editorial", "estado": "rodando", "seg": 845, "tokens": 41.2, "pedido": "Montar a tela A seguindo a direção editorial da Helena, testando em 2040×790 e 1440×900.", "passo": "Ajustando o espaço entre o topo e a primeira dobra.", "arquivos": ["design/telas/A.html"]}, {"id": "lia-b", "nome": "Lia", "cargo": "interface", "setor": "DESIGN", "tarefa": "Tela B · imersão", "estado": "rodando", "seg": 580, "tokens": 29.8, "pedido": "Montar a tela B na direção luminosa, com a mesma estrutura da tela A.", "passo": "Testando o brilho do fundo no celular.", "arquivos": ["design/telas/B.html"]}, {"id": "rui-topo", "nome": "Rui", "cargo": "redator", "setor": "CONTEÚDO", "tarefa": "Texto do topo", "estado": "rodando", "seg": 442, "tokens": 24.1, "pedido": "Título, subtítulo e chamada do topo, sem prometer cura e sem cara de IA.", "passo": "Escrevendo a terceira opção de título.", "arquivos": ["conteudo/topo.md"]}, {"id": "rui-faq", "nome": "Rui", "cargo": "redator", "setor": "CONTEÚDO", "tarefa": "Perguntas frequentes", "estado": "espera", "seg": 0, "tokens": 0, "pedido": "Seis perguntas frequentes a partir das dúvidas do grupo da Mirian.", "passo": "Na fila, depois do texto do topo.", "arquivos": []}, {"id": "igor", "nome": "Igor", "cargo": "SEO", "setor": "CONTEÚDO", "tarefa": "Título e descrição de busca", "estado": "espera", "seg": 0, "tokens": 0, "pedido": "Título de busca, descrição e Open Graph da landing.", "passo": "Espera o texto do topo ficar pronto.", "arquivos": []}, {"id": "bia", "nome": "Bia", "cargo": "social", "setor": "CONTEÚDO", "tarefa": "Posts de lançamento", "estado": "espera", "seg": 0, "tokens": 0, "pedido": "Três posts e uma sequência de stories anunciando a turma.", "passo": "Espera a tela escolhida.", "arquivos": []}, {"id": "dora", "nome": "Dora", "cargo": "documentos", "setor": "CONTEÚDO", "tarefa": "PDF do porquê de cada escolha", "estado": "espera", "seg": 0, "tokens": 0, "pedido": "PDF curto explicando as escolhas de visual e texto para a Mirian.", "passo": "Espera as duas telas.", "arquivos": []}, {"id": "otto-a", "nome": "Otto", "cargo": "revisor", "setor": "REVISÃO", "tarefa": "Revisar tela A", "estado": "espera", "seg": 0, "tokens": 0, "pedido": "Revisar design, texto e acessibilidade da tela A nas três larguras.", "passo": "Espera a Lia terminar a tela A.", "arquivos": []}, {"id": "otto-b", "nome": "Otto", "cargo": "revisor", "setor": "REVISÃO", "tarefa": "Revisar tela B", "estado": "espera", "seg": 0, "tokens": 0, "pedido": "Revisar design, texto e acessibilidade da tela B nas três larguras.", "passo": "Espera a Lia terminar a tela B.", "arquivos": []}, {"id": "guto", "nome": "Guto", "cargo": "guardião", "setor": "MÁQUINA", "tarefa": "Guardar a cópia no GitHub", "estado": "espera", "seg": 0, "tokens": 0, "pedido": "Commit e push no repo privado do curso quando o Alex aprovar.", "passo": "Espera a aprovação.", "arquivos": []}];
+const SETOR = { 'DESIGN': '#6FF3FF', 'CONTEÚDO': '#FFA53A', 'REVISÃO': '#9BF7D6', 'MÁQUINA': '#B8D3D8' };
+const COR = { rodando: '#FFA53A', feito: '#9BF7D6', espera: '#4A5E66', pausado: '#B8D3D8' };
+const TEXTO = { rodando: 'rodando', feito: 'concluído', espera: 'esperando a vez', pausado: 'pausado' };
+const tempo = (s) => s <= 0 ? '—' : (s >= 60 ? Math.floor(s / 60) + 'm ' + String(s % 60).padStart(2, '0') + 's' : s + 's');
+const tok = (k) => k <= 0 ? 'nenhum token ainda' : k.toFixed(1) + 'k tokens';
+// passagens de trabalho: o pulso corre pela conexão uma vez. O programa avisa com
+// window.dispatchEvent(new CustomEvent('fluxo-passagem', { detail: 'sara_rui' })).
+const PASSAGENS = { alex_sara: null, sara_helena: 'helena', sara_rui: 'rui-topo', helena_lia: 'lia-a', lia_otto: 'otto-a', otto_entrega: 'guto' };
+const ZMIN = 60, ZMAX = 140;
+class Component extends DCLogic {
+  componentDidMount() {
+    this._t = setInterval(() => this.setState({ tique: ((this.state && this.state.tique) || 0) + 1 }), 1000);
+    this._onResize = () => this.setState({ vw: window.innerWidth, vh: window.innerHeight });
+    window.addEventListener('resize', this._onResize);
+    this._onPassagem = (ev) => this.passar(ev && ev.detail);
+    window.addEventListener('fluxo-passagem', this._onPassagem);
+    // a passagem mais recente desta sessão (a Sara mandou o texto do topo para o Rui)
+    this._demo = setTimeout(() => this.passar('sara_rui'), 900);
+  }
+  componentWillUnmount() {
+    clearInterval(this._t); clearTimeout(this._demo); clearTimeout(this._fimPulso);
+    window.removeEventListener('resize', this._onResize); window.removeEventListener('fluxo-passagem', this._onPassagem);
+  }
+  passar(id) {
+    if (!(id in PASSAGENS)) return;
+    const n = (((this.state || {}).passagem || {}).n || 0) + 1;
+    this.setState({ passagem: { id, n } });
+    clearTimeout(this._fimPulso);
+    this._fimPulso = setTimeout(() => this.setState({ passagem: null }), 1300);
+  }
+  renderVals() {
+    const st = this.state || {};
+    const z = st.zoom || 100, modo = st.modo || 'etapas', sel = st.sel || null, t = st.tique || 0;
+    const pausados = st.pausados || {};
+    // P1: a prancha inteira cabe na janela (nunca passa de 100%) e fica no centro
+    const vw = st.vw || (typeof window !== 'undefined' ? window.innerWidth : 1680);
+    const vh = st.vh || (typeof window !== 'undefined' ? window.innerHeight : 880);
+    const fit = Math.min(1, vw / 1680, vh / 880);
+    // B12: o zoom só mexe no quadro, dentro da janela; dá para arrastar quando ampliado
+    const pan = st.pan || { x: 0, y: 0 };
+    const limita = (p, zz) => { const k = Math.max(0, zz / 100 - 1); const mx = 840 * k + 40, my = 307 * k + 40; return zz <= 100 ? { x: 0, y: 0 } : { x: Math.max(-mx, Math.min(mx, p.x)), y: Math.max(-my, Math.min(my, p.y)) }; };
+    const muda = (n) => () => { const zz = Math.max(ZMIN, Math.min(ZMAX, n)); this.setState({ zoom: zz, pan: limita(pan, zz) }); };
+    const moverPor = (dx, dy) => this.setState({ pan: limita({ x: pan.x + dx, y: pan.y + dy }, z) });
+    const arrastar = {
+      inicio: (ev) => {
+        if (z <= 100 || (ev.target && ev.target.closest && ev.target.closest('button,a'))) return;
+        this._arr = { x: ev.clientX, y: ev.clientY, px: pan.x, py: pan.y };
+        if (ev.currentTarget.setPointerCapture) ev.currentTarget.setPointerCapture(ev.pointerId);
+        this.setState({ arrastando: true });
+      },
+      move: (ev) => {
+        const a = this._arr; if (!a) return;
+        this.setState({ pan: limita({ x: a.px + (ev.clientX - a.x) / fit, y: a.py + (ev.clientY - a.y) / fit }, z) });
+      },
+      fim: () => { if (this._arr) { this._arr = null; this.setState({ arrastando: false }); } },
+      tecla: (ev) => {
+        const passo = ev.shiftKey ? 120 : 40;
+        const mapa = { ArrowLeft: [passo, 0], ArrowRight: [-passo, 0], ArrowUp: [0, passo], ArrowDown: [0, -passo] };
+        if (ev.key === '+' || ev.key === '=') { ev.preventDefault(); muda(z + 10)(); return; }
+        if (ev.key === '-') { ev.preventDefault(); muda(z - 10)(); return; }
+        if (ev.key === '0') { ev.preventDefault(); this.setState({ zoom: 100, pan: { x: 0, y: 0 } }); return; }
+        if (mapa[ev.key] && z > 100) { ev.preventDefault(); moverPor(mapa[ev.key][0], mapa[ev.key][1]); }
+      }
+    };
+    const pg = st.passagem || null;
+    const pulso = {}; Object.keys(PASSAGENS).forEach((k) => { pulso[k] = pg && pg.id === k ? (pg.n % 2 ? 'pulso-a' : 'pulso-b') : 'pulso-nada'; });
+    const recebeu = pg ? PASSAGENS[pg.id] : null;
+    const abrir = (id) => () => this.setState({ modo: 'mapa', sel: id });
+    const lista = AGENTES.map((a, i) => {
+      const estado = a.estado === 'rodando' && pausados[a.id] ? 'pausado' : a.estado;
+      const vivo = estado === 'rodando';
+      const seg = a.seg + (vivo ? t : 0);
+      const tokens = a.tokens + (vivo ? t * 0.04 : 0);
+      const ativo = sel === a.id;
+      const cor = COR[estado];
+      return Object.assign({}, a, {
+        estado, cor, ativo: String(ativo),
+        rotulo: a.nome + ': ' + a.tarefa + ', ' + TEXTO[estado] + (ativo ? ', detalhes abertos' : ''),
+        classeGalho: 'galho' + (recebeu === a.id ? (st.passagem.n % 2 ? ' recebeu-a' : ' recebeu-b') : ''),
+        passoCurto: (a.passo.charAt(0).toLowerCase() + a.passo.slice(1)).replace(/\.$/, ''),
+        classeLed: vivo ? 'led-vivo' : 'led',
+        ledBrilho: estado === 'espera' ? 'none' : '0 0 8px ' + cor,
+        borda: ativo ? '#6FF3FF' : (vivo ? 'rgba(255,165,58,0.45)' : '#2A363B'),
+        brilho: ativo ? '0 0 18px -4px rgba(111,243,255,0.8)' : (vivo ? '0 0 14px -8px rgba(255,165,58,0.9)' : 'none'),
+        corSetor: SETOR[a.setor] || '#B8D3D8',
+        estadoTexto: TEXTO[estado], tempoTexto: estado === 'espera' ? 'não começou' : tempo(seg), tokensTexto: tok(tokens), tokensNum: tokens,
+        linha2: estado === 'espera' ? 'esperando a vez' : tempo(seg) + ' · ' + tok(tokens) + (estado === 'pausado' ? ' · pausado' : ''),
+        troncoTopo: i === 0 ? '50%' : '-8px', troncoBase: i === AGENTES.length - 1 ? '50%' : '0',
+        abrir: () => this.setState({ sel: ativo ? null : a.id }),
+        largura: Math.min(100, Math.round(tokens / 2)) + '%',
+        temArquivos: a.arquivos.length > 0, semArquivos: a.arquivos.length === 0,
+        arquivos: a.arquivos.map((n) => ({ nome: n })),
+        rodando: estado === 'rodando', pausado: estado === 'pausado',
+        parar: () => this.setState({ pausados: Object.assign({}, pausados, { [a.id]: !pausados[a.id] }) })
+      });
+    });
+    const total = lista.reduce((s, a) => s + a.tokensNum, 0);
+    const conta = (e) => lista.filter((a) => a.estado === e).length;
+    const resumo = [
+      { n: conta('rodando'), rotulo: 'rodando', cor: '#FFA53A', borda: 'rgba(255,165,58,0.4)' },
+      { n: conta('feito'), rotulo: 'concluídos', cor: '#9BF7D6', borda: 'rgba(155,247,214,0.35)' },
+      { n: conta('espera'), rotulo: 'na fila', cor: '#B8D3D8', borda: '#2A363B' },
+      { n: conta('pausado'), rotulo: 'pausados', cor: '#B8D3D8', borda: '#2A363B' }
+    ];
+    const setores = Object.keys(SETOR).map((nome) => {
+      const doSetor = lista.filter((a) => a.setor === nome);
+      const tk = doSetor.reduce((s, a) => s + a.tokensNum, 0);
+      return { nome, cor: SETOR[nome], texto: doSetor.length + (doSetor.length === 1 ? ' agente · ' : ' agentes · ') + (tk > 0 ? tk.toFixed(1) + 'k' : '—'), largura: Math.max(2, Math.round(tk / Math.max(total, 1) * 100)) + '%' };
+    });
+    const d = lista.find((a) => a.id === sel);
+    return {
+      ehEtapas: modo === 'etapas', ehMapa: modo === 'mapa',
+      modoEtapas: String(modo === 'etapas'), modoMapa: String(modo === 'mapa'),
+      irEtapas: () => this.setState({ modo: 'etapas' }), irMapa: () => this.setState({ modo: 'mapa' }),
+      prancha: 'translate(-50%, -50%) scale(' + fit.toFixed(4) + ')',
+      quadroTransform: 'translate(' + pan.x.toFixed(1) + 'px, ' + pan.y.toFixed(1) + 'px) scale(' + (z / 100) + ')',
+      quadroClasse: st.arrastando ? 'quadro arrastando' : 'quadro', podeMover: z > 100 ? '1' : '0', arrastar, pulso,
+      zoomTexto: z + '%', menos: muda(z - 10), mais: muda(z + 10), ajustar: () => this.setState({ zoom: 100, pan: { x: 0, y: 0 } }),
+      agora: lista.filter((a) => a.estado === 'rodando'), aSeguir: lista.filter((a) => a.estado === 'espera').slice(0, 2),
+      abreSara: () => this.setState({ modo: 'mapa', sel: null }),
+      abreHelena: abrir('helena'), abreLia: abrir('lia-a'), abreRui: abrir('rui-topo'), abreIgor: abrir('igor'), abreOtto: abrir('otto-a'), abreGuto: abrir('guto'),
+      saraAtiva: String(!d),
+      agentes: lista, d: d || lista[0], temDetalhe: !!d, semDetalhe: !d, fechar: () => this.setState({ sel: null }),
+      resumo, setores,
+      totalAgentes: lista.length, totalTokens: total.toFixed(1) + 'k tokens',
+      contextoTexto: (211.1 + t * 0.02).toFixed(1) + 'k',
+      subtitulo: modo === 'mapa'
+        ? lista.length + ' agentes · 8 funcionários · clique num agente para ver os detalhes'
+        : 'Landing do curso da Mirian · agora · 8 funcionários em ' + lista.length + ' tarefas · ' + total.toFixed(0) + 'k tokens (exemplo)'
+    };
+  }
+}
+
+</script>
+</body>
+</html>

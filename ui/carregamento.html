@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ponte de Comando — abrindo</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #05080A; }
+  iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+  /* provisório, só se a arte da Sara (estudio/carregando.html) não existir */
+  .provisorio { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; color: #CFE3E8; font: 700 14px/1 'Rajdhani', 'Segoe UI', sans-serif; letter-spacing: .22em; }
+  .provisorio .barra { width: 320px; height: 2px; background: rgba(111,243,255,.15); overflow: hidden; }
+  .provisorio .barra i { display: block; height: 100%; width: 0; background: #6FF3FF; box-shadow: 0 0 8px #6FF3FF; animation: enche 8s linear forwards; }
+  @keyframes enche { to { width: 100%; } }
+  .provisorio b { color: #6FF3FF; }
+  .arrastar { position: fixed; left: 0; right: 0; top: 0; height: 28px; z-index: 2; }
+</style>
+</head>
+<body>
+<div class="arrastar" data-tauri-drag-region></div>
+<script>
+  // A janela fica no mínimo 8 s e espera a arte avisar "carregado" (postMessage ou evento).
+  // A casca também segura os 8 s e segue sozinha em 25 s se ninguém avisar.
+  (function () {
+    const inicio = performance.now()
+    let avisou = false
+    const concluir = () => {
+      if (avisou) return
+      avisou = true
+      const falta = Math.max(0, 8000 - (performance.now() - inicio))
+      setTimeout(() => { if (window.ponte) window.ponte._invocar('carregamento_concluido') }, falta)
+    }
+    window.addEventListener('message', (e) => { if (e.data === 'carregado') concluir() })
+    window.addEventListener('carregado', concluir)
+
+    const usarProvisorio = () => {
+      const d = document.createElement('div')
+      d.className = 'provisorio'
+      d.innerHTML = '<div>PONTE DE COMANDO · <b>SARA</b></div><div class="barra"><i></i></div>'
+      document.body.appendChild(d)
+      setTimeout(concluir, 8000)
+    }
+    fetch('estudio/carregando.html', { method: 'GET', cache: 'no-store' })
+      .then((r) => {
+        if (!r.ok) return usarProvisorio()
+        const f = document.createElement('iframe')
+        f.src = 'estudio/carregando.html'
+        f.title = 'Abrindo a Ponte de Comando'
+        f.addEventListener('load', () => {
+          // mesma origem: ouve também o evento disparado dentro da página
+          try { f.contentWindow.addEventListener('carregado', concluir) } catch (e) {}
+        })
+        f.addEventListener('error', usarProvisorio)
+        document.body.appendChild(f)
+      })
+      .catch(usarProvisorio)
+  })()
+</script>
+</body>
+</html>

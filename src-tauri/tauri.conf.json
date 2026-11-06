@@ -1,0 +1,37 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Ponte de Comando",
+  "mainBinaryName": "ponte-de-comando",
+  "version": "0.1.0",
+  "identifier": "com.pixelmartins.pontedecomando",
+  "build": {
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ],
+    "shortDescription": "Acompanha o Claude Code, com a Sara no canto da tela",
+    "longDescription": "Ponte de Comando · Sara — conversa com o Claude Code, mapa dos agentes e a Sara em miniatura avisando quando o trabalho fica pronto. Tudo local.",
+    "windows": {
+      "nsis": {
+        "languages": ["PortugueseBR"],
+        "installMode": "currentUser",
+        "displayLanguageSelector": false
+      },
+      "webviewInstallMode": { "type": "downloadBootstrapper" }
+    }
+  }
+}

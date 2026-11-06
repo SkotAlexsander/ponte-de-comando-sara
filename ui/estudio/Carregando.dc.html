@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Ponte de Comando — carregamento</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#05080A}
+
+.cg{position:relative;width:100%;height:100%;min-height:520px;overflow:hidden;background:#05080A;color:#E6F1F3;font-family:'IBM Plex Sans',system-ui,sans-serif;display:flex;align-items:center;justify-content:center}
+.cg-fundo{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 46%,rgba(5,8,10,.35) 0%,rgba(5,8,10,.82) 60%,#05080A 100%),url(./assets/7e1849384392f4275d02f957a5c94ab4.webp) center/cover no-repeat}
+.cg-linhas{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
+.cg-canto{position:absolute;width:26px;height:26px;border-color:rgba(111,243,255,.7);border-style:solid;filter:drop-shadow(0 0 4px rgba(111,243,255,.8))}
+.cg-meio{position:relative;width:min(860px,88vw);display:flex;flex-direction:column;align-items:center;gap:26px}
+.cg-placa{position:relative;box-sizing:border-box;height:52px;display:flex;align-items:center;gap:12px;border-style:solid;border-width:22px 30px;border-image:url(./assets/dbe467e3dbb6c60364355356f2ddd7df.webp) 64 90 64 90 fill stretch;filter:drop-shadow(0 4px 6px rgba(0,0,0,.6))}
+.cg-visor{position:absolute;left:-15px;right:-15px;top:-7px;bottom:-7px;background:linear-gradient(180deg,rgba(4,12,16,.96),rgba(6,18,24,.92));box-shadow:inset 0 0 12px rgba(111,243,255,.3),inset 0 -1px 0 rgba(111,243,255,.25);clip-path:polygon(7px 0,calc(100% - 7px) 0,100% 7px,100% calc(100% - 7px),calc(100% - 7px) 100%,7px 100%,0 calc(100% - 7px),0 7px)}
+.cg-nome{position:relative;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:17px;letter-spacing:.26em;color:#CFE3E8;white-space:nowrap;text-shadow:0 0 6px rgba(111,243,255,.25)}
+.cg-sara{color:#6FF3FF;text-shadow:0 0 10px rgba(111,243,255,.8);margin-right:-.26em}
+.cg-div{position:relative;width:1px;height:16px;background:rgba(111,243,255,.5);box-shadow:0 0 4px rgba(111,243,255,.7)}
+.cg-glitch{animation:cg-glitch 3.6s steps(1) infinite}
+@keyframes cg-glitch{0%,92%,100%{transform:none;opacity:1}93%{transform:translateX(2px);opacity:.75}95%{transform:translateX(-2px)}97%{transform:none;opacity:.9}}
+.cg-tubo{position:relative;width:100%;height:58px}
+.cg-vao{position:absolute;left:15px;right:15px;top:15px;bottom:15px;overflow:hidden;background:linear-gradient(180deg,#020507,#061015);box-shadow:inset 0 3px 8px rgba(0,0,0,.9);clip-path:polygon(6px 0,calc(100% - 6px) 0,100% 6px,100% calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,0 calc(100% - 6px),0 6px)}
+.cg-grade{position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(111,243,255,.07) 0 1px,transparent 1px 14px)}
+.cg-liquido{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(180deg,#B5FCFF 0%,#5FE8F6 18%,#1FB9CF 55%,#0B7488 100%)}
+.cg-brilho-caixa{position:absolute;left:15px;right:15px;top:15px;bottom:15px;pointer-events:none}
+.cg-brilho{position:absolute;left:0;top:0;bottom:0;width:0%;opacity:0;box-shadow:0 0 28px 6px rgba(111,243,255,.6);transition:box-shadow .5s}
+.cg-pronto .cg-brilho{box-shadow:0 0 28px 6px rgba(155,247,214,.6)}
+.cg-onda{position:absolute;top:0;right:-11px;width:12px;height:100%;display:none}
+.cg-clarao{position:absolute;inset:0;pointer-events:none;opacity:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.8),transparent) no-repeat;background-size:160px 100%;background-position:-170px 0}
+.cg-pronto .cg-clarao{animation:cg-clarao .9s ease-in .05s 1}
+@keyframes cg-clarao{0%{opacity:1;background-position:-170px 0}90%{opacity:1}100%{opacity:0;background-position:calc(100% + 170px) 0}}
+.cg-faisca{position:absolute;right:16px;top:50%;width:3px;height:3px;margin-top:-1.5px;border-radius:50%;background:#E6FFFA;box-shadow:0 0 6px 2px rgba(155,247,214,.9);opacity:0;pointer-events:none;z-index:3}
+.cg-pronto .cg-faisca{animation:.7s ease-out .75s 1}
+.cg-pronto .cg-fa1{animation-name:cg-fa1}.cg-pronto .cg-fa2{animation-name:cg-fa2}.cg-pronto .cg-fa3{animation-name:cg-fa3}.cg-pronto .cg-fa4{animation-name:cg-fa4}
+@keyframes cg-fa1{0%{opacity:1;transform:none}100%{opacity:0;transform:translate(20px,-17px)}}
+@keyframes cg-fa2{0%{opacity:1;transform:none}100%{opacity:0;transform:translate(26px,3px)}}
+@keyframes cg-fa3{0%{opacity:1;transform:none}100%{opacity:0;transform:translate(17px,18px)}}
+@keyframes cg-fa4{0%{opacity:1;transform:none}100%{opacity:0;transform:translate(8px,-24px)}}
+.cg-reflexo{position:absolute;left:0;right:0;top:4px;height:6px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);opacity:.55;animation:cg-reflexo 2.4s ease-in-out infinite}
+@keyframes cg-reflexo{0%,100%{transform:translateX(-30%)}50%{transform:translateX(30%)}}
+.cg-bolha{position:absolute;bottom:3px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.95) 0 35%,rgba(230,255,255,.55) 60%,rgba(230,255,255,0) 100%);animation:cg-bolha linear infinite}
+@keyframes cg-bolha{from{transform:translateY(0);opacity:0}15%{opacity:.9}80%{opacity:.6}to{transform:translateY(-19px);opacity:0}}
+.cg-moldura{position:absolute;inset:0;box-sizing:border-box;border-style:solid;border-width:17px;border-image:url(./assets/d837fc7db557d249d2fca02ae16de29f.webp) 50 stretch;pointer-events:none;filter:drop-shadow(0 5px 8px rgba(0,0,0,.6)) drop-shadow(0 0 8px rgba(111,243,255,.25))}
+.cg-grupo{width:100%;display:flex;flex-direction:column;gap:10px}
+.cg-estado{box-sizing:border-box;width:100%;padding:0 15px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.cg-pct{flex:0 0 auto;min-width:62px;box-sizing:border-box;padding:2px 10px;text-align:right;background:rgba(3,8,11,.94);border:1px solid rgba(111,243,255,.3);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;line-height:18px;letter-spacing:.08em;color:#B8FAFF;font-variant-numeric:tabular-nums;text-shadow:0 0 6px rgba(111,243,255,.5)}
+.cg-pct small{font-size:11px;margin-left:2px;color:#B8D3D8}
+.cg-etapa{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:.3em;color:#6FF3FF;text-shadow:0 0 8px rgba(111,243,255,.7);min-height:18px;line-height:18px;white-space:nowrap;overflow:visible}
+.cg-registro{position:relative;width:min(640px,100%);height:156px}
+.cg-log{position:absolute;inset:9px;box-sizing:border-box;padding:14px 19px;overflow:hidden;background:rgba(3,8,11,.9);font-family:'JetBrains Mono',monospace;font-size:12px;line-height:18px;color:#8FA9B1;display:flex;flex-direction:column;justify-content:flex-end}
+.cg-log b{font-weight:500;color:#9BF7D6}
+.cg-log .ag{color:#FFA53A}
+.cg-cursor{display:inline-block;width:7px;height:12px;background:#6FF3FF;vertical-align:-1px;animation:cg-pisca 1s steps(1) infinite}
+@keyframes cg-pisca{50%{opacity:0}}
+.cg-rodape{position:absolute;left:60px;right:60px;bottom:26px;display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;color:rgba(143,169,177,.7)}
+.cg-flash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,rgba(111,243,255,.35),transparent 60%);opacity:0;transition:opacity .5s}
+.cg-pronto .cg-flash{opacity:1}
+.cg-pronto .cg-liquido{background:linear-gradient(180deg,#E6FFFA 0%,#9BF7D6 30%,#3FCFA8 70%,#1E8F74 100%)}
+.cg-pronto .cg-etapa,.cg-pronto .cg-pct{color:#9BF7D6;text-shadow:0 0 8px rgba(155,247,214,.6)}
+.cg-pronto .cg-pct{border-color:rgba(155,247,214,.45)}
+@media (prefers-reduced-motion:reduce){.cg-onda,.cg-reflexo,.cg-bolha,.cg-glitch,.cg-cursor,.cg-pronto .cg-clarao,.cg-pronto .cg-faisca{animation:none}.cg-brilho{transition:none}}
+
+.cg-de-novo::before{content:'';position:absolute;inset:-8px}
+.cg-de-novo{position:absolute;right:60px;top:18px;height:30px;padding:0 12px;border:1px solid rgba(111,243,255,.4);background:rgba(3,8,11,.85);color:#B8FAFF;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:.18em;z-index:5}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #05080A">
+<div style="position: relative; flex: 0 0 auto; width: 960px; height: 560px">
+
+<div class="cg" id="cg">
+  <div class="cg-fundo" aria-hidden="true"></div>
+  <div class="cg-linhas" aria-hidden="true"></div>
+  <div class="cg-flash" aria-hidden="true"></div>
+  <span class="cg-canto" aria-hidden="true" style="left:20px;top:20px;border-width:2px 0 0 2px"></span>
+  <span class="cg-canto" aria-hidden="true" style="right:20px;top:20px;border-width:2px 2px 0 0"></span>
+  <span class="cg-canto" aria-hidden="true" style="left:20px;bottom:20px;border-width:0 0 2px 2px"></span>
+  <span class="cg-canto" aria-hidden="true" style="right:20px;bottom:20px;border-width:0 2px 2px 0"></span>
+
+  <div class="cg-meio" role="progressbar" aria-label="Abrindo a Ponte de Comando" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="cg-barra">
+    <div class="cg-placa cg-glitch">
+      <span class="cg-visor" aria-hidden="true"></span>
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6FF3FF" stroke-width="1.6" style="position:relative;filter:drop-shadow(0 0 4px rgba(111,243,255,.8))"><circle cx="12" cy="12" r="9.5"></circle><circle cx="12" cy="12" r="5"></circle><circle cx="12" cy="12" r="1.6" fill="#FFA53A" stroke="none"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"></path></svg>
+      <span class="cg-nome">PONTE DE COMANDO</span><span class="cg-div" aria-hidden="true"></span><span class="cg-nome cg-sara">SARA</span>
+    </div>
+
+    <div class="cg-grupo">
+      <div class="cg-tubo">
+        <div class="cg-brilho-caixa" aria-hidden="true"><div class="cg-brilho" id="cg-brilho"></div></div>
+        <div class="cg-vao">
+          <div class="cg-grade" aria-hidden="true"></div>
+          <div class="cg-liquido" id="cg-liquido" aria-hidden="true">
+            <svg class="cg-onda" id="cg-onda-svg" viewBox="0 0 12 28" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="cg-grad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="28"><stop offset="0" stop-color="#B5FCFF"></stop><stop offset="0.18" stop-color="#5FE8F6"></stop><stop offset="0.55" stop-color="#1FB9CF"></stop><stop offset="1" stop-color="#0B7488"></stop></linearGradient></defs><path id="cg-onda" d="" fill="url(#cg-grad)"></path></svg>
+            <span class="cg-reflexo"></span>
+            <span class="cg-bolha" style="left:15%;width:3px;height:3px;animation-duration:2.48s;animation-delay:-0.18s"></span><span class="cg-bolha" style="left:76%;width:2px;height:2px;animation-duration:1.80s;animation-delay:-0.67s"></span><span class="cg-bolha" style="left:84%;width:3px;height:3px;animation-duration:2.53s;animation-delay:-0.19s"></span><span class="cg-bolha" style="left:78%;width:2px;height:2px;animation-duration:2.23s;animation-delay:-2.93s"></span><span class="cg-bolha" style="left:9%;width:2px;height:2px;animation-duration:2.49s;animation-delay:-0.40s"></span><span class="cg-bolha" style="left:57%;width:4px;height:4px;animation-duration:1.83s;animation-delay:-0.35s"></span><span class="cg-bolha" style="left:43%;width:2px;height:2px;animation-duration:2.50s;animation-delay:-2.05s"></span><span class="cg-bolha" style="left:17%;width:3px;height:3px;animation-duration:2.53s;animation-delay:-1.92s"></span><span class="cg-bolha" style="left:51%;width:4px;height:4px;animation-duration:1.76s;animation-delay:-2.14s"></span><span class="cg-bolha" style="left:76%;width:2px;height:2px;animation-duration:1.70s;animation-delay:-0.62s"></span><span class="cg-bolha" style="left:91%;width:4px;height:4px;animation-duration:2.45s;animation-delay:-2.33s"></span><span class="cg-bolha" style="left:63%;width:2px;height:2px;animation-duration:2.54s;animation-delay:-1.36s"></span><span class="cg-bolha" style="left:42%;width:2px;height:2px;animation-duration:2.00s;animation-delay:-0.54s"></span><span class="cg-bolha" style="left:35%;width:2px;height:2px;animation-duration:1.73s;animation-delay:-0.90s"></span><span class="cg-bolha" style="left:67%;width:3px;height:3px;animation-duration:3.00s;animation-delay:-2.19s"></span><span class="cg-bolha" style="left:40%;width:3px;height:3px;animation-duration:2.57s;animation-delay:-0.22s"></span><span class="cg-bolha" style="left:69%;width:2px;height:2px;animation-duration:2.27s;animation-delay:-2.27s"></span><span class="cg-bolha" style="left:23%;width:2px;height:2px;animation-duration:3.09s;animation-delay:-1.27s"></span>
+          </div>
+          <div class="cg-clarao" aria-hidden="true"></div>
+        </div>
+        <div class="cg-moldura" aria-hidden="true"></div>
+        <span class="cg-faisca cg-fa1" aria-hidden="true"></span>
+        <span class="cg-faisca cg-fa2" aria-hidden="true"></span>
+        <span class="cg-faisca cg-fa3" aria-hidden="true"></span>
+        <span class="cg-faisca cg-fa4" aria-hidden="true"></span>
+      </div>
+      <div class="cg-estado">
+        <div class="cg-etapa" id="cg-etapa">PONTE DE COMANDO ABRINDO</div>
+        <div class="cg-pct" aria-hidden="true"><span id="cg-num">0</span><small>%</small></div>
+      </div>
+    </div>
+    <div class="cg-registro">
+      <div class="cg-log" id="cg-log" aria-live="polite"></div>
+      <div class="cg-moldura" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <div class="cg-rodape" aria-hidden="true"><span>SYS · PONTE 0.1.0</span><span id="cg-relogio">00:00:00</span><span>CANAL 01 · SEGURO</span></div>
+</div>
+
+<button class="cg-de-novo" onClick="{{ deNovo }}">CARREGAR DE NOVO</button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":960,"height":560}}'>
+
+function iniciarCarga(doc, aoTerminar) {
+  var raiz = doc.getElementById('cg'); if (!raiz || raiz._rodando) return; raiz._rodando = true;
+  var liq = doc.getElementById('cg-liquido'), num = doc.getElementById('cg-num'), barra = doc.getElementById('cg-barra');
+  var etapa = doc.getElementById('cg-etapa'), log = doc.getElementById('cg-log'), relogio = doc.getElementById('cg-relogio');
+  var onda = doc.getElementById('cg-onda'), ondaSvg = doc.getElementById('cg-onda-svg'), brilho = doc.getElementById('cg-brilho');
+  var quieto = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var bolhas = Array.prototype.slice.call(raiz.querySelectorAll('.cg-bolha'));
+  bolhas.forEach(function (b) { b.style.animationName = ''; b.style.opacity = ''; });
+  // frente do líquido: uma senoide vertical (28 px, a altura do vão), com o mesmo degradê do líquido; anda pelo quadro, não por transform
+  function frente(s) {
+    var f = quieto ? 0 : (s / 1.2) * 40, d = 'M0 0 ';
+    for (var y = 0; y <= 28; y += 1) d += 'L' + (5 + 4.5 * Math.sin((y + f) / 40 * Math.PI * 2)).toFixed(2) + ' ' + y + ' ';
+    onda.setAttribute('d', d + 'L0 28 Z');
+  }
+  // curva da carga: 8,2 s com respiros, como sistema de verdade
+  var C = [[0, 0], [0.5, 4], [1.3, 13], [2.0, 19], [2.5, 21], [3.3, 38], [3.9, 44], [4.5, 59], [5.2, 66], [5.9, 79], [6.5, 88], [7.1, 93], [7.6, 97], [8.2, 100]];
+  var PASSOS = [
+    [0, 'ligando o núcleo da ponte', 'OK'], [9, 'montando as molduras de metal', 'OK'], [20, 'ligando os cabos de moldura a moldura', 'OK'],
+    [33, 'conectando ao Claude Code', 'OK'], [47, 'abrindo a pasta de trabalho · A:\\Claude', 'OK'], [58, 'chamando a equipe · 34 funcionários', 'PRONTOS'],
+    [71, 'lendo a memória da Sara', 'OK'], [84, 'calibrando o retrato e a voz', 'OK'], [95, 'acendendo as luzes do console', 'OK']
+  ];
+  var ETAPAS = [[0, 'PONTE DE COMANDO ABRINDO'], [33, 'CONECTANDO'], [58, 'CHAMANDO A EQUIPE'], [84, 'CALIBRANDO A SARA'], [100, 'PONTE DE COMANDO ABERTA']];
+  var mostrados = 0, t0 = performance.now(), fim = false;
+  var linhas = [];
+  function linha(txt, ok) {
+    linhas.push('<div>› ' + txt + (ok ? ' <b>' + ok + '</b>' : '') + '</div>');
+    if (linhas.length > 5) linhas.shift();
+    log.innerHTML = linhas.join('') + '<div>› <span class="cg-cursor"></span></div>';
+  }
+  function em(s) {
+    for (var i = 1; i < C.length; i++) if (s <= C[i][0]) { var a = C[i - 1], b = C[i], k = (s - a[0]) / (b[0] - a[0]); k = k * k * (3 - 2 * k); return a[1] + (b[1] - a[1]) * k; }
+    return 100;
+  }
+  function quadro(agora) {
+    var s = (agora - t0) / 1000, p = Math.min(100, em(s)), n = Math.floor(p);
+    liq.style.width = p + '%'; brilho.style.width = p + '%'; brilho.style.opacity = p > 1 ? '1' : '0';
+    ondaSvg.style.display = p > 3 && p < 99.5 ? 'block' : 'none'; if (p > 3 && p < 99.5) frente(s);
+    num.textContent = n; barra.setAttribute('aria-valuenow', String(n));
+    while (mostrados < PASSOS.length && n >= PASSOS[mostrados][0]) { linha(PASSOS[mostrados][1], PASSOS[mostrados][2]); mostrados++; }
+    for (var j = ETAPAS.length - 1; j >= 0; j--) if (n >= ETAPAS[j][0]) { etapa.textContent = ETAPAS[j][1]; break; }
+    var dt = new Date(); relogio.textContent = [dt.getHours(), dt.getMinutes(), dt.getSeconds()].map(function (x) { return String(x).padStart(2, '0'); }).join(':');
+    if (n >= 100 && !fim) {
+      fim = true; raiz.classList.add('cg-pronto'); linha('ponte de comando aberta', '✓');
+      // as bolhas param aos poucos: cada uma termina a subida em que está e não volta
+      bolhas.forEach(function (b) { b.addEventListener('animationiteration', function () { b.style.animationName = 'none'; b.style.opacity = '0'; }, { once: true }); });
+      setTimeout(function () {
+        try { window.dispatchEvent(new Event('carregado')); } catch (e) {}
+        try { if (window.parent && window.parent !== window) window.parent.postMessage('carregado', '*'); } catch (e) {}
+        if (aoTerminar) aoTerminar();
+      }, 600);
+      return;
+    }
+    raiz._raf = requestAnimationFrame(quadro);
+  }
+  raiz._raf = requestAnimationFrame(quadro);
+  return function parar() { cancelAnimationFrame(raiz._raf); raiz._rodando = false; };
+}
+
+class Component extends DCLogic {
+  componentDidMount() { this._t = setTimeout(() => { this._parar = iniciarCarga(document); }, 150); }
+  componentWillUnmount() { clearTimeout(this._t); if (this._parar) this._parar(); }
+  renderVals() {
+    return {
+      deNovo: () => {
+        if (this._parar) this._parar();
+        const r = document.getElementById('cg'); if (r) { r.classList.remove('cg-pronto'); r._rodando = false; }
+        const log = document.getElementById('cg-log'); if (log) log.innerHTML = '';
+        this._parar = iniciarCarga(document);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

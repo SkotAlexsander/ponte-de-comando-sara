@@ -1,0 +1,34 @@
+{
+  "_fonte": "https://platform.claude.com/docs/en/about-claude/pricing — conferido em 02/09/2026",
+  "_comentario": "Preço em dólar por MILHÃO de tokens. Fonte única: motor.js e conferir.py leem daqui, então uma correção de preço vale para o cálculo e para a conferência ao mesmo tempo. As chaves são PREFIXOS: o nome gravado no transcript pode vir com sufixo de data (claude-haiku-4-5-20251001), então o casamento é por começo de nome, do prefixo mais longo para o mais curto. `leituraCache` só aparece onde o modelo foge do multiplicador padrão.",
+  "modelos": {
+    "claude-fable-5-1": { "entrada": 10, "saida": 50, "leituraCache": 0.025 },
+    "claude-mythos-5-1": { "entrada": 10, "saida": 50, "leituraCache": 0.025 },
+    "claude-fable-5": { "entrada": 10, "saida": 50 },
+    "claude-mythos-5": { "entrada": 10, "saida": 50 },
+    "claude-opus-5": { "entrada": 5, "saida": 25 },
+    "claude-opus-4-8": { "entrada": 5, "saida": 25 },
+    "claude-opus-4-7": { "entrada": 5, "saida": 25 },
+    "claude-opus-4-6": { "entrada": 5, "saida": 25 },
+    "claude-opus-4-5": { "entrada": 5, "saida": 25 },
+    "claude-sonnet-5": { "entrada": 2, "saida": 10 },
+    "claude-sonnet-4-6": { "entrada": 3, "saida": 15 },
+    "claude-sonnet-4-5": { "entrada": 3, "saida": 15 },
+    "claude-haiku-4-5": { "entrada": 1, "saida": 5 },
+    "claude-haiku-3-5": { "entrada": 0.8, "saida": 4 }
+  },
+  "_rapido": "Fast mode (/fast) roda o mesmo modelo com saída mais veloz, a preço premium. Só existe em Opus 5 e Opus 4.8. Quando o transcript traz usage.speed = 'fast', é este preço que vale — cobrar o normal reportaria metade do gasto.",
+  "rapido": {
+    "claude-opus-5": { "entrada": 10, "saida": 50 },
+    "claude-opus-4-8": { "entrada": 10, "saida": 50 }
+  },
+  "_ferramentas": "Cobradas por uso, fora dos tokens. Busca web: US$ 10 por 1.000 buscas. Web fetch não custa nada além dos tokens do conteúdo.",
+  "ferramentas": { "buscaWeb": 0.01 },
+  "desconhecido": { "entrada": 5, "saida": 25 },
+  "multiplicadores": {
+    "_comentario": "Sobre o preço de ENTRADA do modelo. A leitura pode ser sobrescrita por modelo (ver leituraCache em Fable 5.1 / Mythos 5.1, que leem a 0,025x).",
+    "leituraCache": 0.1,
+    "escritaCache5m": 1.25,
+    "escritaCache1h": 2.0
+  }
+}
