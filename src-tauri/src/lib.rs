@@ -732,8 +732,15 @@ fn conta_guardar_chave(app: AppHandle, chave: String) -> Result<(), String> {
 
 /// Chamada mínima e gratuita (lista de modelos) com a chave do Cofre. Diz OK ou o erro, nunca a chave.
 #[tauri::command]
-async fn conta_testar_chave(app: AppHandle) -> Value {
-    let Some(chave) = cofre::ler(&cofre::alvo()) else {
+async fn conta_testar_chave(app: AppHandle, chave: Option<String>) -> Value {
+    // com a chave digitada na tela (ainda não guardada), testa ela; sem, testa a do Cofre. Nunca grava nada.
+    let digitada = chave.map(|c| c.trim().to_string()).filter(|c| !c.is_empty());
+    if let Some(c) = &digitada {
+        if !cofre::formato_valido(c) {
+            return json!({ "ok": false, "erro": tr(&app, "Isso não parece uma chave da Anthropic (começa com sk-ant-).", "That does not look like an Anthropic key (it starts with sk-ant-).") });
+        }
+    }
+    let Some(chave) = digitada.or_else(|| cofre::ler(&cofre::alvo())) else {
         return json!({ "ok": false, "erro": tr(&app, "Não há chave guardada.", "No key stored.") });
     };
     let p = ponte(&app);

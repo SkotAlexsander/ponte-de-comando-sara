@@ -43,11 +43,12 @@
   const chave = (id) => id + '@' + CARGA
   const idDaChave = (c) => { const [id, carga] = String(c || '').split('@'); return carga === CARGA ? id : null }
   const lerConfigDaAba = () => {
-    const grupo = document.querySelector('[aria-label="Modelo e velocidade desta conversa"]')
+    const grupo = document.querySelector('[aria-label="Modelo e velocidade desta conversa"], [aria-label="Model and speed of this conversation"]')
     const t = grupo ? grupo.textContent.toUpperCase() : ''
     const modelo = (t.match(/OPUS|SONNET|HAIKU/) || ['OPUS'])[0]
-    const esforco = (t.match(/BAIXO|MÉDIO|MEDIO|ALTO|MÁXIMO|MAXIMO/) || ['ALTO'])[0]
-    return { modelo, esforco, velocidade: /RÁPIDA|RAPIDA/.test(t) ? 'RÁPIDA' : 'NORMAL' }
+    // a tela em inglês mostra LOW/MEDIUM/HIGH/MAX (o backend aceita os dois)
+    const esforco = (t.match(/BAIXO|MÉDIO|MEDIO|ALTO|MÁXIMO|MAXIMO|MEDIUM|LOW|HIGH|MAX/) || ['ALTO'])[0]
+    return { modelo, esforco, velocidade: /RÁPIDA|RAPIDA|FAST/.test(t) ? 'RÁPIDA' : 'NORMAL' }
   }
   const msgs = (id) => ((st().extra || {})[id] || []).slice()
   const gravarMsgs = (id, lista, extra) => set(Object.assign({ extra: Object.assign({}, st().extra || {}, { [id]: lista }) }, extra || {}))
@@ -290,7 +291,7 @@
     try { const c = await p().conversa(chave(id)); sessaoDaAba = c && c.sessao } catch {}
     const medidas = r.sessoes.filter((x) => x.respostas)
     const s = medidas.find((x) => x.sessao === sessaoDaAba) || medidas.slice().sort((a, b) => (b.atualizadaEm || 0) - (a.atualizadaEm || 0))[0]
-    const caixa = document.querySelector('section[aria-label="Consumo de tokens"]')
+    const caixa = document.querySelector('section[aria-label="Consumo de tokens"], section[aria-label="Token usage"]')
     if (!s || !caixa) return
     const maior = Math.max(1, ...s.agentes.map((a) => a.tokens || 0))
     set({
@@ -334,6 +335,92 @@
     for (const t of novos) { const l = document.createElement('div'); l.textContent = t; faixa.insertBefore(l, faixa.lastChild) }
   }
 
+  // ---------- 9. Configurações da Lia: tradução das chaves da tela para as do programa ----------
+  // A tela (normalTema na Main) usa nomes e valores próprios; o programa (ponte.config, docs/ponte.md) usa
+  // os dele. Aqui, só na janela principal, `ponte.config` passa a falar a língua da tela:
+  //   ler()/aoMudar() devolvem as DUAS formas juntas (a tela lê as dela; o resto do adaptador, as do programa);
+  //   gravar() traduz e manda SÓ o que mudou (a tela manda o objeto inteiro a cada clique).
+  // chaveFinal: só os 4 últimos caracteres, para mostrar; a chave inteira vai só para conta.guardarChave.
+  const MODELOS = ['opus', 'sonnet', 'haiku'], ESFORCOS = ['low', 'medium', 'high', 'max']
+  const CANTO_TELA = { 'sup-esq': 'se', 'sup-dir': 'sd', 'inf-esq': 'ie', 'inf-dir': 'id' }
+  const CANTO_PROG = { se: 'sup-esq', sd: 'sup-dir', ie: 'inf-esq', id: 'inf-dir' }
+  let chaveFinal = ''
+  function paraTela(c) {
+    if (!c) return c
+    const pn = c.padraoNova || {}
+    const e = ESFORCOS.indexOf(pn.esforco === 'xhigh' ? 'high' : pn.esforco)
+    const tela = {
+      tema: c.tema, fosforo: c.fosforo, letra: c.fosforoLetra, escala: c.tamanhoLetra, movimento: c.animacoes,
+      idioma: c.idioma === 'en' ? 'en' : 'pt',
+      idiomaRespostas: c.idiomaRespostas === 'en' ? 'en' : c.idiomaRespostas === 'pt-BR' ? 'pt' : 'interface',
+      conexao: c.modoConta, chaveFinal,
+      padroes: { m: Math.max(0, MODELOS.indexOf(pn.modelo)), e: e < 0 ? 2 : e, r: !!pn.rapido },
+      lembrar: !!c.lembrarAprovacoes, som: c.somAviso !== false, volume: typeof c.volumeAviso === 'number' ? c.volumeAviso : 70,
+      miniatura: c.miniAoMinimizar !== false, canto: CANTO_PROG[c.cantoMini] || 'inf-dir', notif: c.toastWindows || 'auto',
+      abrirWindows: !!c.abrirComWindows, minimizado: !!c.comecarNaBandeja,
+    }
+    return Object.assign({}, c, tela)
+  }
+  function paraPrograma(v) {
+    const o = v || {}, saida = {}
+    const copiar = (de, para, conv) => { if (o[de] !== undefined) saida[para] = conv ? conv(o[de]) : o[de] }
+    copiar('tema', 'tema'); copiar('fosforo', 'fosforo'); copiar('letra', 'fosforoLetra')
+    copiar('escala', 'tamanhoLetra', Number); copiar('movimento', 'animacoes'); copiar('conexao', 'modoConta')
+    copiar('idioma', 'idioma', (x) => (x === 'en' ? 'en' : 'pt-BR'))
+    copiar('idiomaRespostas', 'idiomaRespostas', (x) => (x === 'en' ? 'en' : x === 'pt' ? 'pt-BR' : 'seguir'))
+    copiar('lembrar', 'lembrarAprovacoes', Boolean); copiar('som', 'somAviso', Boolean); copiar('volume', 'volumeAviso', (x) => Math.max(0, Math.min(100, Math.round(+x || 0))))
+    copiar('miniatura', 'miniAoMinimizar', Boolean); copiar('canto', 'cantoMini', (x) => CANTO_TELA[x] || x); copiar('notif', 'toastWindows')
+    copiar('abrirWindows', 'abrirComWindows', Boolean); copiar('minimizado', 'comecarNaBandeja', Boolean)
+    if (o.padroes && typeof o.padroes === 'object') saida.padraoNova = { modelo: MODELOS[o.padroes.m] || 'opus', esforco: ESFORCOS[o.padroes.e] || 'high', rapido: !!o.padroes.r }
+    if (typeof o.chaveFinal === 'string') chaveFinal = o.chaveFinal.replace(/[^A-Za-z0-9]/g, '').slice(-4)
+    // e as chaves do próprio programa, se vierem com o nome dele (as só de leitura ficam de fora)
+    for (const k of ['fosforoLetra', 'tamanhoLetra', 'animacoes', 'modoConta', 'padraoNova', 'lembrarAprovacoes', 'somAviso', 'volumeAviso', 'miniAoMinimizar', 'cantoMini', 'toastWindows', 'abrirComWindows', 'comecarNaBandeja', 'mudo'])
+      if (o[k] !== undefined && saida[k] === undefined) saida[k] = o[k]
+    return saida
+  }
+  const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+  function ligarConfiguracoes() {
+    const P = window.ponte
+    if (!P || P.__configDaTela) return
+    P.__configDaTela = true
+    const orig = { ler: P.config.ler, gravar: P.config.gravar }
+    let ultimo = null
+    const lembrar = (c) => { if (c) ultimo = c; return c }
+    const ouvintes = []
+    P.aoConfig((c) => { lembrar(c); const t = paraTela(c); ouvintes.forEach((f) => { try { f(t) } catch (e) {} }) })
+    P.config = Object.assign({}, P.config, {
+      ler: () => orig.ler().then(lembrar).then(paraTela),
+      // grava só o que mudou; devolve na forma da tela
+      gravar: async (v) => {
+        const atual = ultimo || (await orig.ler().then(lembrar))
+        const novo = paraPrograma(v)
+        const mudou = {}
+        for (const [k, x] of Object.entries(novo)) if (!igual(atual[k], x)) mudou[k] = x
+        if (!Object.keys(mudou).length) return paraTela(atual)
+        return orig.gravar(mudou).then(lembrar).then(paraTela)
+      },
+      aoMudar: (fn) => { ouvintes.push(fn); return () => { const i = ouvintes.indexOf(fn); if (i >= 0) ouvintes.splice(i, 1) } },
+      caminho: '',
+      exportar: () => P.sistema.exportarConfig(),
+    })
+    P.info().then((i) => { if (i && i.pastaDeDados) P.config.caminho = i.pastaDeDados }).catch(() => {})
+    // conta: a tela chama atual/entrar/trocar/sair/testarChave/guardarChave e espera { email, plano }
+    const contaTela = (c) => (c ? Object.assign({}, c, { email: c.logado === false ? '—' : (c.email || '—'), plano: c.plano || c.metodo || (c.modo === 'api' ? 'chave de API' : '') }) : c)
+    const statusDepoisDoLogin = () => new Promise((ok) => { const desligar = P.aoConta((c) => { desligar(); P.conta.status().then((s) => ok(contaTela(s)), () => ok(contaTela(c))) }) })
+    const conta = P.conta
+    P.conta = Object.assign({}, conta, {
+      atual: () => conta.status().then(contaTela),
+      trocar: () => conta.trocar().then(statusDepoisDoLogin),
+      entrar: () => conta.trocar().then(statusDepoisDoLogin),
+      sair: () => conta.sair(true).then(contaTela), // o botão SAIR da tela é a confirmação do Alex
+      // com a chave digitada, testa ela; sem, testa a guardada. A tela espera verdadeiro/falso
+      testarChave: (k) => P._invocar('conta_testar_chave', { chave: k ? String(k) : null }).then((r) => !!(r && r.ok)),
+      guardarChave: (k) => conta.guardarChave(k).then(() => { chaveFinal = String(k).trim().slice(-4) }),
+    })
+    P.sistema = Object.assign({}, P.sistema, { estadoInicial: () => P.estado() })
+  }
+  ligarConfiguracoes()
+
   // ---------- ligar tudo ----------
   esperar().then(async (logica) => {
     if (!logica || !window.ponte) { console.warn('ponte: não achei a lógica da Main; ficou só o protótipo'); return }
@@ -350,7 +437,7 @@
       window.addEventListener('click', (ev) => {
         const b = ev.target && ev.target.closest && ev.target.closest('button')
         if (!b) return
-        if (b.classList.contains('ambar') && /ENVIAR/i.test(b.textContent)) { ev.preventDefault(); ev.stopImmediatePropagation(); enviarReal() }
+        if (b.classList.contains('cv-enviar') || (b.classList.contains('ambar') && /ENVIAR|SEND/i.test(b.textContent))) { ev.preventDefault(); ev.stopImmediatePropagation(); enviarReal() }
         else if (b.classList.contains('parar')) {
           ev.preventDefault(); ev.stopImmediatePropagation()
           // PARAR vale para a aba aberta (se ela estiver rodando); senão, para a que o template mostra

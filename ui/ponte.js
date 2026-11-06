@@ -14,9 +14,10 @@
     arvore: { '': [{ nome: '03-projetos', tipo: 'pasta' }, { nome: 'LEIA-ME.md', tipo: 'arquivo' }], '03-projetos': [{ nome: 'ponte-de-comando-sara', tipo: 'pasta' }], '03-projetos\\ponte-de-comando-sara': [] },
     estado: { estado: 'esperando', legenda: 'Por aqui', aviso: null, mudo: false, som: false },
     conversas: {},
-    config: { tema: 'metal', fosforo: 'ambar', pastaTrabalho: 'A:\\Claude', pastaTrabalhoPadrao: true, miniAoMinimizar: true, toastWindows: 'auto', mudo: false,
+    config: { tema: 'metal', fosforo: 'branco', fosforoLetra: 'atual', pastaTrabalho: 'A:\\Claude', pastaTrabalhoPadrao: true, miniAoMinimizar: true, toastWindows: 'auto', mudo: false,
       idioma: 'pt-BR', idiomaRespostas: 'seguir', tamanhoLetra: 100, animacoes: 'sistema', padraoNova: { modelo: 'opus', esforco: 'high', rapido: false },
-      lembrarAprovacoes: false, somAviso: true, volumeAviso: 70, cantoMini: 'id', abrirComWindows: false, comecarNaBandeja: false, modoConta: 'assinatura' },
+      lembrarAprovacoes: false, somAviso: true, volumeAviso: 70, cantoMini: 'id', abrirComWindows: false, comecarNaBandeja: false, modoConta: 'assinatura',
+      pastaTrabalhoCaminhoPadrao: 'A:\\Claude', aprovacaoSempre: true },
   }
   const montarItem = (pai, it) => { const caminho = pai ? pai + '\\' + it.nome : it.nome; return { nome: it.nome, caminho, absoluto: falso.raiz + '\\' + caminho, tipo: it.tipo, link: false, tamanho: null } }
   const relFalso = (d) => {
@@ -59,7 +60,10 @@
       case 'mini_canto': return 'inferior-direito'
       case 'config_ler': return Object.assign({}, falso.config)
       case 'config_gravar': {
-        const ok = { tema: ['metal', 'fosforo', 'grade'], fosforo: ['ambar', 'verde'], toastWindows: ['auto', 'sempre', 'nunca'] }
+        const ok = { tema: ['metal', 'fosforo', 'grade'], fosforo: ['ambar', 'verde', 'branco'], fosforoLetra: ['terminal', 'atual'], toastWindows: ['auto', 'sempre', 'nunca'] }
+        const soLeitura = ['pastaTrabalhoPadrao', 'pastaTrabalhoCaminhoPadrao', 'aprovacaoSempre']
+        if ('aprovacaoSempre' in (a.parcial || {}) && a.parcial.aprovacaoSempre !== true) throw new Error('A aprovação de cada ação fica sempre ligada.')
+        for (const k of soLeitura) if (a.parcial && k in a.parcial) { a.parcial = Object.assign({}, a.parcial); delete a.parcial[k] }
         for (const [k, v] of Object.entries(a.parcial || {})) {
           if (!(k in falso.config)) throw new Error('Chave desconhecida: ' + k)
           if (ok[k] && !ok[k].includes(v)) throw new Error('Valor inválido para ' + k)
@@ -68,6 +72,14 @@
         emitirFalso('ponte:config', Object.assign({}, falso.config))
         return Object.assign({}, falso.config)
       }
+      case 'conta_status': return { ok: true, logado: true, metodo: 'claude.ai', email: 'a***@exemplo.com', organizacao: null, plano: 'exemplo', modo: falso.config.modoConta, temChave: false }
+      case 'conta_modo': return falso.config.modoConta
+      case 'conta_trocar': setTimeout(() => emitirFalso('ponte:conta', { ok: true, logado: true, email: 'a***@exemplo.com', plano: 'exemplo' }), 50); return null
+      case 'conta_sair': return { ok: true, logado: false }
+      case 'conta_guardar_chave': if (!/^sk-ant-[A-Za-z0-9_-]{20,}$/.test(String(a.chave || ''))) throw new Error('Isso não parece uma chave da Anthropic (começa com sk-ant-).'); return null
+      case 'conta_testar_chave': return { ok: /^sk-ant-[A-Za-z0-9_-]{20,}$/.test(String(a.chave || '')), status: 0, erro: 'teste fora do programa' }
+      case 'conta_apagar_chave': return true
+      case 'info_app': return { versao: 'navegador', pastaDeDados: '%APPDATA%\\com.pixelmartins.pontedecomando (fora do programa)' }
       case 'tokens_resumo': return { sessoes: [], total: { custo: 0, tokens: 0 }, precosConferidos: false }
       case 'limites': return { disponivel: false }
       default: return null
@@ -126,7 +138,7 @@
       trocar: () => erroEmTexto(invocar('conta_trocar')),             // login oficial num terminal visível
       sair: (confirmado) => erroEmTexto(invocar('conta_sair', { confirmado: confirmado === true })),
       guardarChave: (chave) => erroEmTexto(invocar('conta_guardar_chave', { chave: String(chave || '') })),
-      testarChave: () => invocar('conta_testar_chave'), // { ok, status, erro?, modelos? }
+      testarChave: (chave) => invocar('conta_testar_chave', { chave: chave ? String(chave) : null }), // { ok, status, erro?, modelos? }; sem chave testa a do Cofre
       apagarChave: () => invocar('conta_apagar_chave'),
     },
     aoConta: (fn) => ouvir('ponte:conta', fn),
