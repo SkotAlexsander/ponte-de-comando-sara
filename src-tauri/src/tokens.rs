@@ -805,22 +805,15 @@ fn nome_pela_cauda(p: &Path) -> Option<String> {
 
 // ------------------------------------------------------------------ conta e MCP (claude CLI, sem shell)
 
-fn exe_claude() -> PathBuf {
-    let p = PathBuf::from(std::env::var("USERPROFILE").unwrap_or_default()).join(".local").join("bin").join("claude.exe");
-    if p.is_file() {
-        p
-    } else {
-        PathBuf::from("claude")
-    }
-}
 
 pub fn rodar_claude_publico(args: &[&str], cwd: Option<&Path>, limite: Duration) -> Result<String, String> {
     rodar_claude(args, cwd, limite)
 }
 
 fn rodar_claude(args: &[&str], cwd: Option<&Path>, limite: Duration) -> Result<String, String> {
-    let mut cmd = Command::new(exe_claude());
-    cmd.args(args).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped()).env_remove("CLAUDECODE");
+    let exe = crate::job::claude_exe().ok_or("não achei o claude.exe")?;
+    let mut cmd = Command::new(exe);
+    cmd.args(args).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::null()).env_remove("CLAUDECODE");
     if let Some(c) = cwd {
         cmd.current_dir(c);
     }
@@ -830,6 +823,7 @@ fn rodar_claude(args: &[&str], cwd: Option<&Path>, limite: Duration) -> Result<S
         cmd.creation_flags(0x0800_0000);
     }
     let mut f = cmd.spawn().map_err(|e| e.to_string())?;
+    crate::job::amarrar(f.id());
     let mut saida = f.stdout.take().unwrap();
     let leitor = std::thread::spawn(move || {
         let mut s = String::new();

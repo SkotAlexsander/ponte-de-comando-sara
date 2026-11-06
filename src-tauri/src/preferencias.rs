@@ -67,9 +67,7 @@ pub fn exportavel(c: &Config) -> Value {
     let mut v = publica(c);
     if let Some(o) = v.as_object_mut() {
         o.remove("pastaTrabalhoPadrao");
-        if c.pasta_de_trabalho.is_none() {
-            o.insert("pastaTrabalho".into(), Value::Null);
-        }
+        o.remove("pastaTrabalho"); // a pasta não viaja no arquivo: trocar é só pelo seletor
     }
     json!({ "programa": "Ponte de Comando", "versaoConfig": 1, "config": v })
 }
@@ -217,15 +215,8 @@ pub fn aplicar(atual: &Config, parcial: &Value) -> Result<(Config, Efeitos), Str
     match o.get("pastaTrabalho") {
         None => {}
         Some(Value::Null) => { c.pasta_de_trabalho = None; ef.pasta = true; }
-        Some(Value::String(s)) => {
-            let p = std::fs::canonicalize(s.trim()).map_err(|_| erro("Essa pasta não existe.", "That folder does not exist."))?;
-            if !p.is_dir() {
-                return Err(erro("Isso não é uma pasta.", "That is not a folder."));
-            }
-            c.pasta_de_trabalho = Some(crate::arquivos::exibir(&p));
-            ef.pasta = true;
-        }
-        Some(_) => return Err(format!("pastaTrabalho: {}", t(&il, "um caminho ou null.", "a path or null."))),
+        // a página não muda a barreira: trocar a pasta é só pelo seletor do Windows (ponte.trocarPasta)
+        Some(_) => return Err(erro("A pasta de trabalho só muda pelo botão PASTA (seletor do Windows); aqui só dá para voltar ao padrão (null).", "The work folder only changes through the PASTA button (Windows picker); here you can only reset it (null).")),
     }
     if instrucao_idioma(&c) != antes_idioma {
         ef.reabrir_sidecar = true;

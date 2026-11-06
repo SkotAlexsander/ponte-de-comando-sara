@@ -278,18 +278,12 @@ pub fn traduzir_linha(conversa: &str, linha: &str) -> Vec<EventoConversa> {
     }
 }
 
-fn exe_claude() -> (PathBuf, Vec<String>) {
-    if let Ok(e) = std::env::var("PONTE_CLAUDE") {
-        let prefixo = std::env::var("PONTE_CLAUDE_PREFIXO").map(|p| vec![p]).unwrap_or_default();
-        return (PathBuf::from(e), prefixo);
+fn exe_claude() -> Option<(PathBuf, Vec<String>)> {
+    if let Some(e) = crate::config::env_teste("PONTE_CLAUDE") {
+        let prefixo = crate::config::env_teste("PONTE_CLAUDE_PREFIXO").map(|p| vec![p]).unwrap_or_default();
+        return Some((PathBuf::from(e), prefixo));
     }
-    if let Ok(home) = std::env::var("USERPROFILE") {
-        let p = Path::new(&home).join(".local").join("bin").join("claude.exe");
-        if p.is_file() {
-            return (p, vec![]);
-        }
-    }
-    (PathBuf::from("claude"), vec![])
+    crate::job::claude_exe().map(|p| (p, vec![]))
 }
 
 impl Conversas {
@@ -466,7 +460,7 @@ impl Conversas {
         if !cwd.is_dir() {
             return Err(format!("A pasta desta conversa não existe mais: {}", info.pasta));
         }
-        let (exe, prefixo) = exe_claude();
+        let (exe, prefixo) = exe_claude().ok_or("Não achei o claude.exe (em %USERPROFILE%\\.local\\bin).")?;
         let mut cmd = Command::new(&exe);
         cmd.args(&prefixo)
             .args(montar_args(&info))
@@ -482,6 +476,7 @@ impl Conversas {
             cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
         }
         let mut filho = cmd.spawn().map_err(|e| format!("Não consegui abrir o Claude Code ({}): {e}", exe.display()))?;
+        crate::job::amarrar(filho.id());
         if let Some(mut entrada) = filho.stdin.take() {
             let t = texto.clone();
             std::thread::spawn(move || {

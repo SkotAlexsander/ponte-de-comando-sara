@@ -52,6 +52,8 @@ pub struct Estado {
     pub mudo: bool,
     /// Onde o aviso aparece agora: "principal" (a Main está na tela), "mini" ou "nenhum" (vira toast).
     pub onde: String,
+    /// Avisos do programa para mostrar na tela (porta dos hooks ocupada, pasta que sumiu…).
+    pub alertas: Vec<String>,
     pub em: u64,
 }
 
@@ -67,6 +69,7 @@ impl Default for Estado {
             som: false,
             mudo: false,
             onde: String::new(),
+            alertas: vec![],
             em: agora_ms(),
         }
     }

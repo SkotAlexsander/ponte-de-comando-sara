@@ -84,12 +84,12 @@ pub fn validar_nome(nome: &str) -> Result<String, String> {
     if n.chars().count() > 200 {
         return Err("Nome comprido demais (máximo 200 letras).".into());
     }
-    let base = n.split('.').next().unwrap_or("").to_ascii_lowercase();
-    let reservado = matches!(base.as_str(), "con" | "prn" | "aux" | "nul")
-        || ((base.starts_with("com") || base.starts_with("lpt"))
-            && base.len() == 4
-            && base.as_bytes()[3].is_ascii_digit()
-            && base.as_bytes()[3] != b'0');
+    // o Windows ignora espaços antes da extensão ("NUL .txt" = NUL) e aceita ¹²³ como número de porta
+    let base = n.split('.').next().unwrap_or("").trim_end().to_lowercase();
+    let porta = |prefixo: &str| {
+        base.strip_prefix(prefixo).map(|r| matches!(r, "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "¹" | "²" | "³")).unwrap_or(false)
+    };
+    let reservado = matches!(base.as_str(), "con" | "prn" | "aux" | "nul" | "conin$" | "conout$" | "clock$") || porta("com") || porta("lpt");
     if reservado {
         return Err("O Windows reserva esse nome.".into());
     }
@@ -143,7 +143,13 @@ pub fn resolver(raiz: &Path, destino: &str) -> Result<PathBuf, String> {
         }
     };
 
-    let c = fs::canonicalize(&candidato).map_err(|_| format!("Essa pasta não existe: {}", candidato.display()))?;
+    let c = fs::canonicalize(&candidato).map_err(|e| {
+        if e.kind() == std::io::ErrorKind::PermissionDenied {
+            format!("Sem permissão para abrir essa pasta: {}", exibir(&candidato))
+        } else {
+            format!("Essa pasta não existe: {}", exibir(&candidato))
+        }
+    })?;
     if !c.starts_with(&raiz_c) {
         return Err("Esse caminho fica fora da pasta de trabalho.".into());
     }
@@ -193,7 +199,13 @@ pub fn listar(raiz: &Path, pasta: &str) -> Result<Listagem, String> {
     let alvo = resolver(raiz, pasta)?;
     let mut itens = Vec::new();
     let mut truncado = false;
-    let leitor = fs::read_dir(&alvo).map_err(|e| format!("Não consegui abrir a pasta: {e}"))?;
+    let leitor = fs::read_dir(&alvo).map_err(|e| {
+        if e.kind() == std::io::ErrorKind::PermissionDenied {
+            format!("Sem permissão para abrir essa pasta: {}", exibir(&alvo))
+        } else {
+            format!("Não consegui abrir a pasta: {e}")
+        }
+    })?;
     for ent in leitor.flatten() {
         let nome = ent.file_name().to_string_lossy().to_string();
         if IGNORAR.iter().any(|i| i.eq_ignore_ascii_case(&nome)) {
@@ -315,6 +327,10 @@ mod testes {
         assert!(validar_nome("nul.txt").is_err());
         assert!(validar_nome("com1").is_err());
         assert!(validar_nome("com0").is_ok());
+        assert!(validar_nome("COM¹.txt").is_err());
+        assert!(validar_nome("CONOUT$").is_err());
+        assert!(validar_nome("NUL .txt").is_err());
+        assert!(validar_nome("nulo.txt").is_ok());
         assert!(validar_nome("console").is_ok());
         assert!(validar_nome("fim.").is_err());
         assert!(validar_nome("fim ").is_ok()); // trim tira o espaço do fim

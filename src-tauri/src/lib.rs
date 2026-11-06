@@ -8,6 +8,7 @@ mod cofre;
 mod config;
 mod conversa;
 mod estado;
+mod job;
 mod preferencias;
 mod servidor;
 mod sidecar;
@@ -183,7 +184,7 @@ fn obter_mudo(app: AppHandle) -> bool {
 fn argumentos_webview() -> String {
     // os padrões do wry + som sem clique (o aviso de pronto toca sozinho)
     let mut a = String::from("--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --autoplay-policy=no-user-gesture-required");
-    if let Ok(porta) = std::env::var("PONTE_DEPURAR_PORTA") {
+    if let Some(porta) = config::env_teste("PONTE_DEPURAR_PORTA") {
         if porta.parse::<u16>().is_ok() {
             a.push_str(&format!(" --remote-debugging-port={porta}"));
         }
@@ -262,7 +263,7 @@ fn mostrar_principal_interno(app: &AppHandle) {
 
 /// Modo de teste: janelas fora da área visível e sem pegar o foco (o Alex está usando o PC).
 fn teste_fora_da_tela() -> bool {
-    std::env::var("PONTE_TESTE_FORA_DA_TELA").map(|v| v == "1").unwrap_or(false)
+    config::env_teste("PONTE_TESTE_FORA_DA_TELA").map(|v| v == "1").unwrap_or(false)
 }
 const FORA: f64 = -30000.0;
 
@@ -426,12 +427,6 @@ fn mini_arrastando(app: AppHandle) {
     });
 }
 
-/// Chamado pela página quando o arrasto termina; o fim de verdade é do vigia em mini_arrastando.
-#[tauri::command]
-fn mini_soltou(app: AppHandle) -> String {
-    ponte(&app).config.lock().unwrap().mini_canto.clone()
-}
-
 /// Depois de arrastar: gruda no canto mais perto, no monitor onde ela ficou, e grava.
 fn finalizar_arrasto(app: &AppHandle) -> String {
     let app = app.clone();
@@ -481,7 +476,7 @@ fn tr(app: &AppHandle, pt: &str, en: &str) -> String {
 
 /// Iniciar com o Windows (plugin oficial autostart, abre com --minimizado). Nos testes, PONTE_AUTOSTART_FALSO=1.
 fn aplicar_autostart(app: &AppHandle, ligar: bool) -> Result<(), String> {
-    if std::env::var("PONTE_AUTOSTART_FALSO").map(|v| v == "1").unwrap_or(false) {
+    if config::env_teste("PONTE_AUTOSTART_FALSO").map(|v| v == "1").unwrap_or(false) {
         return Ok(());
     }
     let a = app.autolaunch();
@@ -732,7 +727,7 @@ fn importar_de(app: &AppHandle, caminho: &std::path::Path) -> Result<Value, Stri
 /// Teste: importar sem o seletor (só com PONTE_TESTE_FORA_DA_TELA=1).
 #[tauri::command]
 fn sistema_importar_arquivo_teste(app: AppHandle, caminho: String) -> Result<Value, String> {
-    if !teste_fora_da_tela() {
+    if !cfg!(debug_assertions) || !teste_fora_da_tela() {
         return Err("só nos testes".into());
     }
     importar_de(&app, std::path::Path::new(&caminho))
@@ -768,6 +763,8 @@ struct InfoPasta {
     nome: String,
     padrao: bool,
     caminho_padrao: String,
+    /// A pasta gravada que sumiu (o programa voltou para a padrão e avisa).
+    aviso: Option<String>,
 }
 
 fn info_pasta(app: &AppHandle) -> InfoPasta {
@@ -777,6 +774,7 @@ fn info_pasta(app: &AppHandle) -> InfoPasta {
         nome: p.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| arquivos::exibir(&p)),
         padrao,
         caminho_padrao: arquivos::exibir(&Config::pasta_padrao()),
+        aviso: ponte(app).config.lock().unwrap().pasta_gravada_sumiu().map(|p| format!("A pasta de trabalho gravada não existe mais ({p}); usando {}.", arquivos::exibir(&Config::pasta_padrao()))),
     }
 }
 
@@ -828,12 +826,28 @@ async fn trocar_pasta(app: AppHandle) -> Result<Option<String>, String> {
     if !c.is_dir() {
         return Err("Isso não é uma pasta.".into());
     }
+    if let Some(e) = pasta_proibida(&c) {
+        return Err(e);
+    }
     let texto = arquivos::exibir(&c);
     ponte(&app).config.lock().unwrap().pasta_de_trabalho = Some(texto.clone());
     salvar_config(&app);
     let _ = app.emit("ponte:pasta", info_pasta(&app));
     let _ = app.emit("ponte:config", config_publica(&app));
     Ok(Some(texto))
+}
+
+/// Pastas que não podem virar a pasta de trabalho: raiz de disco e a pasta do Windows.
+fn pasta_proibida(c: &std::path::Path) -> Option<String> {
+    let texto = arquivos::exibir(c).to_lowercase();
+    if c.parent().is_none() || texto.trim_end_matches('\\').len() <= 2 {
+        return Some("A raiz de um disco não pode ser a pasta de trabalho. Escolha uma pasta dentro dele.".into());
+    }
+    let windows = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into()).to_lowercase();
+    if texto == windows || texto.starts_with(&format!("{windows}\\")) {
+        return Some("A pasta do Windows não pode ser a pasta de trabalho.".into());
+    }
+    None
 }
 
 #[tauri::command]
@@ -1073,9 +1087,10 @@ fn limites(app: AppHandle) -> Value {
 }
 
 #[tauri::command]
-fn conversas_antigas(app: AppHandle, pasta: Option<String>, limite: Option<usize>) -> Value {
-    let alvo = pasta.map(PathBuf::from).unwrap_or_else(|| raiz(&app));
-    tokens::conversas_antigas(&alvo, limite.unwrap_or(50))
+fn conversas_antigas(app: AppHandle, pasta: Option<String>, limite: Option<usize>) -> Result<Value, String> {
+    // só pastas dentro da pasta de trabalho (o resolver recusa caminho de fora)
+    let alvo = arquivos::resolver(&raiz(&app), pasta.as_deref().unwrap_or(""))?;
+    Ok(tokens::conversas_antigas(&alvo, limite.unwrap_or(50).min(200)))
 }
 
 #[tauri::command]
@@ -1156,14 +1171,14 @@ fn sair(app: &AppHandle) {
 // ---------------------------------------------------------------- início
 
 fn pasta_de_dados(app: &AppHandle) -> PathBuf {
-    if let Ok(p) = std::env::var("PONTE_PASTA_DE_DADOS") {
+    if let Some(p) = config::env_teste("PONTE_PASTA_DE_DADOS") {
         return PathBuf::from(p);
     }
     app.path().app_data_dir().unwrap_or_else(|_| std::env::temp_dir().join("ponte-de-comando"))
 }
 
 fn script_do_sidecar(app: &AppHandle) -> Option<PathBuf> {
-    if let Ok(p) = std::env::var("PONTE_SIDECAR") {
+    if let Some(p) = config::env_teste("PONTE_SIDECAR") {
         return Some(PathBuf::from(p));
     }
     // instalado: ao lado dos recursos; em desenvolvimento: a pasta sidecar/ do projeto
@@ -1215,15 +1230,33 @@ pub fn rodar() {
             });
 
             // servidor dos hooks (só 127.0.0.1)
+            // servidor dos hooks: id novo a cada execução, conferido pelo hook antes de mandar o token
             let h2 = handle.clone();
-            match servidor::iniciar(config.porta_efetiva(), token, Arc::new(move |ev| receber_evento(&h2, ev))) {
-                Ok(porta) => {
-                    *ponte(&handle).porta.lock().unwrap() = Some(porta);
-                    let _ = config::gravar_atomico(&dados.join("porta"), porta.to_string().as_bytes());
-                    registrar(&dados, &format!("servidor dos hooks em 127.0.0.1:{porta}"));
-                }
-                Err(e) => registrar(&dados, &format!("servidor dos hooks NÃO abriu na porta {}: {e}", config.porta_efetiva())),
+            let id_servidor = config::aleatorio_hex(16);
+            let pedida = config.porta_efetiva();
+            let (aberta, falhas) = servidor::iniciar(pedida, token, id_servidor.clone(), Arc::new(move |ev| receber_evento(&h2, ev)));
+            for (p, e) in &falhas {
+                registrar(&dados, &format!("servidor dos hooks NÃO abriu na porta {p}: {e}"));
             }
+            let mut alertas = vec![];
+            match aberta {
+                Some(porta) => {
+                    *ponte(&handle).porta.lock().unwrap() = Some(porta);
+                    let _ = config::gravar_atomico(&dados.join("porta"), format!("{porta} {id_servidor}").as_bytes());
+                    registrar(&dados, &format!("servidor dos hooks em 127.0.0.1:{porta}"));
+                    if porta != pedida {
+                        alertas.push(format!("A porta {pedida} dos hooks estava ocupada; o servidor dos hooks abriu na porta {porta} (o hook acompanha sozinho)."));
+                    }
+                }
+                None => {
+                    let _ = std::fs::remove_file(dados.join("porta"));
+                    alertas.push(format!("O servidor dos hooks não abriu (portas {pedida} a {} ocupadas): os avisos de conversas de fora não vão chegar.", pedida.saturating_add(10)));
+                }
+            }
+            if let Some(p) = config.pasta_gravada_sumiu() {
+                alertas.push(format!("A pasta de trabalho gravada não existe mais ({p}); usando a padrão."));
+            }
+            ponte(&handle).estado.lock().unwrap().alertas = alertas;
 
             criar_janelas(&handle)?;
             montar_bandeja(&handle)?;
@@ -1332,7 +1365,6 @@ pub fn rodar() {
             carregamento_concluido,
             mini_tamanho,
             mini_arrastando,
-            mini_soltou,
             mini_canto,
             pasta_de_trabalho,
             listar,

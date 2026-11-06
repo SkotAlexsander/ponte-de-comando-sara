@@ -32,12 +32,23 @@ try {
   try { entrada = JSON.parse(bruto) } catch { dizer('stdin não é JSON'); sair() }
   const evento = mapear(entrada)
   if (!evento) { dizer(`evento ignorado: ${entrada && entrada.hook_event_name}`); sair() }
-  let token, porta
+  let token, porta, idServidor
   try {
     token = readFileSync(join(pastaDeDados, 'token'), 'utf8').trim()
-    porta = Number(readFileSync(join(pastaDeDados, 'porta'), 'utf8').trim())
+    const [p, id] = readFileSync(join(pastaDeDados, 'porta'), 'utf8').trim().split(/\s+/)
+    porta = Number(p); idServidor = id || ''
   } catch { dizer(`o programa ainda não foi aberto (sem token/porta em ${pastaDeDados})`); sair() }
-  if (process.env.PONTE_PORTA) porta = Number(process.env.PONTE_PORTA)
+  // confere que quem está na porta é a Ponte desta execução, antes de mandar o token
+  const ping = await new Promise((ok) => {
+    const r = request({ host: '127.0.0.1', port: porta, path: '/ping', method: 'GET', timeout: 1000 }, (res) => {
+      let t = ''; res.setEncoding('utf8'); res.on('data', (d) => { t += d; if (t.length > 2000) res.destroy() }); res.on('end', () => { try { ok(JSON.parse(t)) } catch { ok(null) } })
+    })
+    r.on('timeout', () => { r.destroy(); ok(null) }); r.on('error', () => ok(null)); r.end()
+  })
+  if (!idServidor || !ping || ping.app !== 'ponte-de-comando' || ping.id !== idServidor) {
+    dizer(`quem responde na porta ${porta} não é esta Ponte de Comando; o token não foi enviado`)
+    sair()
+  }
   const corpo = Buffer.from(JSON.stringify(evento))
   const req = request({ host: '127.0.0.1', port: porta, path: '/evento', method: 'POST', timeout: 1500, headers: { 'Content-Type': 'application/json', 'Content-Length': corpo.length, 'X-Ponte-Token': token } }, (res) => {
     res.resume()

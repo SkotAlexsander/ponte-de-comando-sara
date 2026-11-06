@@ -286,6 +286,27 @@
     }
   }
 
+  // ---------- 8. avisos do programa (pasta que sumiu, porta dos hooks ocupada…) ----------
+  let faixa = null
+  const vistos = new Set()
+  function mostrarAlertas(lista) {
+    const novos = (lista || []).filter((t) => t && !vistos.has(t))
+    if (!novos.length) return
+    novos.forEach((t) => vistos.add(t))
+    if (!faixa) {
+      faixa = document.createElement('div')
+      faixa.setAttribute('role', 'status')
+      faixa.style.cssText = 'position:fixed;left:50%;top:64px;transform:translateX(-50%);z-index:9998;max-width:min(720px,calc(100vw - 32px));box-sizing:border-box;padding:10px 40px 10px 14px;background:rgba(14,12,6,.97);border:1px solid rgba(255,197,110,.6);color:#FFE2B0;font:13px/19px "IBM Plex Sans",system-ui,sans-serif;box-shadow:0 8px 20px rgba(0,0,0,.6)'
+      const x = document.createElement('button')
+      x.textContent = '×'; x.setAttribute('aria-label', 'Fechar o aviso')
+      x.style.cssText = 'position:absolute;right:6px;top:4px;width:28px;height:28px;border:0;background:transparent;color:#FFC56E;font-size:18px;cursor:pointer'
+      x.addEventListener('click', () => { faixa.remove(); faixa = null })
+      faixa.appendChild(x)
+      document.body.appendChild(faixa)
+    }
+    for (const t of novos) { const l = document.createElement('div'); l.textContent = t; faixa.insertBefore(l, faixa.lastChild) }
+  }
+
   // ---------- ligar tudo ----------
   esperar().then(async (logica) => {
     if (!logica || !window.ponte) { console.warn('ponte: não achei a lógica da Main; ficou só o protótipo'); return }

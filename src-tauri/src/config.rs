@@ -102,11 +102,40 @@ pub fn cantos_validos() -> [&'static str; 4] {
 }
 
 impl Config {
+    /// Lê a config campo a campo: um campo com tipo errado volta ao padrão SÓ ele (os outros ficam).
+    /// Se algo foi descartado (ou o arquivo nem é JSON), guarda uma cópia do original antes de qualquer gravação.
     pub fn carregar(pasta: &Path) -> Config {
-        let mut c: Config = fs::read_to_string(pasta.join("config.json"))
-            .ok()
-            .and_then(|t| serde_json::from_str(&t).ok())
-            .unwrap_or_default();
+        let (c, descartados) = Config::carregar_relatando(pasta);
+        if !descartados.is_empty() {
+            registrar(pasta, &format!("config.json: campos descartados ({}); cópia guardada", descartados.join(", ")));
+        }
+        c
+    }
+
+    pub fn carregar_relatando(pasta: &Path) -> (Config, Vec<String>) {
+        let arq = pasta.join("config.json");
+        let Ok(texto) = fs::read_to_string(&arq) else { return (Config::default(), vec![]) };
+        let mut descartados = vec![];
+        let mut base = serde_json::to_value(Config::default()).unwrap_or_default();
+        match serde_json::from_str::<serde_json::Value>(&texto) {
+            Ok(serde_json::Value::Object(lido)) => {
+                for (k, v) in lido {
+                    let mut tentativa = base.clone();
+                    tentativa[&k] = v;
+                    if serde_json::from_value::<Config>(tentativa.clone()).is_ok() {
+                        base = tentativa;
+                    } else {
+                        descartados.push(k);
+                    }
+                }
+            }
+            _ => descartados.push("(o arquivo não é JSON)".into()),
+        }
+        if !descartados.is_empty() {
+            let copia = pasta.join(format!("config.corrompido-{}.bak", agora_ms()));
+            let _ = fs::copy(&arq, &copia);
+        }
+        let mut c: Config = serde_json::from_value(base).unwrap_or_default();
         if !cantos_validos().contains(&c.mini_canto.as_str()) {
             c.mini_canto = "inferior-direito".into();
         }
@@ -132,7 +161,7 @@ impl Config {
         if !["assinatura", "api"].contains(&c.modo_conta.as_str()) { c.modo_conta = p.modo_conta.clone(); }
         if !["opus", "sonnet", "haiku"].contains(&c.padrao_nova.modelo.as_str()) { c.padrao_nova.modelo = "opus".into(); }
         if crate::conversa::normalizar_esforco(&c.padrao_nova.esforco).is_err() { c.padrao_nova.esforco = "high".into(); }
-        c
+        (c, descartados)
     }
 
     pub fn salvar(&self, pasta: &Path) -> Result<(), String> {
@@ -142,8 +171,7 @@ impl Config {
 
     /// Porta efetiva: `PONTE_PORTA` (testes) vence a do arquivo.
     pub fn porta_efetiva(&self) -> u16 {
-        std::env::var("PONTE_PORTA")
-            .ok()
+        env_teste("PONTE_PORTA")
             .and_then(|p| p.parse::<u16>().ok())
             .filter(|p| *p >= 1024)
             .unwrap_or(self.porta)
@@ -157,6 +185,11 @@ impl Config {
             // máquina sem o disco A: — cai para a pasta do usuário
             std::env::var("USERPROFILE").map(PathBuf::from).unwrap_or(p)
         }
+    }
+
+    /// A pasta gravada que não existe mais (para avisar o Alex em vez de cair calado na padrão).
+    pub fn pasta_gravada_sumiu(&self) -> Option<String> {
+        self.pasta_de_trabalho.as_ref().filter(|p| !PathBuf::from(p).is_dir()).cloned()
     }
 
     /// A pasta de trabalho em uso (a escolhida, se ainda existir; senão a padrão).
@@ -179,6 +212,15 @@ pub fn gravar_atomico(caminho: &Path, dados: &[u8]) -> Result<(), String> {
         f.sync_all().ok();
     }
     fs::rename(&tmp, caminho).map_err(|e| format!("{}: {e}", caminho.display()))
+}
+
+/// Variáveis de ambiente de TESTE: só valem no build de desenvolvimento (no release são ignoradas).
+pub fn env_teste(nome: &str) -> Option<String> {
+    if cfg!(debug_assertions) {
+        std::env::var(nome).ok()
+    } else {
+        None
+    }
 }
 
 pub fn aleatorio_hex(bytes: usize) -> String {

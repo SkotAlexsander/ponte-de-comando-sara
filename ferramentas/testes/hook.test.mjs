@@ -46,10 +46,11 @@ test('o hook manda o POST com o token, não escreve no stdout e sai com 0', asyn
   const dados = mkdtempSync(join(tmpdir(), 'ponte-hook-'))
   const recebidos = []
   const srv = createServer((req, res) => {
+    if (req.url === '/ping') { res.end('{"ok":true,"app":"ponte-de-comando","id":"id-teste"}'); return }
     let c = ''; req.on('data', (d) => c += d); req.on('end', () => { recebidos.push({ token: req.headers['x-ponte-token'], corpo: JSON.parse(c) }); res.end('{"ok":true}') })
   })
   await new Promise((ok) => srv.listen(0, '127.0.0.1', ok))
-  writeFileSync(join(dados, 'token'), 'abc123'); writeFileSync(join(dados, 'porta'), String(srv.address().port))
+  writeFileSync(join(dados, 'token'), 'abc123'); writeFileSync(join(dados, 'porta'), `${srv.address().port} id-teste`)
   const r = await new Promise((ok) => {
     const { spawn } = require_spawn()
     const p = spawn(process.execPath, [join(raiz, 'ferramentas', 'hook', 'ponte-hook.mjs')], { cwd: raiz, windowsHide: true, env: { ...process.env, PONTE_PASTA_DE_DADOS: dados } })
@@ -60,6 +61,18 @@ test('o hook manda o POST com o token, não escreve no stdout e sai com 0', asyn
   srv.close()
   assert.equal(r.code, 0); assert.equal(r.out, '')
   assert.equal(recebidos.length, 1); assert.equal(recebidos[0].token, 'abc123'); assert.equal(recebidos[0].corpo.tipo, 'pronto')
+})
+
+test('outro programa na porta (sem o id certo) não recebe o token', async () => {
+  const dados = mkdtempSync(join(tmpdir(), 'ponte-hook-intruso-'))
+  const vistos = []
+  const srv = createServer((req, res) => { vistos.push(req.headers['x-ponte-token'] || ''); res.end('{"ok":true,"id":"outro"}') })
+  await new Promise((ok) => srv.listen(0, '127.0.0.1', ok))
+  writeFileSync(join(dados, 'token'), 'segredo-de-teste'); writeFileSync(join(dados, 'porta'), `${srv.address().port} id-certo`)
+  const r = spawnSync(process.execPath, [join(raiz, 'ferramentas', 'hook', 'ponte-hook.mjs')], { input: JSON.stringify(ex('exemplo-stop.json')), windowsHide: true, env: { ...process.env, PONTE_PASTA_DE_DADOS: dados } })
+  srv.close()
+  assert.equal(r.status, 0)
+  assert.ok(!vistos.includes('segredo-de-teste'))
 })
 
 test('com o programa fechado o hook sai com 0, rápido e calado', () => {
