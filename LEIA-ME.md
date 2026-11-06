@@ -2,6 +2,8 @@
 
 Programa do Alex para acompanhar o Claude Code no PC. Ao abrir, aparece a tela de carregamento da Sara por pelo menos 8 segundos. Depois abrem a janela principal e a **miniatura da Sara**, que fica no canto da tela, por cima de tudo, e avisa quando o trabalho fica pronto ou quando ela precisa de você.
 
+![A Ponte de Comando 0.1.1 em uso: conversa com atividades, arquivos, biblioteca, conversas e consumo](docs/capturas/v011-conversa.png)
+
 ## O que ele faz hoje
 
 - **Carregamento** sem borda, 960×560, centralizado, com a arte `carregando.html` da Sara (≥ 8 s).
