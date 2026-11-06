@@ -11,7 +11,22 @@
     "withGlobalTauri": true,
     "windows": [],
     "security": {
-      "csp": null
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self' 'unsafe-eval'",
+        "style-src": "'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src": "'self' data: https://fonts.gstatic.com",
+        "img-src": "'self' data: blob:",
+        "media-src": "'self' data: blob:",
+        "connect-src": "'self' ipc: http://ipc.localhost",
+        "frame-src": "'self'",
+        "object-src": "'none'",
+        "base-uri": "'none'",
+        "form-action": "'none'"
+      },
+      "dangerousDisableAssetCspModification": [
+        "style-src"
+      ]
     }
   },
   "bundle": {
@@ -43,7 +58,8 @@
       "../sidecar/ponte-sidecar.mjs": "sidecar/ponte-sidecar.mjs",
       "../sidecar/package.json": "sidecar/package.json",
       "../sidecar/node_modules/": "sidecar/node_modules/",
-      "../sidecar/testar-chave.mjs": "sidecar/testar-chave.mjs"
+      "../sidecar/testar-chave.mjs": "sidecar/testar-chave.mjs",
+      "../sidecar/regras.mjs": "sidecar/regras.mjs"
     }
   }
 }

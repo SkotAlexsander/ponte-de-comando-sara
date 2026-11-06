@@ -1,0 +1,21 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "mini",
+  "description": "A miniatura: só estado, mudo, aviso, trazer a principal e o próprio tamanho/canto/arrasto.",
+  "windows": [
+    "mini"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "allow-estado-atual",
+    "allow-config-ler",
+    "allow-definir-mudo",
+    "allow-obter-mudo",
+    "allow-dispensar-aviso",
+    "allow-mostrar-principal",
+    "allow-mini-tamanho",
+    "allow-mini-arrastando",
+    "allow-mini-canto"
+  ]
+}

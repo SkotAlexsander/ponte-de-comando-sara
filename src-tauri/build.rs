@@ -1,3 +1,51 @@
+// QA B6/M8: cada comando próprio vira uma permissão (allow-<comando>) e cada janela só recebe as que usa
+// (capabilities/principal.json, mini.json, carregamento.json). Comando novo precisa entrar AQUI e numa capability.
+const COMANDOS: &[&str] = &[
+    "estado_atual",
+    "config_ler",
+    "config_gravar",
+    "conta_status",
+    "conta_modo",
+    "conta_trocar",
+    "conta_sair",
+    "conta_guardar_chave",
+    "conta_testar_chave",
+    "conta_apagar_chave",
+    "sistema_abrir_pasta_dados",
+    "sistema_exportar_config",
+    "sistema_importar_config",
+    "sistema_importar_arquivo_teste",
+    "sistema_restaurar_padrao",
+    "dispensar_aviso",
+    "definir_mudo",
+    "obter_mudo",
+    "mostrar_principal",
+    "carregamento_concluido",
+    "mini_tamanho",
+    "mini_arrastando",
+    "mini_canto",
+    "pasta_de_trabalho",
+    "listar",
+    "criar_pasta",
+    "criar_arquivo",
+    "ler_arquivo",
+    "trocar_pasta",
+    "voltar_padrao",
+    "enviar",
+    "parar",
+    "responder_permissao",
+    "parar_agente",
+    "conversa_info",
+    "info_app",
+    "tokens_resumo",
+    "limites",
+    "conversas_antigas",
+    "conta",
+    "conexoes_mcp",
+    "retomar_sessao",
+];
+
 fn main() {
-    tauri_build::build()
+    tauri_build::try_build(tauri_build::Attributes::new().app_manifest(tauri_build::AppManifest::new().commands(COMANDOS)))
+        .expect("erro no build da Ponte de Comando");
 }
