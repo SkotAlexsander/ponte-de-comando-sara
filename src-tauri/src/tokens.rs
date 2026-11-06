@@ -15,14 +15,13 @@ use crate::estado::Evento;
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 use std::fs;
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime};
 
 const PRECOS: &str = include_str!("../precos.json");
-const BLOCO: u64 = 4 * 1024 * 1024;
 
 // ------------------------------------------------------------------ preços
 
@@ -93,50 +92,121 @@ impl Tabela {
 }
 
 // ------------------------------------------------------------------ leitura incremental
+//
+// QA A3 (06/11): a versão antiga lia o arquivo novo INTEIRO para um Vec<String> e tirava cada linha do
+// começo de um Vec de 4 MB (drain), o que era quadrático por bloco: 40 s a 2 min e 923 MB na 1ª leitura.
+// Agora: BufReader de 4 MB + read_until (memchr do std), cada linha vai direto para o callback sem ser
+// guardada, e cada volta do motor tem um ORÇAMENTO de bytes — o resto fica para a volta seguinte, que
+// vem logo (sem a pausa de 2 s), e o busy → idle das sessões continua sendo olhado a cada volta.
+
+const BLOCO: usize = 4 * 1024 * 1024;
+/// Linha maior que isto é saída de ferramenta (o que o motor procura cabe em poucos KB): é descartada.
+const LINHA_MAX: usize = 16 * 1024 * 1024;
+/// Bytes lidos por volta, somando todas as sessões.
+pub const ORCAMENTO_VOLTA: u64 = 64 * 1024 * 1024;
+/// Mínimo de cada sessão numa volta (para uma sessão gigante não parar as outras).
+const ORCAMENTO_MINIMO: u64 = 8 * 1024 * 1024;
 
 #[derive(Default)]
 struct Arquivo {
     posicao: u64,
     resto: Vec<u8>,
+    /// no meio de uma linha gigante: descarta até a próxima quebra de linha
+    pulando: bool,
     criado: Option<SystemTime>,
 }
 
+#[derive(Debug, Default, PartialEq)]
+struct Leitura {
+    recomecou: bool,
+    /// chegou ao fim do arquivo (nada pendente)
+    em_dia: bool,
+    lidos: u64,
+}
+
+fn emitir(l: &[u8], cada: &mut dyn FnMut(&str)) {
+    let t = match std::str::from_utf8(l) {
+        Ok(s) => std::borrow::Cow::Borrowed(s),
+        Err(_) => String::from_utf8_lossy(l),
+    };
+    let t = t.trim();
+    if !t.is_empty() {
+        cada(t);
+    }
+}
+
 impl Arquivo {
-    /// Lê as linhas novas (completas). Se o arquivo encolheu ou foi trocado, recomeça.
-    fn linhas_novas(&mut self, caminho: &Path) -> (Vec<String>, bool) {
-        let Ok(meta) = fs::metadata(caminho) else { return (vec![], false) };
+    /// O arquivo encolheu ou foi trocado (outro "criado")? Então recomeça do zero e devolve true.
+    fn conferir_troca(&mut self, caminho: &Path) -> bool {
+        let Ok(meta) = fs::metadata(caminho) else { return false };
         let criado = meta.created().ok();
-        let mut recomecou = false;
         if meta.len() < self.posicao || (self.criado.is_some() && criado != self.criado) {
             *self = Arquivo::default();
-            recomecou = true;
+            self.criado = criado;
+            return true;
+        }
+        false
+    }
+
+    /// Lê as linhas novas (completas) até gastar o orçamento. Se o arquivo encolheu ou foi trocado, recomeça.
+    fn ler(&mut self, caminho: &Path, orcamento: &mut u64, cada: &mut dyn FnMut(&str)) -> Leitura {
+        let mut r = Leitura { em_dia: true, ..Default::default() };
+        let Ok(meta) = fs::metadata(caminho) else { return r };
+        let criado = meta.created().ok();
+        if meta.len() < self.posicao || (self.criado.is_some() && criado != self.criado) {
+            *self = Arquivo::default();
+            r.recomecou = true;
         }
         self.criado = criado;
         if meta.len() == self.posicao {
-            return (vec![], recomecou);
+            return r;
         }
-        let Ok(mut f) = fs::File::open(caminho) else { return (vec![], recomecou) };
+        if *orcamento == 0 {
+            r.em_dia = false;
+            return r;
+        }
+        let Ok(mut f) = fs::File::open(caminho) else { return r };
         if f.seek(SeekFrom::Start(self.posicao)).is_err() {
-            return (vec![], recomecou);
+            return r;
         }
-        let mut linhas = vec![];
-        let mut buf = vec![0u8; BLOCO as usize];
-        loop {
-            let n = match f.read(&mut buf) {
-                Ok(0) | Err(_) => break,
+        let mut leitor = BufReader::with_capacity(BLOCO.min((meta.len() - self.posicao) as usize + 1).max(8 * 1024), f);
+        let mut linha = std::mem::take(&mut self.resto);
+        while *orcamento > 0 {
+            let cabe = (LINHA_MAX as u64).saturating_sub(linha.len() as u64).max(1);
+            let n = match (&mut leitor).take(cabe).read_until(b'\n', &mut linha) {
                 Ok(n) => n,
+                Err(_) => break,
             };
+            if n == 0 {
+                break; // fim do arquivo
+            }
             self.posicao += n as u64;
-            self.resto.extend_from_slice(&buf[..n]);
-            while let Some(i) = self.resto.iter().position(|b| *b == b'\n') {
-                let l: Vec<u8> = self.resto.drain(..=i).collect();
-                linhas.push(String::from_utf8_lossy(&l).trim().to_string());
+            *orcamento = orcamento.saturating_sub(n as u64);
+            r.lidos += n as u64;
+            if linha.last() == Some(&b'\n') {
+                if !self.pulando {
+                    emitir(&linha, cada);
+                }
+                self.pulando = false;
+                linha.clear();
+            } else if linha.len() >= LINHA_MAX {
+                self.pulando = true;
+                linha.clear();
             }
-            if n < buf.len() {
-                break;
-            }
+            // senão: o arquivo acabou no meio de uma linha; ela fica guardada até completar
         }
-        (linhas, recomecou)
+        self.resto = if self.pulando || linha.is_empty() { Vec::new() } else { linha };
+        r.em_dia = self.posicao >= meta.len();
+        r
+    }
+
+    /// Para os testes: lê tudo de uma vez e devolve as linhas.
+    #[cfg(test)]
+    fn linhas_novas(&mut self, caminho: &Path) -> (Vec<String>, bool) {
+        let mut v = vec![];
+        let mut orc = u64::MAX;
+        let r = self.ler(caminho, &mut orc, &mut |l| v.push(l.to_string()));
+        (v, r.recomecou)
     }
 }
 
@@ -180,6 +250,7 @@ pub struct Sessao {
     desconhecidos: HashSet<String>,
     /// (timestamp ISO, ttl em minutos, suposto)
     cache: Option<(String, u32, bool)>,
+    em_dia: bool,
 }
 
 impl Sessao {
@@ -200,6 +271,7 @@ impl Sessao {
             ultimo_modelo: String::new(),
             desconhecidos: HashSet::new(),
             cache: None,
+            em_dia: false,
         }
     }
 
@@ -220,8 +292,20 @@ impl Sessao {
         self.transcript.with_extension("").join("subagents")
     }
 
-    /// Lê o que há de novo. Devolve true se algo mudou.
+    /// Lê o que há de novo (tudo, sem orçamento). Devolve true se algo mudou.
+    #[cfg(test)]
     pub fn atualizar(&mut self, t: &Tabela) -> bool {
+        let mut orc = u64::MAX;
+        self.atualizar_com(t, &mut orc)
+    }
+
+    /// Já leu cada arquivo até o fim pelo menos uma vez? Antes disso os números estariam pela metade.
+    pub fn em_dia(&self) -> bool {
+        self.em_dia
+    }
+
+    /// Lê o que há de novo, até gastar o orçamento. Devolve true se algo mudou.
+    pub fn atualizar_com(&mut self, t: &Tabela, orcamento: &mut u64) -> bool {
         self.ciclos += 1;
         // o principal e os subagentes já conhecidos a cada volta; arquivo novo de subagente a cada 5 voltas
         let mut caminhos = vec![self.transcript.clone()];
@@ -237,21 +321,36 @@ impl Sessao {
             }
         }
         let mut mudou = false;
+        let mut tudo_em_dia = true;
         for c in caminhos {
             let principal = c == self.transcript;
             let mut a = self.arquivos.remove(&c).unwrap_or_default();
-            let (linhas, recomecou) = a.linhas_novas(&c);
-            self.arquivos.insert(c.clone(), a);
-            if recomecou {
+            if a.conferir_troca(&c) {
+                // o arquivo foi trocado: o que veio dele sai da conta e é lido de novo
                 self.contabilizado.retain(|_, l| l.arquivo != c);
                 mudou = true;
             }
             let dono = if principal { None } else { c.file_stem().map(|s| s.to_string_lossy().trim_start_matches("agent-").to_string()) };
-            for l in linhas {
-                if self.linha(&l, &c, principal, &dono, t) {
-                    mudou = true;
+            let mut linhas_mudaram = false;
+            let r = a.ler(&c, orcamento, &mut |l| {
+                if self.linha(l, &c, principal, &dono, t) {
+                    linhas_mudaram = true;
                 }
+            });
+            self.arquivos.insert(c.clone(), a);
+            if r.recomecou {
+                mudou = true;
             }
+            if linhas_mudaram {
+                mudou = true;
+            }
+            if !r.em_dia {
+                tudo_em_dia = false;
+            }
+        }
+        if tudo_em_dia && !self.em_dia {
+            self.em_dia = true;
+            mudou = true;
         }
         if mudou {
             self.ler_metas();
@@ -638,13 +737,18 @@ impl Motor {
             .spawn(move || {
                 let mut ultimo_limite = Instant::now() - Duration::from_secs(600);
                 loop {
-                    let mudou = eu.volta(&ao_estado);
+                    let (mudou, pendente) = eu.volta(&ao_estado);
                     if mudou {
                         ao_resumo(eu.resumo());
                     }
                     if ultimo_limite.elapsed() > Duration::from_secs(60) {
                         ultimo_limite = Instant::now();
                         eu.ler_limites();
+                    }
+                    if pendente {
+                        // ainda há transcript para ler: a próxima volta vem logo (com uma folga para a CPU)
+                        std::thread::sleep(Duration::from_millis(40));
+                        continue;
                     }
                     for _ in 0..20 {
                         std::thread::sleep(Duration::from_millis(100));
@@ -658,7 +762,8 @@ impl Motor {
     }
 
     /// Uma volta: sessões vivas, busy → idle (2ª fonte de "pronto") e tokens de cada uma.
-    fn volta(&self, ao_estado: &AoEstado) -> bool {
+    /// Devolve (mudou, pendente): pendente = algum transcript ficou para a próxima volta (orçamento).
+    fn volta(&self, ao_estado: &AoEstado) -> (bool, bool) {
         let vivas = sessoes_vivas();
         let mut mudou = false;
         {
@@ -687,6 +792,9 @@ impl Motor {
         if sessoes.len() != n {
             mudou = true;
         }
+        // orçamento da volta dividido entre as sessões (cada uma com um mínimo)
+        let por_sessao = (ORCAMENTO_VOLTA / vivas.len().max(1) as u64).max(ORCAMENTO_MINIMO);
+        let mut pendente = false;
         for v in &vivas {
             if !sessoes.contains_key(&v.sessao) {
                 if let Some(t) = achar_transcript(&v.sessao, &v.cwd) {
@@ -694,8 +802,12 @@ impl Motor {
                 }
             }
             if let Some(s) = sessoes.get_mut(&v.sessao) {
-                if s.atualizar(&self.tabela) {
+                let mut orc = por_sessao;
+                if s.atualizar_com(&self.tabela, &mut orc) {
                     mudou = true;
+                }
+                if orc == 0 || !s.em_dia() {
+                    pendente = true;
                 }
             }
         }
@@ -703,7 +815,12 @@ impl Motor {
             let mut lista = vec![];
             let (mut custo, mut tokens) = (0f64, 0u64);
             for v in &vivas {
-                let mut r = sessoes.get(&v.sessao).map(|s| s.resumo()).unwrap_or_else(|| json!({ "sessao": v.sessao, "nome": v.nome, "medido": false }));
+                // sessão ainda na 1ª leitura: sem números pela metade (a tela mostra "lendo")
+                let mut r = match sessoes.get(&v.sessao) {
+                    Some(s) if s.em_dia() => s.resumo(),
+                    Some(s) => json!({ "sessao": v.sessao, "nome": s.nome(), "medido": false, "lendo": true }),
+                    None => json!({ "sessao": v.sessao, "nome": v.nome, "medido": false }),
+                };
                 if !v.nome.is_empty() && r.get("nome").and_then(|x| x.as_str()).map(|n| n.len() <= 8).unwrap_or(true) {
                     r["nome"] = json!(v.nome);
                 }
@@ -719,7 +836,7 @@ impl Motor {
             *self.ultimo_resumo.lock().unwrap() = json!({ "sessoes": lista, "total": { "custo": custo, "tokens": tokens, "custoEstimado": true }, "precosConferidos": false });
         }
         *self.vivas.lock().unwrap() = vivas;
-        mudou
+        (mudou, pendente)
     }
 
     /// Limites de 5 h e 7 dias, de `~/.claude.json` (sem rede). Falha nunca apaga o anterior.
@@ -836,6 +953,15 @@ fn rodar_claude(args: &[&str], cwd: Option<&Path>, limite: Duration) -> Result<S
             break;
         }
         if Instant::now() > fim {
+            // QA B8: derruba a árvore inteira (o `claude mcp list` abre os servidores MCP como netos)
+            let mut tk = Command::new(r"C:\Windows\System32\taskkill.exe");
+            tk.args(["/PID", &f.id().to_string(), "/T", "/F"]).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+            #[cfg(windows)]
+            {
+                use std::os::windows::process::CommandExt;
+                tk.creation_flags(0x0800_0000);
+            }
+            let _ = tk.status();
             let _ = f.kill();
             return Err("o claude demorou demais".into());
         }
@@ -939,6 +1065,58 @@ mod testes {
         f.flush().unwrap();
         assert!(s.atualizar(&t));
         assert_eq!(s.resumo()["saida"], 57);
+        fs::remove_dir_all(&d).ok();
+    }
+
+    /// QA A3: em pedaços (orçamento pequeno) dá o mesmo resultado que tudo de uma vez, a linha
+    /// gigante é pulada sem guardar memória, a truncada no fim não vira resposta, e é linear.
+    #[test]
+    fn leitura_incremental_por_orcamento() {
+        use std::io::Write;
+        let d = std::env::temp_dir().join(format!("ponte-orc-{}", crate::config::aleatorio_hex(4)));
+        fs::create_dir_all(&d).unwrap();
+        let arq = d.join("s3.jsonl");
+        let mut f = fs::File::create(&arq).unwrap();
+        let curta = format!("{{\"type\":\"user\",\"message\":{{\"content\":[{{\"type\":\"tool_result\",\"tool_use_id\":\"x\",\"content\":\"{}\"}}]}}}}\n", "r".repeat(180));
+        let mut respostas = 0u64;
+        for i in 0..60_000u64 {
+            if i % 200 == 0 {
+                respostas += 1;
+                writeln!(f, "{{\"type\":\"assistant\",\"message\":{{\"id\":\"m{i}\",\"model\":\"claude-haiku-4-5\",\"usage\":{{\"input_tokens\":1,\"output_tokens\":2}}}}}}").unwrap();
+            } else if i == 30_000 {
+                // linha gigante (saída de ferramenta) com 20 MB, maior que LINHA_MAX
+                f.write_all(b"{\"type\":\"user\",\"x\":\"").unwrap();
+                f.write_all(&vec![b'z'; 20 * 1024 * 1024]).unwrap();
+                f.write_all(b"\"}\n").unwrap();
+            } else {
+                f.write_all(curta.as_bytes()).unwrap();
+            }
+        }
+        f.write_all(b"{\"type\":\"assistant\",\"message\":{\"id\":\"truncada\"").unwrap();
+        drop(f);
+        let t = Tabela::carregar();
+        let t0 = Instant::now();
+        let mut inteira = Sessao::nova("s3", arq.clone());
+        inteira.atualizar(&t);
+        let tempo = t0.elapsed();
+        assert!(inteira.em_dia());
+        assert_eq!(inteira.resumo()["respostas"], respostas);
+        let mut aos_poucos = Sessao::nova("s3", arq.clone());
+        let mut voltas = 0;
+        while !aos_poucos.em_dia() {
+            let mut orc = 512 * 1024;
+            aos_poucos.atualizar_com(&t, &mut orc);
+            voltas += 1;
+            assert!(voltas < 500, "não terminou");
+        }
+        assert!(voltas > 10, "o orçamento não dividiu a leitura ({voltas} voltas)");
+        assert_eq!(aos_poucos.resumo()["respostas"], respostas);
+        assert_eq!(aos_poucos.resumo()["saida"], inteira.resumo()["saida"]);
+        // o resto guardado é só a linha truncada do fim, não a linha gigante
+        let a = aos_poucos.arquivos.get(&arq).unwrap();
+        assert!(a.resto.len() < 100, "resto de {} bytes", a.resto.len());
+        // ~32 MB: a versão antiga levava dezenas de segundos; esta, bem menos (mesmo no debug)
+        assert!(tempo < Duration::from_secs(10), "{tempo:?}");
         fs::remove_dir_all(&d).ok();
     }
 
