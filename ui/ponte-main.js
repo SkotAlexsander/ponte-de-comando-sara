@@ -147,6 +147,7 @@
       }
       cartao.querySelector('[data-sim]').addEventListener('click', () => responder(true))
       cartao.querySelector('[data-nao]').addEventListener('click', () => responder(false))
+      cartao.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { ev.preventDefault(); responder(false) } })
       document.body.appendChild(cartao)
     }
     const atual = fila[0]

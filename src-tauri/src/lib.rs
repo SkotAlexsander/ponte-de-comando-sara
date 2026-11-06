@@ -46,6 +46,7 @@ pub struct Ponte {
     inicio: Instant,
     concluido: AtomicBool,
     arrastando: AtomicBool,
+    ultimo_movimento: Mutex<Instant>,
     porta: Mutex<Option<u16>>,
     item_mudo: Mutex<Option<CheckMenuItem<Wry>>>,
     item_mini: Mutex<Option<MenuItem<Wry>>>,
@@ -293,14 +294,47 @@ fn mini_tamanho(app: AppHandle, largura: f64, altura: f64) {
     }
 }
 
+#[cfg(windows)]
+fn botao_esquerdo_apertado() -> bool {
+    use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_LBUTTON};
+    unsafe { (GetAsyncKeyState(VK_LBUTTON as i32) as u16 & 0x8000) != 0 }
+}
+#[cfg(not(windows))]
+fn botao_esquerdo_apertado() -> bool {
+    false
+}
+
+/// A miniatura começou a ser arrastada. O fim é percebido aqui (botão solto e janela parada),
+/// porque no Windows o startDragging pode voltar antes de o Alex soltar o mouse.
 #[tauri::command]
 fn mini_arrastando(app: AppHandle) {
-    ponte(&app).arrastando.store(true, Ordering::SeqCst);
+    let p = ponte(&app);
+    if p.arrastando.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    *p.ultimo_movimento.lock().unwrap() = Instant::now();
+    std::thread::spawn(move || {
+        let inicio = Instant::now();
+        loop {
+            std::thread::sleep(Duration::from_millis(120));
+            let parado = ponte(&app).ultimo_movimento.lock().unwrap().elapsed() > Duration::from_millis(250);
+            if (parado && !botao_esquerdo_apertado()) || inicio.elapsed() > Duration::from_secs(60) {
+                break;
+            }
+        }
+        finalizar_arrasto(&app);
+    });
+}
+
+/// Chamado pela página quando o arrasto termina; o fim de verdade é do vigia em mini_arrastando.
+#[tauri::command]
+fn mini_soltou(app: AppHandle) -> String {
+    ponte(&app).config.lock().unwrap().mini_canto.clone()
 }
 
 /// Depois de arrastar: gruda no canto mais perto, no monitor onde ela ficou, e grava.
-#[tauri::command]
-fn mini_soltou(app: AppHandle) -> String {
+fn finalizar_arrasto(app: &AppHandle) -> String {
+    let app = app.clone();
     let p = ponte(&app);
     p.arrastando.store(false, Ordering::SeqCst);
     let Some(mini) = app.get_webview_window("mini") else { return String::new() };
@@ -699,7 +733,8 @@ fn script_do_sidecar(app: &AppHandle) -> Option<PathBuf> {
         app.path().resource_dir().ok().map(|r| r.join("sidecar").join("ponte-sidecar.mjs")),
         Some(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("sidecar").join("ponte-sidecar.mjs")),
     ];
-    candidatos.into_iter().flatten().find(|p| p.is_file())
+    // o Node não abre script com o prefixo \?\ que o Windows põe nos caminhos canônicos
+    candidatos.into_iter().flatten().find(|p| p.is_file()).map(|p| PathBuf::from(arquivos::exibir(&p)))
 }
 
 pub fn rodar() {
@@ -730,6 +765,7 @@ pub fn rodar() {
                 inicio: Instant::now(),
                 concluido: AtomicBool::new(false),
                 arrastando: AtomicBool::new(false),
+                ultimo_movimento: Mutex::new(Instant::now()),
                 porta: Mutex::new(None),
                 item_mudo: Mutex::new(None),
                 item_mini: Mutex::new(None),
@@ -756,7 +792,14 @@ pub fn rodar() {
                 let _ = h3.emit("ponte:tokens", resumo);
             }), Arc::new({
                 let h4 = handle.clone();
-                move |ev| receber_evento(&h4, ev)
+                move |ev: Evento| {
+                    // as sessões abertas pelo programa já avisam pelo "result" do SDK
+                    // (e o status pode ficar idle enquanto o cartão de permissão espera)
+                    if ev.origem == "sessoes" && ponte(&h4).conversas.tem_sessao(&ev.sessao) {
+                        return;
+                    }
+                    receber_evento(&h4, ev)
+                }
             }));
 
             // se a página de carregamento nunca avisar, segue em 25 s
@@ -793,6 +836,12 @@ pub fn rodar() {
             }
             ("carregamento", WindowEvent::Destroyed) => concluir_carregamento(janela.app_handle()),
             ("mini", WindowEvent::ScaleFactorChanged { .. }) => posicionar_mini(janela.app_handle()),
+            ("mini", WindowEvent::Moved(_)) => {
+                let p = ponte(janela.app_handle());
+                if p.arrastando.load(Ordering::SeqCst) {
+                    *p.ultimo_movimento.lock().unwrap() = Instant::now();
+                }
+            }
             _ => {}
         })
         .invoke_handler(tauri::generate_handler![

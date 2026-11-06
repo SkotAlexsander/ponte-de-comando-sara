@@ -223,12 +223,14 @@ impl Sessao {
     /// Lê o que há de novo. Devolve true se algo mudou.
     pub fn atualizar(&mut self, t: &Tabela) -> bool {
         self.ciclos += 1;
+        // o principal e os subagentes já conhecidos a cada volta; arquivo novo de subagente a cada 5 voltas
         let mut caminhos = vec![self.transcript.clone()];
-        if self.ciclos == 1 || self.ciclos % 5 == 0 || !self.arquivos.is_empty() {
+        caminhos.extend(self.arquivos.keys().filter(|k| **k != self.transcript).cloned());
+        if self.ciclos == 1 || self.ciclos % 5 == 0 {
             if let Ok(l) = fs::read_dir(self.pasta_subagentes()) {
                 for e in l.flatten() {
                     let p = e.path();
-                    if p.extension().map(|x| x == "jsonl").unwrap_or(false) {
+                    if p.extension().map(|x| x == "jsonl").unwrap_or(false) && !caminhos.contains(&p) {
                         caminhos.push(p);
                     }
                 }

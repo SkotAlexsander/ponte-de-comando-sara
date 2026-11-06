@@ -16,7 +16,9 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": [
+      "nsis"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -27,11 +29,20 @@
     "longDescription": "Ponte de Comando · Sara — conversa com o Claude Code, mapa dos agentes e a Sara em miniatura avisando quando o trabalho fica pronto. Tudo local.",
     "windows": {
       "nsis": {
-        "languages": ["PortugueseBR"],
+        "languages": [
+          "PortugueseBR"
+        ],
         "installMode": "currentUser",
         "displayLanguageSelector": false
       },
-      "webviewInstallMode": { "type": "downloadBootstrapper" }
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      }
+    },
+    "resources": {
+      "../sidecar/ponte-sidecar.mjs": "sidecar/ponte-sidecar.mjs",
+      "../sidecar/package.json": "sidecar/package.json",
+      "../sidecar/node_modules/": "sidecar/node_modules/"
     }
   }
 }

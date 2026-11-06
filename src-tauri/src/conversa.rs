@@ -310,6 +310,11 @@ impl Conversas {
         self.mapa.lock().unwrap().get(conversa).cloned()
     }
 
+    /// Esta sessão do Claude Code foi aberta pelo programa?
+    pub fn tem_sessao(&self, sessao: &str) -> bool {
+        self.mapa.lock().unwrap().values().any(|i| i.sessao == sessao)
+    }
+
     pub fn rodando(&self, conversa: &str) -> bool {
         self.rodando.lock().unwrap().contains_key(conversa) || self.rodando_sdk.lock().unwrap().contains(conversa)
     }
