@@ -1,6 +1,6 @@
 {
   "origem": "A:\\Claude\\00-empresa\\corpos\\sara\\interface\\estudio-local",
-  "sincronizadoEm": "2026-11-06T04:18:57.725Z",
+  "sincronizadoEm": "2026-11-06T22:07:02.183Z",
   "remendos": [
     {
       "arquivo": "Main.dc.html",
@@ -171,13 +171,13 @@
     },
     {
       "arquivo": "Carregando.dc.html",
-      "bytes": 19638,
-      "sha1": "3eaa7f815667"
+      "bytes": 22378,
+      "sha1": "4d70b5811593"
     },
     {
       "arquivo": "carregando.html",
-      "bytes": 18285,
-      "sha1": "2a994e8c6e97"
+      "bytes": 21025,
+      "sha1": "de4a9b757b86"
     },
     {
       "arquivo": "Estilos.dc.html",
@@ -186,18 +186,18 @@
     },
     {
       "arquivo": "Fluxo.dc.html",
-      "bytes": 49818,
-      "sha1": "73cfc7ce9499"
+      "bytes": 52558,
+      "sha1": "34b31d0e72c1"
     },
     {
       "arquivo": "Main.dc.html",
-      "bytes": 139614,
-      "sha1": "0e010a6d26c9"
+      "bytes": 275637,
+      "sha1": "1294bb06a5bb"
     },
     {
       "arquivo": "Mini.dc.html",
-      "bytes": 18152,
-      "sha1": "4d246ef6d9d7"
+      "bytes": 20892,
+      "sha1": "6ee6bd27d3ea"
     },
     {
       "arquivo": "support.js",

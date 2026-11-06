@@ -1,6 +1,46 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
+<script data-ponte-pausa>
+(function () {
+  if (window.__pontePausa) return; window.__pontePausa = true;
+  var raf = window.requestAnimationFrame.bind(window), caf = window.cancelAnimationFrame.bind(window), si = window.setInterval.bind(window);
+  var fila = [], seq = 0, escondidoDesde = null, acumulado = 0, inicio = performance.now();
+  window.requestAnimationFrame = function (cb) {
+    if (!document.hidden) return raf(function (ts) { cb(ts - acumulado); });
+    var k = 'pausa-' + (++seq); fila.push([k, cb]); return k;
+  };
+  window.cancelAnimationFrame = function (k) { if (typeof k === 'string') fila = fila.filter(function (x) { return x[0] !== k; }); else caf(k); };
+  window.setInterval = function (cb, ms) {
+    var extra = Array.prototype.slice.call(arguments, 2);
+    if (typeof cb !== 'function') return si.apply(window, arguments);
+    return si(function () { if (!document.hidden) cb.apply(this, extra); }, ms);
+  };
+  function videos(esconder) {
+    document.querySelectorAll('video').forEach(function (v) {
+      if (esconder) { if (!v.paused) { v.__ponteTocava = true; v.pause(); } }
+      else if (v.__ponteTocava) { v.__ponteTocava = false; var p = v.play(); if (p && p.catch) p.catch(function () {}); }
+    });
+  }
+  function aplicar() {
+    var h = document.hidden, r = document.documentElement;
+    if (h) { if (escondidoDesde === null) escondidoDesde = Math.max(performance.now(), inicio); }
+    else if (escondidoDesde !== null) { acumulado += performance.now() - escondidoDesde; escondidoDesde = null; }
+    r.classList.toggle('pausado', h); r.setAttribute('data-pausado', h ? 'true' : 'false');
+    videos(h);
+    if (!h && fila.length) { var f = fila; fila = []; raf(function (ts) { f.forEach(function (x) { try { x[1](ts - acumulado); } catch (e) { setTimeout(function () { throw e; }); } }); }); }
+    try { window.dispatchEvent(new CustomEvent('ponte-visibilidade', { detail: { escondido: h } })); } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', aplicar);
+  // vídeo que tenta tocar sozinho (autoplay) enquanto escondido volta a pausar
+  document.addEventListener('play', function (ev) { if (document.hidden && ev.target && ev.target.tagName === 'VIDEO') { ev.target.__ponteTocava = true; ev.target.pause(); } }, true);
+  var css = document.createElement('style');
+  css.textContent = '.pausado *,.pausado *::before,.pausado *::after{animation-play-state:paused !important;transition-duration:0s !important;transition-delay:0s !important}';
+  (document.head || document.documentElement).appendChild(css);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', aplicar); else aplicar();
+  aplicar();
+})();
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ponte de Comando — abrindo</title>
