@@ -223,7 +223,10 @@
   }
 
   // ---------- 5. placa da Sara pelos eventos de fora ----------
+  // se a Main tiver o estado "precisa" (placa PRECISO DE VOCÊ), usa ele; senão, o mais perto é "escutando"
+  const temPrecisa = () => /\bprecisa\s*:\s*\{/.test(fonteDoTemplate())
   const MAPA = { esperando: 'esperando', trabalhando: 'trabalhando', precisa: 'escutando', pronto: 'pronto', erro: 'erro' }
+  const mapear = (k) => (k === 'precisa' && temPrecisa() ? 'precisa' : MAPA[k])
   // som curto (o mesmo da miniatura): com a Main na tela, o aviso é dela
   let ctxSom = null
   function tocar(tipo) {
@@ -243,7 +246,7 @@
   function aoEstado(e) {
     if (e.som && !e.mudo && e.aviso && e.onde === 'principal') tocar(e.aviso.tipo)
     if (st().rodandoEm) return // a conversa daqui manda na placa enquanto roda
-    const k = MAPA[e.estado]
+    const k = mapear(e.estado)
     if (k && st().estado !== k) set({ estado: k })
   }
 
