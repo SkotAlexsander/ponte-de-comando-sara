@@ -6,7 +6,9 @@
 //      "cwd":"A:\\Claude","sessao":"<uuid>","retomar":false}
 //     {"cmd":"parar","conversa":"c1"}            interrompe o turno sem perder a conversa
 //     {"cmd":"fechar","conversa":"c1"}           encerra a sessão viva (retomável depois)
-//     {"cmd":"permissao","pedido":"p7","decisao":"permitir"|"negar","motivo":"..."}
+//     {"cmd":"permissao","pedido":"p7","decisao":"permitir"|"negar","motivo":"...","lembrar":true}
+//   "enviar" pode trazer "instrucao": texto curto que vai no FIM do system prompt do Claude Code
+//   (preset claude_code + append; o prompt do Claude Code nunca é trocado). Ex.: "Always answer the user in English."
 //     {"cmd":"parar_agente","conversa":"c1","tarefa":"<task_id>"}
 //     {"cmd":"sair"}
 //   sidecar → Rust (stdout):
@@ -108,22 +110,25 @@ function traduzir(conversa, msg, estado) {
 
 async function abrir(c) {
   const fila = criarFila()
-  const estado = { sessao: c.sessao, ocupada: false, cfg: { modelo: c.modelo, esforco: c.esforco, rapido: !!c.rapido }, fila, q: null, cauda: '' }
+  const estado = { sessao: c.sessao, ocupada: false, cfg: { modelo: c.modelo, esforco: c.esforco, rapido: !!c.rapido }, instrucao: c.instrucao || '', language: c.language || '', fila, q: null, cauda: '' }
   const opcoes = {
     cwd: c.cwd,
     model: c.modelo,
     effort: c.esforco,
-    settings: { fastMode: !!c.rapido },
+    // idioma das respostas: a configuração oficial "language" do Claude Code + o append (reforço)
+    settings: c.language ? { fastMode: !!c.rapido, language: c.language } : { fastMode: !!c.rapido },
     permissionMode: 'default',
+    // sempre o prompt do Claude Code; a instrução de idioma só entra no fim (snapshot false: trocar o idioma vale já)
+    systemPrompt: c.instrucao ? { type: 'preset', preset: 'claude_code', append: c.instrucao, snapshot: false } : { type: 'preset', preset: 'claude_code' },
     settingSources: ['user', 'project', 'local'],
     includePartialMessages: true,
     agentProgressSummaries: false, // custaria caro por agente (decisão copiada do Oficina)
     pathToClaudeCodeExecutable: exeClaude(),
     env: Object.fromEntries(Object.entries(process.env).filter(([k]) => k !== 'CLAUDECODE' && k !== 'CLAUDE_CODE_ENTRYPOINT')),
     stderr: (d) => { estado.cauda = (estado.cauda + d).slice(-3000) },
-    canUseTool: (ferramenta, entrada, { signal }) => new Promise((resolver) => {
+    canUseTool: (ferramenta, entrada, { signal, suggestions }) => new Promise((resolver) => {
       const pedido = 'p' + (++contadorPedido)
-      pendentes.set(pedido, { resolver, conversa: c.conversa, entrada })
+      pendentes.set(pedido, { resolver, conversa: c.conversa, entrada, sugestoes: suggestions })
       signal?.addEventListener('abort', () => {
         if (pendentes.delete(pedido)) resolver({ behavior: 'deny', message: 'Pedido cancelado.' })
         enviarRust({ evento: 'permissao_fim', conversa: c.conversa, pedido })
@@ -144,12 +149,16 @@ async function abrir(c) {
         }
       }
     } catch (e) {
+      if (estado.substituida) return // fechada de propósito para reabrir (idioma mudou)
       const texto = String(e?.message || e) + (estado.cauda ? `\n${estado.cauda.trim().slice(-600)}` : '')
       log(`conversa ${c.conversa} caiu: ${texto}`)
       enviarRust({ evento: 'conversa', conversa: c.conversa, tipo: 'erro', texto })
     } finally {
-      if (conversas.get(c.conversa) === estado) conversas.delete(c.conversa)
-      enviarRust({ evento: 'conversa', conversa: c.conversa, tipo: 'fechada' })
+      // se outra sessão já tomou o lugar desta, ela é quem fala pela conversa
+      if (!estado.substituida && conversas.get(c.conversa) === estado) {
+        conversas.delete(c.conversa)
+        enviarRust({ evento: 'conversa', conversa: c.conversa, tipo: 'fechada' })
+      }
     }
   })()
   return estado
@@ -157,6 +166,14 @@ async function abrir(c) {
 
 async function enviar(c) {
   let estado = conversas.get(c.conversa)
+  // o idioma das respostas mudou: a instrução é opção de abertura, então reabre a sessão (retomando)
+  if (estado && ((c.instrucao || '') !== estado.instrucao || (c.language || '') !== estado.language) && !estado.ocupada) {
+    estado.substituida = true
+    estado.fila.fechar(); try { estado.q.close() } catch {}
+    conversas.delete(c.conversa)
+    estado = null
+    c = { ...c, retomar: true }
+  }
   if (!estado) estado = await abrir(c)
   else {
     // a mesma sessão viva, com o modelo/esforço/velocidade que a aba pede agora
@@ -166,7 +183,12 @@ async function enviar(c) {
     estado.cfg = cfg
   }
   estado.ocupada = true
-  estado.fila.empurrar({ type: 'user', message: { role: 'user', content: c.texto }, parent_tool_use_id: null, session_id: estado.sessao || '' })
+  // idioma das respostas: a marca curta na mensagem é o que o Claude Code obedece (o append sozinho perde
+  // para a língua em que o Alex escreve); a tela mostra só o que ele digitou
+  const conteudo = c.marcaIdioma ? `${c.marcaIdioma}
+
+${c.texto}` : c.texto
+  estado.fila.empurrar({ type: 'user', message: { role: 'user', content: conteudo }, parent_tool_use_id: null, session_id: estado.sessao || '' })
 }
 
 async function tratar(cmd) {
@@ -197,7 +219,8 @@ async function tratar(cmd) {
       const p = pendentes.get(cmd.pedido)
       if (!p) break
       pendentes.delete(cmd.pedido)
-      if (cmd.decisao === 'permitir') p.resolver({ behavior: 'allow', updatedInput: p.entrada })
+      // "lembrar aprovações": devolve a regra que o próprio Claude Code sugeriu (vale até o fim da sessão)
+      if (cmd.decisao === 'permitir') p.resolver(cmd.lembrar && Array.isArray(p.sugestoes) && p.sugestoes.length ? { behavior: 'allow', updatedInput: p.entrada, updatedPermissions: p.sugestoes } : { behavior: 'allow', updatedInput: p.entrada })
       else p.resolver({ behavior: 'deny', message: cmd.motivo || 'O Alex negou este pedido.' })
       break
     }

@@ -121,11 +121,13 @@
   }).catch(() => aplicarPecas(PADRAO))
 
   // tema de display (ponte.config): a miniatura segue o mesmo da Main
-  const aplicarTema = (c) => { if (!c) return; document.documentElement.dataset.tema = c.tema || 'metal'; document.documentElement.dataset.fosforo = c.fosforo || 'ambar' }
+  let somCfg = { somAviso: true, volumeAviso: 70 }
+  const aplicarTema = (c) => { if (!c) return; somCfg = { somAviso: c.somAviso !== false, volumeAviso: typeof c.volumeAviso === 'number' ? c.volumeAviso : 70 }; document.documentElement.dataset.tema = c.tema || 'metal'; document.documentElement.dataset.fosforo = c.fosforo || 'ambar' }
 
   // som curto (o mesmo do protótipo)
   let ctx = null
   const som = (tipo) => {
+    if (!somCfg.somAviso || !somCfg.volumeAviso) return
     try {
       ctx = ctx || new (window.AudioContext || window.webkitAudioContext)()
       if (ctx.state === 'suspended') ctx.resume()
@@ -133,7 +135,7 @@
       notas.forEach((f, i) => {
         const o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime + i * 0.14
         o.type = 'sine'; o.frequency.value = f
-        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45)
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, 0.16 * somCfg.volumeAviso / 100), t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45)
         o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + 0.5)
       })
       window.__ultimoSom = { tipo, quando: Date.now(), contexto: ctx.state }

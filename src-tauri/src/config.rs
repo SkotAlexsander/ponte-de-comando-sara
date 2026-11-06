@@ -32,6 +32,39 @@ pub struct Config {
     pub mini_canto: String,
     /// Nome do monitor onde a miniatura ficou. `None` = monitor principal.
     pub mini_monitor: Option<String>,
+    /// Língua da interface: "pt-BR" | "en".
+    pub idioma: String,
+    /// Língua das respostas: "seguir" (a da interface) | "pt-BR" | "en". Vira um append no system prompt.
+    pub idioma_respostas: String,
+    /// 90 | 100 | 110 | 125 (%).
+    pub tamanho_letra: u32,
+    /// "sistema" | "sempre" | "reduzidas".
+    pub animacoes: String,
+    /// Modelo, esforço e velocidade de uma conversa nova.
+    pub padrao_nova: PadraoNova,
+    /// Ao permitir no cartão, lembrar a regra sugerida pelo Claude Code até o fim da sessão.
+    pub lembrar_aprovacoes: bool,
+    pub som_aviso: bool,
+    /// 0 a 100.
+    pub volume_aviso: u32,
+    pub abrir_com_windows: bool,
+    pub comecar_na_bandeja: bool,
+    /// "assinatura" (login do Claude Code) | "api" (chave guardada no Cofre do Windows).
+    pub modo_conta: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(default)]
+pub struct PadraoNova {
+    pub modelo: String,
+    pub esforco: String,
+    pub rapido: bool,
+}
+
+impl Default for PadraoNova {
+    fn default() -> Self {
+        PadraoNova { modelo: "opus".into(), esforco: "high".into(), rapido: false }
+    }
 }
 
 impl Default for Config {
@@ -46,6 +79,17 @@ impl Default for Config {
             fosforo: "ambar".into(),
             mini_canto: "inferior-direito".into(),
             mini_monitor: None,
+            idioma: "pt-BR".into(),
+            idioma_respostas: "seguir".into(),
+            tamanho_letra: 100,
+            animacoes: "sistema".into(),
+            padrao_nova: PadraoNova::default(),
+            lembrar_aprovacoes: false,
+            som_aviso: true,
+            volume_aviso: 70,
+            abrir_com_windows: false,
+            comecar_na_bandeja: false,
+            modo_conta: "assinatura".into(),
         }
     }
 }
@@ -78,6 +122,16 @@ impl Config {
         if c.porta < 1024 {
             c.porta = PORTA_PADRAO;
         }
+        // arquivo editado à mão com valor estranho: cada chave volta ao padrão sozinha
+        let p = Config::default();
+        if !["pt-BR", "en"].contains(&c.idioma.as_str()) { c.idioma = p.idioma.clone(); }
+        if !["seguir", "pt-BR", "en"].contains(&c.idioma_respostas.as_str()) { c.idioma_respostas = p.idioma_respostas.clone(); }
+        if ![90, 100, 110, 125].contains(&c.tamanho_letra) { c.tamanho_letra = 100; }
+        if !["sistema", "sempre", "reduzidas"].contains(&c.animacoes.as_str()) { c.animacoes = p.animacoes.clone(); }
+        if c.volume_aviso > 100 { c.volume_aviso = 70; }
+        if !["assinatura", "api"].contains(&c.modo_conta.as_str()) { c.modo_conta = p.modo_conta.clone(); }
+        if !["opus", "sonnet", "haiku"].contains(&c.padrao_nova.modelo.as_str()) { c.padrao_nova.modelo = "opus".into(); }
+        if crate::conversa::normalizar_esforco(&c.padrao_nova.esforco).is_err() { c.padrao_nova.esforco = "high".into(); }
         c
     }
 

@@ -814,6 +814,10 @@ fn exe_claude() -> PathBuf {
     }
 }
 
+pub fn rodar_claude_publico(args: &[&str], cwd: Option<&Path>, limite: Duration) -> Result<String, String> {
+    rodar_claude(args, cwd, limite)
+}
+
 fn rodar_claude(args: &[&str], cwd: Option<&Path>, limite: Duration) -> Result<String, String> {
     let mut cmd = Command::new(exe_claude());
     cmd.args(args).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped()).env_remove("CLAUDECODE");

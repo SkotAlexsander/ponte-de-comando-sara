@@ -14,7 +14,9 @@
     arvore: { '': [{ nome: '03-projetos', tipo: 'pasta' }, { nome: 'LEIA-ME.md', tipo: 'arquivo' }], '03-projetos': [{ nome: 'ponte-de-comando-sara', tipo: 'pasta' }], '03-projetos\\ponte-de-comando-sara': [] },
     estado: { estado: 'esperando', legenda: 'Por aqui', aviso: null, mudo: false, som: false },
     conversas: {},
-    config: { tema: 'metal', fosforo: 'ambar', pastaTrabalho: 'A:\\Claude', pastaTrabalhoPadrao: true, miniAoMinimizar: true, toastWindows: 'auto', mudo: false },
+    config: { tema: 'metal', fosforo: 'ambar', pastaTrabalho: 'A:\\Claude', pastaTrabalhoPadrao: true, miniAoMinimizar: true, toastWindows: 'auto', mudo: false,
+      idioma: 'pt-BR', idiomaRespostas: 'seguir', tamanhoLetra: 100, animacoes: 'sistema', padraoNova: { modelo: 'opus', esforco: 'high', rapido: false },
+      lembrarAprovacoes: false, somAviso: true, volumeAviso: 70, cantoMini: 'id', abrirComWindows: false, comecarNaBandeja: false, modoConta: 'assinatura' },
   }
   const montarItem = (pai, it) => { const caminho = pai ? pai + '\\' + it.nome : it.nome; return { nome: it.nome, caminho, absoluto: falso.raiz + '\\' + caminho, tipo: it.tipo, link: false, tamanho: null } }
   const relFalso = (d) => {
@@ -117,6 +119,26 @@
     },
     aoConfig: (fn) => ouvir('ponte:config', fn),
 
+    // conta: assinatura (login do Claude Code) ou chave de API (Cofre do Windows)
+    conta: {
+      status: () => invocar('conta_status'),          // { ok, logado, metodo, email (mascarado), organizacao, plano, modo, temChave }
+      modo: () => invocar('conta_modo'),              // 'assinatura' | 'api'
+      trocar: () => erroEmTexto(invocar('conta_trocar')),             // login oficial num terminal visível
+      sair: (confirmado) => erroEmTexto(invocar('conta_sair', { confirmado: confirmado === true })),
+      guardarChave: (chave) => erroEmTexto(invocar('conta_guardar_chave', { chave: String(chave || '') })),
+      testarChave: () => invocar('conta_testar_chave'), // { ok, status, erro?, modelos? }
+      apagarChave: () => invocar('conta_apagar_chave'),
+    },
+    aoConta: (fn) => ouvir('ponte:conta', fn),
+
+    // sistema
+    sistema: {
+      abrirPastaDados: () => erroEmTexto(invocar('sistema_abrir_pasta_dados')),
+      exportarConfig: () => erroEmTexto(invocar('sistema_exportar_config')),   // → caminho salvo ou null
+      importarConfig: () => erroEmTexto(invocar('sistema_importar_config')),   // → config nova ou null
+      restaurarPadrao: (confirmado) => erroEmTexto(invocar('sistema_restaurar_padrao', { confirmado: confirmado === true })),
+    },
+
     // estado da Sara e avisos
     estado: () => invocar('estado_atual'),
     dispensarAviso: () => invocar('dispensar_aviso'),
@@ -127,7 +149,6 @@
     // números
     tokens: () => invocar('tokens_resumo'),
     limites: () => invocar('limites'),
-    conta: () => invocar('conta'),
     conexoes: () => invocar('conexoes_mcp'),
     info: () => invocar('info_app'),
 

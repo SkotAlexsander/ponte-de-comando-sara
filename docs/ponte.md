@@ -103,6 +103,58 @@ ponte.aoConfig((c) => { … })                                         // todas 
   - **Fora do programa instalado nunca sai toast**, porque ele apareceria como "Windows PowerShell".
 - **Tema:** a miniatura e a Main recebem `data-tema` e `data-fosforo` no `<html>`. Na Main, a Sara aplica o atributo na área da conversa. O tema muda **só** o que fica dentro do vidro da moldura da conversa.
 
+### Chaves novas (opções inteligentes)
+
+| Chave | Valores | O que faz |
+|---|---|---|
+| `idioma` | `pt-BR` \| `en` | língua da interface; as mensagens de erro novas saem nela |
+| `idiomaRespostas` | `seguir` (a da interface) \| `pt-BR` \| `en` | língua das respostas do Claude (ver abaixo) |
+| `tamanhoLetra` | 90 \| 100 \| 110 \| 125 | guardado para a tela aplicar |
+| `animacoes` | `sistema` \| `sempre` \| `reduzidas` | guardado para a tela aplicar |
+| `padraoNova` | `{ modelo: opus\|sonnet\|haiku, esforco: low…max (aceita BAIXO…MÁXIMO), rapido }` | usado quando a aba não manda modelo/esforço/velocidade |
+| `lembrarAprovacoes` | bool | ao PERMITIR no cartão, devolve a regra que o próprio Claude Code sugeriu (vale até o fim da sessão) |
+| `somAviso`, `volumeAviso` | bool, 0–100 | som da miniatura e da Main |
+| `cantoMini` | `ie` \| `id` \| `se` \| `sd` | canto da miniatura |
+| `abrirComWindows` | bool | plugin oficial autostart (abre com `--minimizado`) |
+| `comecarNaBandeja` | bool | abre sem carregamento e sem principal: só a miniatura |
+| `modoConta` | `assinatura` \| `api` | `api` exige uma chave guardada |
+
+**Idioma das respostas:** com `pt-BR` ou `en` efetivo, a conversa leva três coisas:
+- o **append** no fim do system prompt do Claude Code (`systemPrompt: { type: 'preset', preset: 'claude_code', append, snapshot: false }`; o prompt do Claude Code nunca é trocado);
+- a configuração oficial `language` do Claude Code;
+- uma **marca curta no começo da mensagem** enviada ao Claude, como `[Ponte de Comando: answer in English]`. A tela não mostra a marca.
+
+O motivo foi medido em 06/11/2026, com o Haiku e com o Sonnet: o append e o `language` sozinhos perdem para a língua em que o Alex escreve; com a marca, o Claude obedece. Trocar o idioma no meio de uma conversa reabre a sessão retomando (vale já na próxima mensagem).
+
+## Conta (`ponte.conta`)
+
+| Função | |
+|---|---|
+| `status()` | `{ ok, logado, metodo, email: 's***@dominio', organizacao, plano, modo, temChave }` (`claude auth status --json`) |
+| `modo()` | `'assinatura'` \| `'api'` |
+| `trocar()` | abre o **login oficial** (`claude auth login`) num terminal **visível**; quando ele fecha, `aoConta(fn)` recebe o status novo |
+| `sair(true)` | logout oficial (`claude auth logout`); sem `true` é recusado (a tela confirma antes) |
+| `guardarChave(chave)` | grava no **Cofre do Windows** (Gerenciador de Credenciais, alvo `PonteDeComando/anthropic-api-key`); recusa o que não tiver o formato `sk-ant-…` |
+| `testarChave()` | chamada mínima e gratuita (`GET /v1/models`) → `{ ok, status, erro?, modelos? }` |
+| `apagarChave()` | tira do Cofre; se o modo era `api`, volta para `assinatura` |
+
+Como a chave é tratada:
+- Ela **nunca** vai para arquivo, registro, linha de comando, evento ou tela.
+- No modo `api`, ela entra só na variável `ANTHROPIC_API_KEY` do processo do sidecar e do teste.
+- No modo `assinatura`, essa variável é **tirada** do sidecar, mesmo que exista no Windows.
+- Trocar de modo reabre o sidecar quando nenhuma conversa está rodando.
+- O Cofre é usado direto pela API do Windows (`CredWriteW`/`CredReadW`/`CredDeleteW`), sem biblioteca de terceiro.
+- O modo `claude -p` (sem Node) usa só o login do Claude Code.
+
+## Sistema (`ponte.sistema`)
+
+| Função | |
+|---|---|
+| `abrirPastaDados()` | abre no Explorer a pasta de dados do programa (caminho fixo) |
+| `exportarConfig()` | pergunta onde salvar → `{ programa: 'Ponte de Comando', versaoConfig: 1, config }` (sem token, porta nem chave) |
+| `importarConfig()` | escolhe o arquivo, valida **tudo** e só então aplica; arquivo de outro programa, JSON inválido ou valor errado é recusado inteiro |
+| `restaurarPadrao(true)` | volta tudo que a tela configura ao padrão e desliga o início com o Windows |
+
 ## Miniatura e janela principal
 
 - A miniatura **some** quando a principal está na tela e **aparece** quando ela é minimizada, vai para a bandeja (fechar) ou ainda não abriu, se "Miniatura ao minimizar" estiver ligada. Há um debounce de 150 ms, para não piscar, e a regra é reconferida a cada 3 s.

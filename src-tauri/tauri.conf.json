@@ -42,7 +42,8 @@
     "resources": {
       "../sidecar/ponte-sidecar.mjs": "sidecar/ponte-sidecar.mjs",
       "../sidecar/package.json": "sidecar/package.json",
-      "../sidecar/node_modules/": "sidecar/node_modules/"
+      "../sidecar/node_modules/": "sidecar/node_modules/",
+      "../sidecar/testar-chave.mjs": "sidecar/testar-chave.mjs"
     }
   }
 }

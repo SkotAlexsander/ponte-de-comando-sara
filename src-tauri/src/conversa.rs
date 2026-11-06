@@ -319,6 +319,10 @@ impl Conversas {
         self.rodando.lock().unwrap().contains_key(conversa) || self.rodando_sdk.lock().unwrap().contains(conversa)
     }
 
+    pub fn nenhuma_rodando(&self) -> bool {
+        self.rodando.lock().unwrap().is_empty() && self.rodando_sdk.lock().unwrap().is_empty()
+    }
+
     pub fn marcar_rodando_sdk(&self, conversa: &str, sim: bool) {
         let mut g = self.rodando_sdk.lock().unwrap();
         if sim {

@@ -23,6 +23,8 @@ pub struct Sidecar {
     /// Job Object do Windows (KILL_ON_JOB_CLOSE): quando a Ponte fecha, por qualquer motivo,
     /// o Windows encerra o sidecar, o claude e os comandos que as ferramentas abriram.
     job: Mutex<usize>,
+    /// Modo "api": a chave sai do Cofre e entra SÓ na variável ANTHROPIC_API_KEY do processo filho.
+    chave: Mutex<Option<String>>,
 }
 
 #[cfg(windows)]
@@ -95,7 +97,19 @@ pub fn achar_node() -> Option<PathBuf> {
 
 impl Sidecar {
     pub fn novo(script: Option<PathBuf>, pasta_log: &Path) -> Sidecar {
-        Sidecar { script, node: achar_node(), vivo: Mutex::new(None), pasta_log: pasta_log.to_path_buf(), job: Mutex::new(0) }
+        Sidecar { script, node: achar_node(), vivo: Mutex::new(None), pasta_log: pasta_log.to_path_buf(), job: Mutex::new(0), chave: Mutex::new(None) }
+    }
+
+    /// Troca a chave usada no PRÓXIMO sidecar que abrir. Devolve true se mudou.
+    pub fn definir_chave(&self, chave: Option<String>) -> bool {
+        let mut g = self.chave.lock().unwrap();
+        let mudou = *g != chave;
+        *g = chave;
+        mudou
+    }
+
+    pub fn vivo(&self) -> bool {
+        self.vivo.lock().unwrap().as_mut().map(|v| v.filho.try_wait().map(|s| s.is_none()).unwrap_or(false)).unwrap_or(false)
     }
 
     pub fn disponivel(&self) -> bool {
@@ -121,6 +135,15 @@ impl Sidecar {
             .stderr(Stdio::piped())
             .env_remove("CLAUDECODE")
             .env_remove("CLAUDE_CODE_ENTRYPOINT");
+        // modo da conta: com chave, entra só aqui; sem chave (assinatura), tira qualquer uma herdada
+        match self.chave.lock().unwrap().as_deref() {
+            Some(k) => {
+                cmd.env("ANTHROPIC_API_KEY", k);
+            }
+            None => {
+                cmd.env_remove("ANTHROPIC_API_KEY");
+            }
+        }
         #[cfg(windows)]
         {
             use std::os::windows::process::CommandExt;

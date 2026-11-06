@@ -12,7 +12,9 @@
     "testar:paginas": "node ferramentas/testes/paginas.mjs",
     "testar:programa": "node ferramentas/testes/programa.mjs",
     "testar:sidecar-real": "node ferramentas/testes/sidecar-real.mjs",
-    "testar:job": "node ferramentas/testes/job.mjs"
+    "testar:job": "node ferramentas/testes/job.mjs",
+    "testar:miniatura": "node ferramentas/testes/miniatura.mjs",
+    "testar:opcoes": "node ferramentas/testes/opcoes.mjs"
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.12.0"

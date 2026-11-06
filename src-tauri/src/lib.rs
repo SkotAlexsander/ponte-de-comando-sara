@@ -4,9 +4,11 @@
 //! e o motor de tokens (leitura dos transcripts do Claude Code).
 
 mod arquivos;
+mod cofre;
 mod config;
 mod conversa;
 mod estado;
+mod preferencias;
 mod servidor;
 mod sidecar;
 mod tokens;
@@ -24,6 +26,7 @@ use std::time::{Duration, Instant};
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent, Wry};
+use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_notification::NotificationExt;
 
@@ -52,6 +55,8 @@ pub struct Ponte {
     item_mini: Mutex<Option<MenuItem<Wry>>>,
     item_toast: Mutex<Option<CheckMenuItem<Wry>>>,
     geracao_mini: AtomicU64,
+    /// idioma das respostas ou modo da conta mudou: reabrir o sidecar quando nenhuma conversa estiver rodando
+    reabrir_sidecar: AtomicBool,
     motor_tokens: Arc<tokens::Motor>,
 }
 
@@ -186,9 +191,15 @@ fn argumentos_webview() -> String {
     a
 }
 
+/// Começar na bandeja: aberto pelo Windows (--minimizado) ou "Começar na bandeja" ligado.
+fn comecar_na_bandeja(app: &AppHandle) -> bool {
+    std::env::args().any(|a| a == "--minimizado") || ponte(app).config.lock().unwrap().comecar_na_bandeja
+}
+
 fn criar_janelas(app: &AppHandle) -> tauri::Result<()> {
     let args = argumentos_webview();
     let fora = teste_fora_da_tela();
+    let bandeja = comecar_na_bandeja(app);
     let mut carregamento = WebviewWindowBuilder::new(app, "carregamento", WebviewUrl::App("carregamento.html".into()))
         .title("Ponte de Comando")
         .inner_size(960.0, 560.0)
@@ -202,7 +213,9 @@ fn criar_janelas(app: &AppHandle) -> tauri::Result<()> {
     if fora {
         carregamento = carregamento.position(FORA, FORA).focused(false).focusable(false);
     }
-    carregamento.build()?;
+    if !bandeja {
+        carregamento.build()?;
+    }
 
     let mut principal = WebviewWindowBuilder::new(app, "principal", WebviewUrl::App("estudio/Main.dc.html".into()))
         .title("Ponte de Comando · Sara")
@@ -455,16 +468,25 @@ fn mini_canto(app: AppHandle) -> String {
 // ---------------------------------------------------------------- configurações
 
 fn config_publica(app: &AppHandle) -> Value {
-    let c = ponte(app).config.lock().unwrap().clone();
-    json!({
-        "tema": c.tema,
-        "fosforo": c.fosforo,
-        "pastaTrabalho": arquivos::exibir(&c.pasta_atual().0),
-        "pastaTrabalhoPadrao": c.pasta_atual().1,
-        "miniAoMinimizar": c.mini_visivel,
-        "toastWindows": c.toast_windows,
-        "mudo": c.mudo,
-    })
+    preferencias::publica(&ponte(app).config.lock().unwrap())
+}
+
+fn idioma(app: &AppHandle) -> String {
+    ponte(app).config.lock().unwrap().idioma.clone()
+}
+
+fn tr(app: &AppHandle, pt: &str, en: &str) -> String {
+    preferencias::t(&idioma(app), pt, en)
+}
+
+/// Iniciar com o Windows (plugin oficial autostart, abre com --minimizado). Nos testes, PONTE_AUTOSTART_FALSO=1.
+fn aplicar_autostart(app: &AppHandle, ligar: bool) -> Result<(), String> {
+    if std::env::var("PONTE_AUTOSTART_FALSO").map(|v| v == "1").unwrap_or(false) {
+        return Ok(());
+    }
+    let a = app.autolaunch();
+    let r = if ligar { a.enable() } else { a.disable() };
+    r.map_err(|e| format!("{} {e}", tr(app, "O Windows não deixou mudar o início automático:", "Windows refused to change start-up:")))
 }
 
 #[tauri::command]
@@ -472,89 +494,266 @@ fn config_ler(app: AppHandle) -> Value {
     config_publica(&app)
 }
 
-/// Grava só as chaves conhecidas (as outras são recusadas) e avisa todas as janelas (`ponte:config`).
+/// Grava só as chaves conhecidas, validando o pedido inteiro antes (preferencias::aplicar),
+/// aplica os efeitos e avisa todas as janelas (`ponte:config`).
 #[tauri::command]
 fn config_gravar(app: AppHandle, parcial: Value) -> Result<Value, String> {
-    let o = parcial.as_object().ok_or("Mande um objeto com as chaves a mudar.")?;
-    let texto = |k: &str| o.get(k).and_then(|v| v.as_str()).map(|s| s.trim().to_lowercase());
-    // valida tudo antes de mudar qualquer coisa
-    let mut desconhecidas = vec![];
-    for k in o.keys() {
-        if !["tema", "fosforo", "pastaTrabalho", "miniAoMinimizar", "toastWindows", "mudo"].contains(&k.as_str()) {
-            desconhecidas.push(k.clone());
-        }
+    let p = ponte(&app);
+    let atual = p.config.lock().unwrap().clone();
+    if parcial.get("modoConta").and_then(|v| v.as_str()) == Some("api") && !cofre::existe(&cofre::alvo()) {
+        return Err(tr(&app, "Guarde uma chave de API antes de usar o modo chave.", "Store an API key before switching to API-key mode."));
     }
-    if !desconhecidas.is_empty() {
-        return Err(format!("Chave desconhecida: {}", desconhecidas.join(", ")));
+    let (novo, ef) = preferencias::aplicar(&atual, &parcial)?;
+    if let Some(b) = ef.autostart {
+        aplicar_autostart(&app, b)?;
     }
-    let tema = texto("tema");
-    if let Some(t) = &tema {
-        if !config::TEMAS.contains(&t.as_str()) {
-            return Err("Tema desconhecido (use metal, fosforo ou grade).".into());
-        }
-    }
-    let fosforo = texto("fosforo");
-    if let Some(f) = &fosforo {
-        if !config::FOSFOROS.contains(&f.as_str()) {
-            return Err("Cor do fósforo desconhecida (use ambar ou verde).".into());
-        }
-    }
-    let toast = texto("toastWindows");
-    if let Some(t) = &toast {
-        if !["auto", "sempre", "nunca"].contains(&t.as_str()) {
-            return Err("toastWindows aceita auto, sempre ou nunca.".into());
-        }
-    }
-    let mini = match o.get("miniAoMinimizar") {
-        None => None,
-        Some(Value::Bool(b)) => Some(*b),
-        Some(_) => return Err("miniAoMinimizar é verdadeiro ou falso.".into()),
-    };
-    let mudo = match o.get("mudo") {
-        None => None,
-        Some(Value::Bool(b)) => Some(*b),
-        Some(_) => return Err("mudo é verdadeiro ou falso.".into()),
-    };
-    // pastaTrabalho: null volta ao padrão; texto precisa ser uma pasta que existe
-    let pasta: Option<Option<String>> = match o.get("pastaTrabalho") {
-        None => None,
-        Some(Value::Null) => Some(None),
-        Some(Value::String(t)) => {
-            let c = std::fs::canonicalize(t.trim()).map_err(|_| "Essa pasta não existe.".to_string())?;
-            if !c.is_dir() {
-                return Err("Isso não é uma pasta.".into());
-            }
-            Some(Some(arquivos::exibir(&c)))
-        }
-        Some(_) => return Err("pastaTrabalho é um caminho ou null.".into()),
-    };
-    let pasta_mudou = pasta.is_some();
-    {
-        let p = ponte(&app);
-        let mut c = p.config.lock().unwrap();
-        if let Some(t) = tema { c.tema = t; }
-        if let Some(f) = fosforo { c.fosforo = f; }
-        if let Some(t) = toast { c.toast_windows = t; }
-        if let Some(pa) = pasta { c.pasta_de_trabalho = pa; }
-    }
+    *p.config.lock().unwrap() = novo;
     salvar_config(&app);
-    if let Some(m) = mini {
-        definir_mini_ao_minimizar(&app, m);
+    if ef.mini {
+        let ligada = p.config.lock().unwrap().mini_visivel;
+        definir_mini_ao_minimizar(&app, ligada);
     }
-    if let Some(m) = mudo {
+    if let Some(m) = ef.mudo {
         aplicar_mudo(&app, m);
     }
+    if ef.canto {
+        posicionar_mini(&app);
+        let canto = p.config.lock().unwrap().mini_canto.clone();
+        let _ = app.emit("ponte:mini-canto", &canto);
+    }
     {
-        let p = ponte(&app);
         let sempre = p.config.lock().unwrap().toast_windows == "sempre";
         let item = p.item_toast.lock().unwrap();
         if let Some(i) = item.as_ref() {
             let _ = i.set_checked(sempre);
         }
     }
-    if pasta_mudou {
+    if ef.pasta {
         let _ = app.emit("ponte:pasta", info_pasta(&app));
     }
+    if ef.reabrir_sidecar {
+        p.reabrir_sidecar.store(true, Ordering::SeqCst);
+    }
+    let atual = config_publica(&app);
+    let _ = app.emit("ponte:config", &atual);
+    Ok(atual)
+}
+
+// ---------------------------------------------------------------- conta (assinatura ou chave de API)
+
+fn status_da_conta(app: &AppHandle) -> Value {
+    let mut v = tokens::conta();
+    if let Some(e) = v.get("email").and_then(|x| x.as_str()).map(String::from) {
+        v["email"] = json!(cofre::mascarar_email(&e));
+    }
+    let modo = ponte(app).config.lock().unwrap().modo_conta.clone();
+    v["modo"] = json!(modo);
+    v["temChave"] = json!(cofre::existe(&cofre::alvo()));
+    v
+}
+
+#[tauri::command]
+async fn conta_status(app: AppHandle) -> Value {
+    let a = app.clone();
+    tauri::async_runtime::spawn_blocking(move || status_da_conta(&a)).await.unwrap_or(Value::Null)
+}
+
+#[tauri::command]
+fn conta_modo(app: AppHandle) -> String {
+    ponte(&app).config.lock().unwrap().modo_conta.clone()
+}
+
+/// Abre o login OFICIAL do Claude Code num terminal visível (o OAuth acontece no navegador, à vista).
+/// Quando a janela fecha, o status é relido e vai para as janelas em `ponte:conta`.
+#[tauri::command]
+fn conta_trocar(app: AppHandle) -> Result<(), String> {
+    let exe = PathBuf::from(std::env::var("USERPROFILE").unwrap_or_default()).join(".local").join("bin").join("claude.exe");
+    if !exe.is_file() {
+        return Err(tr(&app, "Não achei o claude.exe para abrir o login.", "Could not find claude.exe to start the login."));
+    }
+    let mut cmd = std::process::Command::new(&exe);
+    cmd.args(["auth", "login"]).env_remove("CLAUDECODE").env_remove("ANTHROPIC_API_KEY");
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0000_0010); // CREATE_NEW_CONSOLE: o login fica à vista
+    }
+    let mut filho = cmd.spawn().map_err(|e| e.to_string())?;
+    registrar(&ponte(&app).pasta_dados, "login do Claude Code aberto num terminal");
+    std::thread::spawn(move || {
+        let _ = filho.wait();
+        let st = status_da_conta(&app);
+        let _ = app.emit("ponte:conta", &st);
+    });
+    Ok(())
+}
+
+/// Logout oficial. A tela confirma antes e manda `confirmado: true`.
+#[tauri::command]
+async fn conta_sair(app: AppHandle, confirmado: bool) -> Result<Value, String> {
+    if !confirmado {
+        return Err(tr(&app, "Confirme na tela antes de sair da conta.", "Confirm on screen before signing out."));
+    }
+    let a = app.clone();
+    let r = tauri::async_runtime::spawn_blocking(move || {
+        let r = tokens::rodar_claude_publico(&["auth", "logout"], None, Duration::from_secs(30));
+        (r, status_da_conta(&a))
+    })
+    .await
+    .map_err(|e| e.to_string())?;
+    let _ = app.emit("ponte:conta", &r.1);
+    r.0.map(|_| r.1)
+}
+
+#[tauri::command]
+fn conta_guardar_chave(app: AppHandle, chave: String) -> Result<(), String> {
+    let chave = chave.trim().to_string();
+    if !cofre::formato_valido(&chave) {
+        return Err(tr(&app, "Isso não parece uma chave da Anthropic (começa com sk-ant-).", "That does not look like an Anthropic key (it starts with sk-ant-)."));
+    }
+    cofre::guardar(&cofre::alvo(), &chave)?;
+    registrar(&ponte(&app).pasta_dados, "chave de API guardada no Cofre do Windows"); // nunca a chave
+    if ponte(&app).config.lock().unwrap().modo_conta == "api" {
+        ponte(&app).reabrir_sidecar.store(true, Ordering::SeqCst);
+    }
+    let _ = app.emit("ponte:conta", json!({ "temChave": true }));
+    Ok(())
+}
+
+/// Chamada mínima e gratuita (lista de modelos) com a chave do Cofre. Diz OK ou o erro, nunca a chave.
+#[tauri::command]
+async fn conta_testar_chave(app: AppHandle) -> Value {
+    let Some(chave) = cofre::ler(&cofre::alvo()) else {
+        return json!({ "ok": false, "erro": tr(&app, "Não há chave guardada.", "No key stored.") });
+    };
+    let p = ponte(&app);
+    let (Some(node), Some(script)) = (p.sidecar.node.clone(), p.sidecar.script.clone()) else {
+        return json!({ "ok": false, "erro": tr(&app, "Sem o Node não dá para testar.", "Node is required to test the key.") });
+    };
+    let testar = script.with_file_name("testar-chave.mjs");
+    let en = idioma(&app) == "en";
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut cmd = std::process::Command::new(node);
+        cmd.arg(&testar).env("ANTHROPIC_API_KEY", &chave).stdin(std::process::Stdio::null());
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x0800_0000);
+        }
+        let saida = cmd.output();
+        drop(chave);
+        match saida {
+            Ok(o) => serde_json::from_slice::<Value>(&o.stdout).unwrap_or_else(|_| json!({ "ok": false, "erro": if en { "unexpected answer from the test" } else { "resposta inesperada do teste" } })),
+            Err(e) => json!({ "ok": false, "erro": e.to_string() }),
+        }
+    })
+    .await
+    .unwrap_or(Value::Null)
+}
+
+#[tauri::command]
+fn conta_apagar_chave(app: AppHandle) -> bool {
+    let apagou = cofre::apagar(&cofre::alvo());
+    let p = ponte(&app);
+    // sem chave não há modo chave
+    if p.config.lock().unwrap().modo_conta == "api" {
+        p.config.lock().unwrap().modo_conta = "assinatura".into();
+        salvar_config(&app);
+        p.reabrir_sidecar.store(true, Ordering::SeqCst);
+        let _ = app.emit("ponte:config", config_publica(&app));
+    }
+    registrar(&p.pasta_dados, "chave de API apagada do Cofre");
+    let _ = app.emit("ponte:conta", json!({ "temChave": false }));
+    apagou
+}
+
+// ---------------------------------------------------------------- sistema
+
+/// Abre no Explorer a pasta de dados do programa (caminho fixo; não aceita caminho de fora).
+#[tauri::command]
+fn sistema_abrir_pasta_dados(app: AppHandle) -> Result<(), String> {
+    let pasta = ponte(&app).pasta_dados.clone();
+    std::process::Command::new(r"C:\Windows\explorer.exe").arg(&pasta).spawn().map(|_| ()).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn sistema_exportar_config(app: AppHandle) -> Result<Option<String>, String> {
+    let conteudo = serde_json::to_string_pretty(&preferencias::exportavel(&ponte(&app).config.lock().unwrap())).map_err(|e| e.to_string())?;
+    let a = app.clone();
+    let titulo = tr(&app, "Salvar as configurações", "Save settings");
+    let escolha = tauri::async_runtime::spawn_blocking(move || {
+        let mut d = a.dialog().file().set_title(titulo).set_file_name("ponte-de-comando-config.json").add_filter("JSON", &["json"]);
+        if let Some(j) = a.get_webview_window("principal") {
+            d = d.set_parent(&j);
+        }
+        d.blocking_save_file()
+    })
+    .await
+    .map_err(|e| e.to_string())?;
+    let Some(arq) = escolha else { return Ok(None) };
+    let caminho = arq.into_path().map_err(|e| e.to_string())?;
+    config::gravar_atomico(&caminho, conteudo.as_bytes())?;
+    Ok(Some(arquivos::exibir(&caminho)))
+}
+
+/// Lê um arquivo exportado, valida TUDO e só então aplica (o mesmo caminho do config_gravar).
+#[tauri::command]
+async fn sistema_importar_config(app: AppHandle) -> Result<Option<Value>, String> {
+    let a = app.clone();
+    let titulo = tr(&app, "Abrir configurações", "Open settings");
+    let escolha = tauri::async_runtime::spawn_blocking(move || {
+        let mut d = a.dialog().file().set_title(titulo).add_filter("JSON", &["json"]);
+        if let Some(j) = a.get_webview_window("principal") {
+            d = d.set_parent(&j);
+        }
+        d.blocking_pick_file()
+    })
+    .await
+    .map_err(|e| e.to_string())?;
+    let Some(arq) = escolha else { return Ok(None) };
+    let caminho = arq.into_path().map_err(|e| e.to_string())?;
+    importar_de(&app, &caminho).map(Some)
+}
+
+fn importar_de(app: &AppHandle, caminho: &std::path::Path) -> Result<Value, String> {
+    let meta = std::fs::metadata(caminho).map_err(|e| e.to_string())?;
+    if meta.len() > 64 * 1024 {
+        return Err(tr(app, "Arquivo grande demais para ser uma configuração.", "File too large to be a settings file."));
+    }
+    let texto = std::fs::read_to_string(caminho).map_err(|e| e.to_string())?;
+    let v: Value = serde_json::from_str(&texto).map_err(|_| tr(app, "O arquivo não é um JSON válido.", "The file is not valid JSON."))?;
+    if v.get("programa").and_then(|x| x.as_str()) != Some("Ponte de Comando") {
+        return Err(tr(app, "Esse arquivo não é uma configuração da Ponte de Comando.", "This file is not a Ponte de Comando settings file."));
+    }
+    let cfg = v.get("config").cloned().ok_or_else(|| tr(app, "O arquivo não tem a parte \"config\".", "The file has no \"config\" section."))?;
+    config_gravar(app.clone(), cfg)
+}
+
+/// Teste: importar sem o seletor (só com PONTE_TESTE_FORA_DA_TELA=1).
+#[tauri::command]
+fn sistema_importar_arquivo_teste(app: AppHandle, caminho: String) -> Result<Value, String> {
+    if !teste_fora_da_tela() {
+        return Err("só nos testes".into());
+    }
+    importar_de(&app, std::path::Path::new(&caminho))
+}
+
+/// Volta tudo que a tela de CONFIGURAÇÕES mexe ao padrão (com confirmação na tela).
+#[tauri::command]
+fn sistema_restaurar_padrao(app: AppHandle, confirmado: bool) -> Result<Value, String> {
+    if !confirmado {
+        return Err(tr(&app, "Confirme na tela antes de restaurar o padrão.", "Confirm on screen before restoring defaults."));
+    }
+    let p = ponte(&app);
+    let novo = preferencias::padrao_mantendo(&p.config.lock().unwrap());
+    let _ = aplicar_autostart(&app, false);
+    *p.config.lock().unwrap() = novo;
+    salvar_config(&app);
+    definir_mini_ao_minimizar(&app, true);
+    aplicar_mudo(&app, false);
+    posicionar_mini(&app);
+    p.reabrir_sidecar.store(true, Ordering::SeqCst);
+    let _ = app.emit("ponte:pasta", info_pasta(&app));
     let atual = config_publica(&app);
     let _ = app.emit("ponte:config", &atual);
     Ok(atual)
@@ -756,7 +955,38 @@ fn enviar(app: AppHandle, pedido: Pedido) -> Result<Resposta, String> {
         Some(i) => i.pasta.clone(),
         None => arquivos::exibir(&arquivos::resolver(&raiz, &pedido.pasta)?),
     };
+    // conversa sem modelo/esforço/velocidade na aba: usa o padrão da conversa nova (ou o que ela já tinha)
+    let (cfg_padrao, instrucao, lembrar, modo_api) = {
+        let c = p.config.lock().unwrap();
+        (c.padrao_nova.clone(), (preferencias::instrucao_idioma(&c), preferencias::language_do_claude(&c), preferencias::marca_idioma(&c)), c.lembrar_aprovacoes, c.modo_conta == "api")
+    };
+    let mut pedido = pedido;
+    if pedido.modelo.trim().is_empty() {
+        pedido.modelo = ja.as_ref().map(|i| i.modelo.clone()).unwrap_or(cfg_padrao.modelo);
+    }
+    if pedido.esforco.trim().is_empty() {
+        pedido.esforco = ja.as_ref().map(|i| i.esforco.clone()).unwrap_or(cfg_padrao.esforco);
+    }
+    if pedido.rapido.is_none() && pedido.velocidade.trim().is_empty() {
+        pedido.rapido = Some(ja.as_ref().map(|i| i.rapido).unwrap_or(cfg_padrao.rapido));
+    }
     let info = p.conversas.preparar(&pedido, pasta)?;
+    // modo da conta: a chave do Cofre (ou nenhuma) vale para o próximo sidecar; trocar pede reabrir
+    let chave = if modo_api { cofre::ler(&cofre::alvo()) } else { None };
+    if modo_api && chave.is_none() {
+        return Err(tr(&app, "O modo chave de API está ligado, mas não há chave no Cofre.", "API-key mode is on, but there is no key in the vault."));
+    }
+    if p.sidecar.definir_chave(chave) {
+        p.reabrir_sidecar.store(true, Ordering::SeqCst);
+    }
+    if p.reabrir_sidecar.load(Ordering::SeqCst) && p.conversas.nenhuma_rodando() {
+        p.reabrir_sidecar.store(false, Ordering::SeqCst);
+        if p.sidecar.vivo() {
+            registrar(&p.pasta_dados, "reabrindo o sidecar (idioma ou conta mudou)");
+            p.sidecar.encerrar();
+        }
+    }
+    let _ = lembrar;
     if !PathBuf::from(&info.pasta).is_dir() {
         return Err(format!("A pasta desta conversa não existe mais: {}", info.pasta));
     }
@@ -766,7 +996,8 @@ fn enviar(app: AppHandle, pedido: Pedido) -> Result<Resposta, String> {
     let cmd = json!({
         "cmd": "enviar", "conversa": pedido.conversa, "texto": texto,
         "modelo": info.modelo, "esforco": info.esforco, "rapido": info.rapido,
-        "cwd": info.pasta, "sessao": info.sessao, "retomar": info.iniciada
+        "cwd": info.pasta, "sessao": info.sessao, "retomar": info.iniciada,
+        "instrucao": instrucao.0, "language": instrucao.1, "marcaIdioma": instrucao.2
     });
     if let Err(e) = p.sidecar.mandar(ao_sidecar_cb(&app), &cmd) {
         p.conversas.marcar_rodando_sdk(&pedido.conversa, false);
@@ -791,7 +1022,8 @@ fn responder_permissao(app: AppHandle, pedido: String, permitir: bool, motivo: O
     if p.permissoes.lock().unwrap().remove(&pedido).is_none() {
         return Err("Esse pedido já foi respondido ou cancelado.".into());
     }
-    let ok = p.sidecar.mandar_se_vivo(&json!({ "cmd": "permissao", "pedido": pedido, "decisao": if permitir { "permitir" } else { "negar" }, "motivo": motivo }));
+    let lembrar = p.config.lock().unwrap().lembrar_aprovacoes;
+    let ok = p.sidecar.mandar_se_vivo(&json!({ "cmd": "permissao", "pedido": pedido, "decisao": if permitir { "permitir" } else { "negar" }, "motivo": motivo, "lembrar": lembrar && permitir }));
     registrar(&p.pasta_dados, &format!("permissão {pedido}: {}", if permitir { "permitida" } else { "negada" }));
     let _ = app.emit("ponte:permissao-fim", json!({ "pedido": pedido }));
     dispensar_aviso(app.clone());
@@ -950,6 +1182,7 @@ pub fn rodar() {
         }))
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec!["--minimizado"])))
         .setup(|app| {
             let handle = app.handle().clone();
             let dados = pasta_de_dados(&handle);
@@ -977,6 +1210,7 @@ pub fn rodar() {
                 item_mini: Mutex::new(None),
                 item_toast: Mutex::new(None),
                 geracao_mini: AtomicU64::new(0),
+                reabrir_sidecar: AtomicBool::new(false),
                 motor_tokens: motor.clone(),
             });
 
@@ -993,6 +1227,12 @@ pub fn rodar() {
 
             criar_janelas(&handle)?;
             montar_bandeja(&handle)?;
+            if comecar_na_bandeja(&handle) {
+                // sem carregamento e sem principal: só a Sara no canto (se "Miniatura ao minimizar" estiver ligada)
+                ponte(&handle).concluido.store(true, Ordering::SeqCst);
+                atualizar_mini(&handle);
+                registrar(&dados, "começou na bandeja");
+            }
 
             // motor de tokens: lê os transcripts em segundo plano e avisa as janelas
             let h3 = handle.clone();
@@ -1073,6 +1313,18 @@ pub fn rodar() {
             estado_atual,
             config_ler,
             config_gravar,
+            conta_status,
+            conta_modo,
+            conta_trocar,
+            conta_sair,
+            conta_guardar_chave,
+            conta_testar_chave,
+            conta_apagar_chave,
+            sistema_abrir_pasta_dados,
+            sistema_exportar_config,
+            sistema_importar_config,
+            sistema_importar_arquivo_teste,
+            sistema_restaurar_padrao,
             dispensar_aviso,
             definir_mudo,
             obter_mudo,

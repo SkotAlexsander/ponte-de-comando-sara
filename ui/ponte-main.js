@@ -229,7 +229,9 @@
   const mapear = (k) => (k === 'precisa' && temPrecisa() ? 'precisa' : MAPA[k])
   // som curto (o mesmo da miniatura): com a Main na tela, o aviso é dela
   let ctxSom = null
+  let somCfg = { somAviso: true, volumeAviso: 70 }
   function tocar(tipo) {
+    if (!somCfg.somAviso || !somCfg.volumeAviso) return
     try {
       ctxSom = ctxSom || new (window.AudioContext || window.webkitAudioContext)()
       if (ctxSom.state === 'suspended') ctxSom.resume()
@@ -237,7 +239,7 @@
       notas.forEach((f, i) => {
         const o = ctxSom.createOscillator(), g = ctxSom.createGain(), t = ctxSom.currentTime + i * 0.14
         o.type = 'sine'; o.frequency.value = f
-        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45)
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, 0.16 * somCfg.volumeAviso / 100), t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45)
         o.connect(g).connect(ctxSom.destination); o.start(t); o.stop(t + 0.5)
       })
       window.__ultimoSomMain = { tipo, quando: Date.now(), contexto: ctxSom.state }
@@ -312,7 +314,7 @@
     if (usaArvoreReal()) await montarRaiz()
     else { const i = await p().pastaDeTrabalho(); set({ pastaTrabalho: i.caminho }) }
     // tema de display: a Main da Sara põe o data-tema na área da conversa; aqui fica também no <html>
-    const aplicarTema = (c) => { if (c) { document.documentElement.dataset.tema = c.tema || 'metal'; document.documentElement.dataset.fosforo = c.fosforo || 'ambar' } }
+    const aplicarTema = (c) => { if (c) { somCfg = { somAviso: c.somAviso !== false, volumeAviso: typeof c.volumeAviso === 'number' ? c.volumeAviso : 70 }; document.documentElement.dataset.tema = c.tema || 'metal'; document.documentElement.dataset.fosforo = c.fosforo || 'ambar' } }
     p().config.ler().then(aplicarTema).catch(() => {})
     p().aoConfig(aplicarTema)
     p().aoTokens(atualizarConsumo)
