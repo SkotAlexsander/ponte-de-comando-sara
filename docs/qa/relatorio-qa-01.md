@@ -394,3 +394,38 @@ Cada `OK` é o comportamento esperado. Cada `FALHOU` é um bug provado.
 - **`eng-desktop` (Davi):** C1, A1, A2, A3, M1–M5, B1–B5, B9–B11. Cada um tem o teste que falha em `ferramentas\testes\qa\`. Reconferir na build nova, porque o código mudou durante o teste.
 - **`eng-seguranca` (Heitor):** M6, M7, M8, B6, B7, B8, e a superfície nova de conta e chave de API (`cofre.rs`, `conta_*`), que não foi auditada.
 - **Sara:** a Main da fonte (`estudio\Main.dc.html`) precisa pausar os vídeos e as animações quando a página ficar escondida (C1). A2 e M2 somem quando o template tiver a conversa dele com id estável por aba.
+
+---
+
+## 6. Status das correções (Davi, `eng-desktop`, 06/11/2026, ramo `pausa/2026-11-06-correcoes-qa`)
+
+Medido no `target\debug` novo, isolado e fora da tela, como no relatório.
+
+| # | Status | Como | Teste |
+|---|---|---|---|
+| C1 | **corrigido** (resíduo) | A casca avisa o WebView2 (`SetIsVisible`) e a página (`document.hidden` = true) quando a janela some ou minimiza; vídeos e animações pausam (`PAUSA_JS` em `lib.rs`); a miniatura escondida também esconde a raiz (janela transparente seguia desenhando). A Main escondida não relê o consumo. | `visibilidade.mjs` **2/2** (0 quadros/s nas duas). `cpu.mjs --claude-vazio`: na tela ~270 %, tudo escondido **3,4 %** em regime → ainda acima do limite de 2 % do teste: **FALHOU por pouco**. O piso medido com as duas páginas em branco e o CDP ligado foi 1,4–2,7 %. Nos primeiros ~10 s depois de esconder o WebView2 ainda solta a GPU (o `cpu.mjs` passou a medir 20 s depois). Só a miniatura: 313 % → 32 %. |
+| A1 | **corrigido** | O sidecar marca o turno parado; o `result` interrompido vira `resultado` com `cancelado: true, erro: false`; a casca e a Main não tratam como erro. | `conversa.mjs` **16/16** |
+| A2 | **corrigido** | Id estável `aba@main`; `conversa()` traz `rodando` e a Main volta a mostrar o PARAR depois de recarregar. | `ciclo.mjs`: "ir ao FLUXO e voltar mantém o id" OK |
+| A3 | **corrigido** | `tokens.rs`: `BufReader` + `read_until`, linha direto para a conta, orçamento de 64 MB por volta, sessão em 1ª leitura aparece como "lendo". | `tokens.mjs 60` **4/4** (60 MB em 1,0 s, pico 9 MB; antes 86,8 s); `memoria-motor.mjs` **1/1** (pico 9 MB, antes 923 MB); cargo `leitura_incremental_por_orcamento` |
+| M1 | **corrigido** | `sidecar_caiu` leva a Sara para "erro" quando havia conversa rodando ou cartão aberto. | `conversa.mjs` (sidecar morto) OK |
+| M2 | **corrigido** | Conjunto de abas rodando no adaptador; `rodandoEm` aponta para a aba aberta; PARAR usa a aba aberta. | `abas.mjs` **3/3** (o teste passou a usar a aba `estudio`: `molduras` não existe mais no template). Com o adaptador antigo: 1/3. |
+| M3 | **corrigido** | O aviso guarda a sessão; "trabalhando"/"esperando" de outra sessão não apaga. Conversas do programa mandam a sessão delas. | cargo `outra_sessao_nao_apaga_o_pronto`; `duas-sessoes.mjs` não rodado nesta rodada |
+| M4 | corrigido (pausa, 37a445b) | Leitura campo a campo + cópia `config.corrompido-*.bak`. | `arquivos-config.mjs` roteiro 1 — não rodado nesta rodada |
+| M5 | corrigido | Tenta as 10 portas seguintes, `porta` com id da execução, `/ping` antes do token; aviso na faixa da Main. | `hook.test.mjs` (intruso não recebe o token); `servidor.mjs` não rodado nesta rodada |
+| M6 | corrigido (pausa) | `conversas_antigas` passa pelo `arquivos::resolver`. | `arquivos-config.mjs` (aceita a recusa como promessa rejeitada) — não rodado nesta rodada |
+| M7 | corrigido (pausa) | `pastaTrabalho` só aceita `null`; trocar é só pelo seletor (que recusa raiz de disco e `C:\Windows`). | idem |
+| M8 | **corrigido** (parcial) | CSP estrita em `tauri.conf.json`; cada janela com só os comandos que usa. Fica: `withGlobalTauri` (a `ponte.js` precisa) e as fontes do Google (estão nos HTML da `ui\`, que é da Lia). | `programa.mjs --sem-claude` **27/27** e `paginas` 14/14 com a CSP |
+| B1 | corrigido | Faixa "A pasta de trabalho gravada não existe mais…" (conferida a cada estado). | `arquivos-config.mjs` roteiro 3 — não rodado nesta rodada |
+| B2, B3 | corrigidos (pausa) | Mensagem "sem permissão" com `exibir()`; `COM¹`, `CONIN$/CONOUT$`, `NUL .txt`. | cargo `nomes` |
+| B4 | corrigido (pausa) | Prazo TOTAL de 3 s por conexão, até 64 conexões. | cargo `conexao_lenta_nao_segura_o_servidor` |
+| B5 | corrigido | Lê o corpo antes de responder e fecha com calma (lê o resto por até 250 ms). | cargo `token_origem_ping_e_porta_ocupada` (40 rodadas não feitas) |
+| B6 | corrigido | Capabilities por janela (`principal`, `mini`, `carregamento`); `mini_soltou` removido. | `programa.mjs` 27/27 |
+| B7 | corrigido | `env_teste` (só debug) para PONTE_*; release tira PONTE_* do sidecar. | revisão de código |
+| B8 | corrigido | `claude.exe` só por caminho absoluto; `node` só de entrada absoluta; stderr do `rodar_claude` descartado; filhos no Job; tempo esgotado derruba a árvore. | revisão de código |
+| B9 | corrigido | Barras dobradas; erro do spawn agora aparece. | uso pelo `programa.mjs` |
+| B10 | corrigido | "silenciar" confere ligado e desligado no arquivo; o fim sempre derruba a árvore. | `programa.mjs` 27/27 |
+| B11 | corrigido | No debug com `PONTE_PASTA_DE_DADOS`, o `identifier` ganha um sufixo pela pasta. | `ciclo.mjs` "abrir duas vezes" OK |
+
+**Ainda falha em `ciclo.mjs`:** "tudo escondido < 1 %" (15,9 % medido só 3 s depois de esconder; ver C1) e "30 trocas + 400 eventos: memória < +60 MB" (+174 MB). O `vazamento.mjs` (o teste próprio de vazamento) não foi rodado nesta rodada.
+
+**Suítes:** `npm run testar` node 9/9 + cargo 40 ok (1 ignorado) · `testar:paginas` 14/14 · `programa.mjs --sem-claude` 27/27 · QA: `visibilidade` 2/2, `tokens` 4/4, `memoria-motor` 1/1, `conversa` 16/16, `abas` 3/3, `ciclo` 5/8 (a 3ª falha era o próprio teste chamando `ponte.conta()`, já ajustado para `ponte.conta.status()`, sem rodar de novo), `cpu` 0/1 (3,4 %).
