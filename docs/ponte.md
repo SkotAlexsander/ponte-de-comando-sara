@@ -60,7 +60,7 @@ await ponte.enviar({
 | Função | Faz |
 |---|---|
 | `parar(conversa)` | interrompe o turno (`interrupt()`) **sem perder a conversa** |
-| `conversa(conversa)` | `{ sessao, iniciada, modelo, esforco, rapido, pasta, criadaEm, atualizadaEm }` ou `null` |
+| `conversa(conversa)` | `{ sessao, iniciada, modelo, esforco, rapido, pasta, criadaEm, atualizadaEm, rodando }` ou `null` (`rodando`: o turno ainda está em andamento; a Main usa ao recarregar) |
 | `responderPermissao(pedido, permitir, motivo?)` | responde ao cartão |
 | `pararAgente(conversa, tarefa)` | para um subagente (`stopTask`) |
 | `conversasAntigas(pasta?, limite?)` | `{ pasta, conversas: [{ sessao, nome, atualizadaEm, bytes, pasta }] }` |
@@ -76,7 +76,7 @@ await ponte.enviar({
 | `ferramenta` | `nome`, `legenda` ("Lendo LEIA-ME.md"), `detalhe`, `pai` (id do agente-pai, se veio de subagente) |
 | `agente` | `subtipo` (task_started/progress/updated/notification), `tarefa`, `descricao`, `estadoTarefa`, `uso` |
 | `limite` | `info` (rate_limit_event do SDK; **fração**, não %) |
-| `resultado` | `texto`, `erro`, `custo` (estimado pelo SDK), `duracaoMs`, `tokensEntrada`, `tokensSaida` |
+| `resultado` | `texto`, `erro`, `custo` (estimado pelo SDK), `duracaoMs`, `tokensEntrada`, `tokensSaida`; `cancelado: true` (com `erro: false`) quando é o fim do turno que o Alex PAROU: não é erro nem pronto |
 | `erro` | `texto` |
 | `cancelado` / `fechada` | |
 
@@ -86,8 +86,9 @@ await ponte.enviar({
 
 ```js
 const c = await ponte.config.ler()
-// → { tema: 'metal'|'fosforo'|'grade', fosforo: 'ambar'|'verde', pastaTrabalho: 'A:\\Claude', pastaTrabalhoPadrao: true,
-//     miniAoMinimizar: true, toastWindows: 'auto'|'sempre'|'nunca', mudo: false }
+// → { tema: 'metal'|'fosforo'|'grade', fosforo: 'ambar'|'verde'|'branco', fosforoLetra: 'terminal'|'atual',
+//     pastaTrabalho: 'A:\\Claude', pastaTrabalhoPadrao: true, pastaTrabalhoCaminhoPadrao: 'A:\\Claude', aprovacaoSempre: true,
+//     miniAoMinimizar: true, toastWindows: 'auto'|'sempre'|'nunca', mudo: false, …as chaves novas abaixo }
 await ponte.config.gravar({ tema: 'fosforo', fosforo: 'verde' })   // → a config inteira depois de gravar
 ponte.aoConfig((c) => { … })                                         // todas as janelas recebem quando alguma grava
 ```
@@ -102,6 +103,10 @@ ponte.aoConfig((c) => { … })                                         // todas 
   - `nunca`.
   - **Fora do programa instalado nunca sai toast**, porque ele apareceria como "Windows PowerShell".
 - **Tema:** a miniatura e a Main recebem `data-tema` e `data-fosforo` no `<html>`. Na Main, a Sara aplica o atributo na área da conversa. O tema muda **só** o que fica dentro do vidro da moldura da conversa.
+
+- **Só leitura:** `pastaTrabalhoPadrao`, `pastaTrabalhoCaminhoPadrao` e `aprovacaoSempre`. Mandar de volta o objeto do `ler()` não dá erro por causa delas (são ignoradas). `aprovacaoSempre` só aceita `true`: **nenhuma chave desliga o cartão de permissão**, e chaves como `permissionMode`, `pularAprovacao` etc. são recusadas como desconhecidas.
+- `pastaTrabalho` só aceita `null` (voltar ao padrão). Trocar a pasta é **só** pelo seletor do Windows (`trocarPasta()`), para a página não mudar a barreira dos arquivos (QA M7).
+- `fosforo` padrão `branco` e `fosforoLetra` padrão `atual`: a combinação aprovada pelo Alex. A Main recebe `data-tema`, `data-fosforo`, `data-fosforo-letra`, `data-idioma`, `data-letra` e `data-animacoes` no `<html>`.
 
 ### Chaves novas (opções inteligentes)
 
@@ -168,7 +173,7 @@ Como a chave é tratada:
 
 | Função | |
 |---|---|
-| `estado()` | `{ estado: 'esperando'\|'trabalhando'\|'precisa'\|'pronto'\|'erro', legenda, pedido, projeto, ferramenta, aviso: { tipo, topo, titulo, texto, acao, em } \| null, som, mudo, em }` |
+| `estado()` | `{ estado: 'esperando'\|'trabalhando'\|'precisa'\|'pronto'\|'erro', legenda, pedido, projeto, ferramenta, aviso: { tipo, topo, titulo, texto, acao, em, sessao } \| null, som, mudo, onde, alertas: [texto], em }`. `alertas`: avisos do programa (porta dos hooks ocupada, pasta de trabalho gravada que sumiu), que a Main mostra numa faixa. Uma sessão trabalhando não apaga o aviso de **outra** sessão |
 | `aoEstado(fn)` | muda com os hooks, as sessões vivas (`busy` → `idle`) e as conversas do programa |
 | `dispensarAviso()` · `mudo()` · `definirMudo(b)` · `aoMudo(fn)` · `mostrarPrincipal()` | |
 
@@ -198,3 +203,9 @@ Como a chave é tratada:
 Os remendos são aplicados pelo `ferramentas/sincronizar-ui.mjs` **na cópia** `ui/estudio/` e registrados em `ui/estudio.json`. Se um trecho mudar na fonte, o sincronizador avisa: "remendo … NÃO APLICADO".
 
 **Pedido para a fonte da Main (Sara):** levar para o próprio template o `ponte.enviar`/`aoConversa`, a árvore por `ponte.listar` (com o `caminho` absoluto do item no `destino`), o consumo por `ponte.tokens()` e um cartão de permissão no estilo dela. O Fluxo ainda não tem dados: o mapa de agentes vivo está em `tokens().sessoes[].agentes` e nos eventos `agente`.
+
+## Segurança das janelas (QA M8/B6)
+
+- **CSP** em `tauri.conf.json`: só scripts do próprio programa (`'unsafe-eval'` porque o runtime do protótipo usa `new Function`), estilos próprios + Google Fonts, fontes do `fonts.gstatic.com`, imagens e vídeos locais (`data:`/`blob:`), nada de `object`, `base` ou `form`. Script injetado de fora não roda.
+- **Cada janela só chama o que usa** (`src-tauri/capabilities/`): a `principal` tem todos os comandos; a `mini` só `estado_atual`, `config_ler`, `definir_mudo`, `obter_mudo`, `dispensar_aviso`, `mostrar_principal`, `mini_tamanho`, `mini_arrastando` e `mini_canto`; o `carregamento` só `carregamento_concluido` e `info_app`. **Comando novo** precisa entrar em `src-tauri/build.rs` (lista `COMANDOS`) e numa capability, senão a janela recebe "not allowed".
+- Janela escondida ou minimizada: a casca avisa o WebView2 (`SetIsVisible`) e a página (`document.hidden` passa a `true`); vídeos e animações param e a raiz fica com `visibility: hidden`. A Main não relê o consumo escondida.

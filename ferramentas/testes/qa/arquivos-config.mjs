@@ -94,14 +94,15 @@ import { abrir, conferir, fimDoPlacar, esperar, ate } from './comum.mjs'
     conferir('caminho de dispositivo (\\\\.\\C:) é recusado', !r.dispositivo.ok, JSON.stringify(r.dispositivo).slice(0, 160))
 
     // comandos que aceitam caminho de FORA da pasta de trabalho
-    const alheio = await app.main.evaluate(() => window.__TAURI__.core.invoke('conversas_antigas', { pasta: 'A:\\Claude', limite: 3 }))
+    // (06/11, Davi: recusar agora REJEITA a promessa com a mensagem; rejeitar conta como recusa)
+    const alheio = await app.main.evaluate(() => window.__TAURI__.core.invoke('conversas_antigas', { pasta: 'A:\\Claude', limite: 3 }).catch(() => null))
     conferir('conversas_antigas recusa pasta fora da pasta de trabalho', !alheio || !alheio.conversas || alheio.conversas.length === 0, `devolveu ${alheio && alheio.conversas ? alheio.conversas.length : 0} conversa(s) de A:\\Claude (com nome = último pedido), estando a pasta de trabalho em %TEMP%`)
     const barreira = await app.main.evaluate(() => window.ponte.config.gravar({ pastaTrabalho: 'C:\\Windows' }).then((c) => c.pastaTrabalho, (e) => 'recusou: ' + e.message))
     conferir('a própria página não consegue mudar a barreira para C:\\Windows sem o seletor do Windows', /recusou/.test(barreira), barreira)
-    await app.main.evaluate((t) => window.ponte.config.gravar({ pastaTrabalho: t }), app.trabalho)
+    await app.main.evaluate((t) => window.ponte.config.gravar({ pastaTrabalho: t }).catch(() => null), app.trabalho) // (06/11: recusado de propósito, a pasta nem mudou)
     const relativa = await app.main.evaluate(() => window.ponte.config.gravar({ pastaTrabalho: '.' }).then((c) => c.pastaTrabalho, (e) => 'recusou: ' + e.message))
     conferir('pastaTrabalho "." é recusada (seria relativa à pasta do processo)', /recusou/.test(relativa), relativa)
-    await app.main.evaluate((t) => window.ponte.config.gravar({ pastaTrabalho: t }), app.trabalho)
+    await app.main.evaluate((t) => window.ponte.config.gravar({ pastaTrabalho: t }).catch(() => null), app.trabalho) // (06/11: recusado de propósito, a pasta nem mudou)
     const morto = await app.main.evaluate(() => window.__TAURI__.core.invoke('mini_soltou').then(() => 'respondeu', (e) => 'recusou: ' + e))
     conferir('comando morto mini_soltou não está exposto', /recusou/.test(morto), morto)
   } catch (e) { conferir('roteiro 4 chegou ao fim', false, e.stack) } finally {

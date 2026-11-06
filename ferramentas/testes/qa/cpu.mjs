@@ -27,7 +27,8 @@ try {
   await app.main.evaluate(() => window.ponte.config.gravar({ miniAoMinimizar: false }))
   await app.main.evaluate(() => window.__TAURI__.window.getCurrentWindow().close())
   await ate(() => app.info().then((i) => !i.janelas.principal && !i.janelas.mini), 4000)
-  await esperar(4000)
+  // (06/11, Davi: o WebView2 leva uns segundos para soltar a GPU depois de esconder; mede em regime, 20 s depois)
+  await esperar(20000)
   const esc = await medir('tudo escondido')
   conferir(`tudo escondido${vazio ? ' (sem sessões do Claude)' : ''}: CPU < 2 % de um núcleo`, esc < 2, `${esc.toFixed(1)} % (na tela ${naTela.toFixed(1)} %)`)
 } catch (e) { conferir('o roteiro chegou ao fim', false, e.stack) } finally {

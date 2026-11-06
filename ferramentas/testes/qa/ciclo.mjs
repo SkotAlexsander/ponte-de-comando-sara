@@ -96,7 +96,7 @@ try {
   // conta() e conexoes(): não deixam processo para trás
   const antesProc = descendentes(app.prog.pid).map((x) => x.pid)
   const t1 = Date.now()
-  const conta = await main.evaluate(() => window.ponte.conta())
+  const conta = await main.evaluate(() => window.ponte.conta.status()) // (06/11: ponte.conta virou o grupo da conta)
   const cx = await main.evaluate(() => window.ponte.conexoes())
   const dur = ((Date.now() - t1) / 1000).toFixed(1)
   await esperar(3000)

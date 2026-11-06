@@ -124,10 +124,14 @@ try {
   const ruim = await fetch(`http://127.0.0.1:${PORTA}/evento`, { method: 'POST', headers: { 'X-Ponte-Token': 'errado', 'Content-Type': 'application/json' }, body: '{"tipo":"pronto"}' }).then((x) => x.status).catch(() => 0)
   conferir('servidor recusa token errado', ruim === 401, String(ruim))
   // silenciar
+  // QA B10: confere que o "mudo" foi gravado LIGADO e depois DESLIGADO (antes passava mesmo sem gravar nada)
+  const mudoNoArquivo = () => { try { return JSON.parse(readFileSync(join(dados, 'config.json'), 'utf8')).mudo } catch { return undefined } }
   await mini.evaluate(() => window.ponte.definirMudo(true))
   const mudo = await ate(() => mini.evaluate(() => document.getElementById('bt-som').getAttribute('aria-pressed') === 'false'), 3000)
+  const gravouLigado = await ate(() => mudoNoArquivo() === true, 3000)
   await mini.evaluate(() => window.ponte.definirMudo(false))
-  conferir('silenciar chega na miniatura e é gravado', !!mudo && /"mudo": true|"mudo":true/.test(readFileSync(join(dados, 'config.json'), 'utf8')) === false)
+  const gravouDesligado = await ate(() => mudoNoArquivo() === false, 3000)
+  conferir('silenciar chega na miniatura e é gravado', !!mudo && !!gravouLigado && !!gravouDesligado, `miniatura=${!!mudo} · gravou ligado=${!!gravouLigado} · gravou desligado=${!!gravouDesligado}`)
 
   // ----- conversa real pelo SDK, com cartão de permissão -----
   if (!semClaude) {
@@ -169,7 +173,9 @@ try {
   conferir('o roteiro chegou ao fim', false, e.message)
 } finally {
   if (nav) await nav.close().catch(() => {})
-  if (saiu === null) spawnSync('C:\\Windows\\System32\\taskkill.exe', ['/PID', String(prog.pid), '/T', '/F'], { windowsHide: true })
+  // QA B10: sempre derruba a árvore do exe (mesmo que ele já tenha caído) e depois varre pela pasta de teste
+  spawnSync('C:\\Windows\\System32\\taskkill.exe', ['/PID', String(prog.pid), '/T', '/F'], { windowsHide: true })
+  await esperar(500)
   limparProcessos(base)
 }
 const falhas = placar.filter((x) => !x.ok).length

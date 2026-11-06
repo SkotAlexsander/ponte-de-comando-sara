@@ -1,5 +1,7 @@
 // QA · duas abas conversando ao mesmo tempo na Main (navegador comum, ponte de mentira, sem gasto).
 // Uso: node ferramentas/testes/qa/abas.mjs [ponte-main.js]
+// (06/11, Davi: a aba B passou de 'molduras' para 'estudio', que é o id que existe no template de hoje;
+//  com um id que não existe, o template mostra a aba 'landing' e o botão PARAR some.)
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { servir } from '../../servir-ui.mjs'
@@ -20,7 +22,7 @@ try {
   await p.fill('#msg', 'pedido da aba A'); await p.press('#msg', 'Enter')
   const chaveA = await p.evaluate(() => window.__enviados[0].conversa)
   // troca para a aba B (o que o clique na lista faz: muda st.sessao) e manda
-  await p.evaluate(() => window.__ponteMain.logica().setState({ sessao: 'molduras' }))
+  await p.evaluate(() => window.__ponteMain.logica().setState({ sessao: 'estudio' }))
   await esperar(200)
   await p.fill('#msg', 'pedido da aba B'); await p.press('#msg', 'Enter')
   const enviados = await p.evaluate(() => window.__enviados.map((x) => x.conversa))
@@ -30,7 +32,7 @@ try {
   await p.evaluate((c) => window.ponte._simular('ponte:conversa', { conversa: c, tipo: 'resultado', texto: 'A pronto', erro: false }), chaveA)
   await esperar(300)
   const rodandoDepois = await p.evaluate(() => window.__ponteMain.logica().state.rodandoEm)
-  conferir('a aba A terminar não marca a aba B como parada', rodandoDepois === 'molduras', `rodandoEm: ${rodandoAntes} → ${rodandoDepois}`)
+  conferir('a aba A terminar não marca a aba B como parada', rodandoDepois === 'estudio', `rodandoEm: ${rodandoAntes} → ${rodandoDepois}`)
   // PARAR na aba B (ainda trabalhando no programa)
   await p.evaluate(() => { const b = document.querySelector('button.parar'); if (b) b.click() })
   const parados = await p.evaluate(() => window.__parados)
