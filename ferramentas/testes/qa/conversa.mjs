@@ -10,6 +10,8 @@ const app = await abrir('conversa')
 const C = 'qa@1'
 const evs = () => app.main.evaluate(() => window.__qa)
 try {
+  // este roteiro testa o CARTÃO: no modo guarda (padrão) os Write na pasta passariam sozinhos
+  await app.main.evaluate(() => window.ponte.config.gravar({ aprovacao: 'sempre' }))
   await app.main.evaluate(() => {
     window.__qa = { conv: [], perm: [], fim: [], est: [] }
     const q = window.__qa, P = window.ponte

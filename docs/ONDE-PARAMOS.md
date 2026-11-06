@@ -1,3 +1,16 @@
+# Pausa: 06/11/2026, ~20:00. Retomar AQUI
+
+**Em andamento quando pausou: o modo "Controle total com guarda"** (pedido do Alex: "controle total das ações, respeitando apenas passos de segurança para cuidar se algo pode prejudicar o sistema ou identificar arquivos de coletas").
+- **Davi:** `sidecar/guarda.mjs` + `ferramentas/testes/guarda.test.mjs` + `guarda-programa.mjs` (WIP, neste commit; NÃO testado). Ele estava escrevendo a bateria de testes.
+  - Especificação: `aprovacao: 'guarda' | 'sempre'` (padrão `'guarda'`), sempre pelo `canUseTool`, nunca `bypassPermissions`.
+  - O cartão aparece só nos 8 grupos de risco: apagar em massa ou fora da pasta; sistema; segurança/Defender; segredos e coleta; mandar dados para fora; persistência; coisa baixada ou ofuscada; áreas protegidas (Valores, livro, diário, settings.json).
+  - Na dúvida, falha fechada. Registro em `%APPDATA%\com.pixelmartins.pontedecomandocoes.log`, exposto como `ponte.registro.ler(n)`.
+  - O script do print (user32 PrintWindow/SetCursorPos/mouse_event) tem que passar direto.
+- **Lia:** a escolha CONTROLE TOTAL COM GUARDA / PEDIR SEMPRE em Novas conversas, o "VER O REGISTRO" e o "restaurar padrão" (branco + atual, lembrar desligado, guarda), quase pronto em `scratchpad\proc\Main.modelo.html`, com cópia no repo empresa (backup `v16-antes-aprovacao`). Faltava conferir a Aparência e rodar os testes.
+- **Depois:** o Davi termina os testes → a Lia fecha → `sincronizar-ui` → 0.1.2 → **o Heitor audita a guarda ANTES de instalar** → instalar por cima (como administrador, `/S`).
+
+---
+
 # Onde paramos: 06/11/2026, ~19:45
 
 ## Atualização da noite (06/11)

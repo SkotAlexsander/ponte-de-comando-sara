@@ -6,15 +6,14 @@
 use crate::config::{Config, PadraoNova, FOSFOROS, LETRAS_FOSFORO, TEMAS};
 use serde_json::{json, Value};
 
-pub const CHAVES: [&str; 19] = [
+pub const CHAVES: [&str; 20] = [
     "tema", "fosforo", "fosforoLetra", "pastaTrabalho", "miniAoMinimizar", "toastWindows", "mudo",
     "idioma", "idiomaRespostas", "tamanhoLetra", "animacoes", "padraoNova", "lembrarAprovacoes",
-    "somAviso", "volumeAviso", "cantoMini", "abrirComWindows", "comecarNaBandeja", "modoConta",
+    "somAviso", "volumeAviso", "cantoMini", "abrirComWindows", "comecarNaBandeja", "modoConta", "aprovacao",
 ];
 
-/// Chaves que a tela LÊ mas não grava. Mandar de volta o objeto do `ler()` não dá erro por causa delas:
-/// são ignoradas, menos `aprovacaoSempre`, que só aceita `true`.
-pub const SO_LEITURA: [&str; 3] = ["pastaTrabalhoPadrao", "pastaTrabalhoCaminhoPadrao", "aprovacaoSempre"];
+/// Chaves que a tela LÊ mas não grava. Mandar de volta o objeto do `ler()` não dá erro por causa delas.
+pub const SO_LEITURA: [&str; 2] = ["pastaTrabalhoPadrao", "pastaTrabalhoCaminhoPadrao"];
 
 /// Texto na língua da interface.
 pub fn t(idioma: &str, pt: &str, en: &str) -> String {
@@ -50,8 +49,8 @@ pub fn publica(c: &Config) -> Value {
         "pastaTrabalho": crate::arquivos::exibir(&pasta),
         "pastaTrabalhoPadrao": padrao,
         "pastaTrabalhoCaminhoPadrao": crate::arquivos::exibir(&Config::pasta_padrao()),
-        // cada ação do Claude passa pelo cartão do Alex; nenhuma chave desliga isso
-        "aprovacaoSempre": true,
+        // "guarda" (a guarda libera o que é seguro) | "sempre" (todo pedido vai para o cartão)
+        "aprovacao": c.aprovacao,
         "miniAoMinimizar": c.mini_visivel,
         "toastWindows": c.toast_windows,
         "mudo": c.mudo,
@@ -129,14 +128,6 @@ pub fn aplicar(atual: &Config, parcial: &Value) -> Result<(Config, Efeitos), Str
     let il = atual.idioma.clone();
     let erro = |pt: &str, en: &str| t(&il, pt, en);
     let o = parcial.as_object().ok_or_else(|| erro("Mande um objeto com as chaves a mudar.", "Send an object with the keys to change."))?;
-    if let Some(v) = o.get("aprovacaoSempre") {
-        if v != &Value::Bool(true) {
-            return Err(erro(
-                "A aprovação de cada ação fica sempre ligada: nenhuma configuração desliga o cartão de permissão.",
-                "Approval of every action is always on: no setting turns the permission card off.",
-            ));
-        }
-    }
     let desconhecidas: Vec<&String> = o.keys().filter(|k| !CHAVES.contains(&k.as_str()) && !SO_LEITURA.contains(&k.as_str())).collect();
     if !desconhecidas.is_empty() {
         let lista = desconhecidas.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(", ");
@@ -179,6 +170,9 @@ pub fn aplicar(atual: &Config, parcial: &Value) -> Result<(Config, Efeitos), Str
     if let Some(v) = um_de("idioma", &["pt-BR", "en"])? { c.idioma = v; }
     if let Some(v) = um_de("idiomaRespostas", &["seguir", "pt-BR", "en"])? { c.idioma_respostas = v; }
     if let Some(v) = um_de("animacoes", &["sistema", "sempre", "reduzidas"])? { c.animacoes = v; }
+    if let Some(v) = um_de("aprovacao", &["guarda", "sempre"])? {
+        c.aprovacao = v;
+    }
     if let Some(v) = um_de("modoConta", &["assinatura", "api"])? {
         if v != c.modo_conta {
             ef.reabrir_sidecar = true;
@@ -330,12 +324,15 @@ mod testes {
         assert_eq!(p["fosforoLetra"], "atual");
     }
 
-    /// "Aprovação sempre ligada": nenhuma chave desliga o cartão, e nenhum modo do Claude Code passa.
+    /// Aprovação: só "guarda" ou "sempre". Nenhuma chave tira o cartão de vez, e nenhum modo do Claude Code passa.
     #[test]
     fn aprovacao_nao_desliga() {
-        assert_eq!(publica(&Config::default())["aprovacaoSempre"], true);
+        assert_eq!(publica(&Config::default())["aprovacao"], "guarda");
+        let (c, _) = com(json!({ "aprovacao": "sempre" })).unwrap();
+        assert_eq!(c.aprovacao, "sempre");
         for ruim in [
-            json!({ "aprovacaoSempre": false }), json!({ "aprovacaoSempre": "nao" }), json!({ "aprovacaoSempre": null }),
+            json!({ "aprovacao": "nenhuma" }), json!({ "aprovacao": "bypassPermissions" }), json!({ "aprovacao": false }),
+            json!({ "aprovacao": null }), json!({ "aprovacaoSempre": false }),
             json!({ "permissionMode": "bypassPermissions" }), json!({ "modoPermissao": "acceptEdits" }),
             json!({ "pularAprovacao": true }), json!({ "dangerouslySkipPermissions": true }),
             json!({ "padraoNova": { "permissionMode": "bypassPermissions" } }),

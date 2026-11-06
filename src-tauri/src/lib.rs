@@ -1049,7 +1049,10 @@ fn ao_sidecar(app: &AppHandle, mut v: Value) {
             let detalhe = estado::cortar(&serde_json::to_string_pretty(&entrada).unwrap_or_default(), 1500);
             p.permissoes.lock().unwrap().insert(pedido.clone(), conversa.clone());
             let sessao = p.conversas.info(&conversa).map(|i| i.sessao).unwrap_or_default();
-            let _ = app.emit("ponte:permissao", json!({ "conversa": conversa, "pedido": pedido, "ferramenta": ferramenta, "frase": frase, "detalhe": detalhe }));
+            // modo guarda: a categoria e o motivo de a guarda ter pedido o cartão
+            let txt = |k: &str| v.get(k).and_then(|x| x.as_str()).map(|s| estado::cortar(s, 200));
+            let _ = app.emit("ponte:permissao", json!({ "conversa": conversa, "pedido": pedido, "ferramenta": ferramenta, "frase": frase, "detalhe": detalhe,
+                "categoria": txt("categoria"), "rotulo": txt("rotulo"), "motivo": txt("motivo") }));
             receber_evento(app, Evento { tipo: "precisa".into(), sessao, texto: format!("Pedido de permissão: {frase}"), origem: "programa".into(), ..Default::default() });
         }
         "permissao_fim" => {
@@ -1076,6 +1079,14 @@ fn ao_sidecar(app: &AppHandle, mut v: Value) {
             }
         }
         "pronto_para_ouvir" => registrar(&p.pasta_dados, &format!("sidecar pronto: {v}")),
+        // registro das ações (liberadas pela guarda, permitidas ou negadas no cartão); o resumo já vem sem segredo
+        "acao" => {
+            // sem o nome da pasta pessoal (como o ponte.log)
+            let txt = |k: &str| v.get(k).and_then(|x| x.as_str()).map(|s| config::sem_pasta_pessoal(&estado::cortar(s, 200))).unwrap_or_default();
+            let linha = json!({ "em": config::agora_ms(), "conversa": conversa, "ferramenta": txt("ferramenta"), "resumo": txt("resumo"), "decisao": txt("decisao"), "categoria": txt("categoria") });
+            config::registrar_acao(&p.pasta_dados, &linha);
+            let _ = app.emit_to("principal", "ponte:registro", &linha);
+        }
         _ => {}
     }
 }
@@ -1112,9 +1123,9 @@ fn enviar(app: AppHandle, pedido: Pedido) -> Result<Resposta, String> {
         None => arquivos::exibir(&arquivos::resolver(&raiz, &pedido.pasta)?),
     };
     // conversa sem modelo/esforço/velocidade na aba: usa o padrão da conversa nova (ou o que ela já tinha)
-    let (cfg_padrao, instrucao, lembrar, modo_api) = {
+    let (cfg_padrao, instrucao, lembrar, modo_api, aprovacao) = {
         let c = p.config.lock().unwrap();
-        (c.padrao_nova.clone(), (preferencias::instrucao_idioma(&c), preferencias::language_do_claude(&c), preferencias::marca_idioma(&c)), c.lembrar_aprovacoes, c.modo_conta == "api")
+        (c.padrao_nova.clone(), (preferencias::instrucao_idioma(&c), preferencias::language_do_claude(&c), preferencias::marca_idioma(&c)), c.lembrar_aprovacoes, c.modo_conta == "api", c.aprovacao.clone())
     };
     let mut pedido = pedido;
     if pedido.modelo.trim().is_empty() {
@@ -1153,7 +1164,9 @@ fn enviar(app: AppHandle, pedido: Pedido) -> Result<Resposta, String> {
         "cmd": "enviar", "conversa": pedido.conversa, "texto": texto,
         "modelo": info.modelo, "esforco": info.esforco, "rapido": info.rapido,
         "cwd": info.pasta, "sessao": info.sessao, "retomar": info.iniciada,
-        "instrucao": instrucao.0, "language": instrucao.1, "marcaIdioma": instrucao.2
+        "instrucao": instrucao.0, "language": instrucao.1, "marcaIdioma": instrucao.2,
+        // Controle total com guarda: o modo e a pasta de trabalho (a guarda pergunta o que sai dela)
+        "aprovacao": aprovacao, "pastaTrabalho": arquivos::exibir(&raiz)
     });
     if let Err(e) = p.sidecar.mandar(ao_sidecar_cb(&app), &cmd) {
         p.conversas.marcar_rodando_sdk(&pedido.conversa, false);
@@ -1192,6 +1205,12 @@ fn parar_agente(app: AppHandle, conversa: String, tarefa: String) -> bool {
 }
 
 /// A conversa e se ela está trabalhando agora (a Main, ao recarregar, volta a mostrar o PARAR).
+/// As últimas `n` ações do registro (`acoes.log`), da mais nova para a mais velha.
+#[tauri::command]
+fn registro_ler(app: AppHandle, n: Option<usize>) -> Vec<Value> {
+    config::ler_acoes(&ponte(&app).pasta_dados, n.unwrap_or(100).clamp(1, 1000))
+}
+
 #[tauri::command]
 fn conversa_info(app: AppHandle, conversa: String) -> Option<Value> {
     let p = ponte(&app);
@@ -1573,7 +1592,8 @@ pub fn rodar() {
             conversas_antigas,
             conta,
             conexoes_mcp,
-            retomar_sessao
+            retomar_sessao,
+            registro_ler
         ])
         .build(contexto)
         .expect("erro ao montar a Ponte de Comando");

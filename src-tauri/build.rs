@@ -43,6 +43,7 @@ const COMANDOS: &[&str] = &[
     "conta",
     "conexoes_mcp",
     "retomar_sessao",
+    "registro_ler",
 ];
 
 fn main() {

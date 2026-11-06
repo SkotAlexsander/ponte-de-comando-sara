@@ -59,7 +59,8 @@
       "../sidecar/package.json": "sidecar/package.json",
       "../sidecar/node_modules/": "sidecar/node_modules/",
       "../sidecar/testar-chave.mjs": "sidecar/testar-chave.mjs",
-      "../sidecar/regras.mjs": "sidecar/regras.mjs"
+      "../sidecar/regras.mjs": "sidecar/regras.mjs",
+      "../sidecar/guarda.mjs": "sidecar/guarda.mjs"
     }
   }
 }

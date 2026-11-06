@@ -22,6 +22,7 @@
 import { createInterface } from 'node:readline'
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import { sugestoesSeguras } from './regras.mjs'
+import { avaliar, resumo } from './guarda.mjs'
 import { existsSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -111,7 +112,9 @@ function traduzir(conversa, msg, estado) {
 
 async function abrir(c) {
   const fila = criarFila()
-  const estado = { sessao: c.sessao, ocupada: false, cfg: { modelo: c.modelo, esforco: c.esforco, rapido: !!c.rapido }, instrucao: c.instrucao || '', language: c.language || '', fila, q: null, cauda: '' }
+  const estado = { sessao: c.sessao, ocupada: false, cfg: { modelo: c.modelo, esforco: c.esforco, rapido: !!c.rapido }, instrucao: c.instrucao || '', language: c.language || '', fila, q: null, cauda: '',
+    // modo de aprovação: 'guarda' (a guarda libera o que é seguro) ou 'sempre' (todo pedido vai para o cartão)
+    aprovacao: c.aprovacao === 'guarda' ? 'guarda' : 'sempre', pastaTrabalho: c.pastaTrabalho || c.cwd }
   const opcoes = {
     cwd: c.cwd,
     model: c.modelo,
@@ -127,14 +130,25 @@ async function abrir(c) {
     pathToClaudeCodeExecutable: exeClaude(),
     env: Object.fromEntries(Object.entries(process.env).filter(([k]) => k !== 'CLAUDECODE' && k !== 'CLAUDE_CODE_ENTRYPOINT')),
     stderr: (d) => { estado.cauda = (estado.cauda + d).slice(-3000) },
+    // Controle total com guarda: o canUseTool continua sendo o único caminho. A guarda libera sozinha o que é
+    // seguro (e registra); o resto, e tudo no modo 'sempre', vai para o cartão do Alex com o motivo.
     canUseTool: (ferramenta, entrada, { signal, suggestions }) => new Promise((resolver) => {
+      let guarda = null
+      if (estado.aprovacao === 'guarda') {
+        guarda = avaliar(ferramenta, entrada, { pastaTrabalho: estado.pastaTrabalho })
+        if (guarda.decisao === 'liberar') {
+          enviarRust({ evento: 'acao', conversa: c.conversa, ferramenta, resumo: resumo(ferramenta, entrada), decisao: 'liberada pela guarda' })
+          resolver({ behavior: 'allow', updatedInput: entrada })
+          return
+        }
+      }
       const pedido = 'p' + (++contadorPedido)
-      pendentes.set(pedido, { resolver, conversa: c.conversa, entrada, sugestoes: suggestions })
+      pendentes.set(pedido, { resolver, conversa: c.conversa, entrada, ferramenta, sugestoes: suggestions, guarda })
       signal?.addEventListener('abort', () => {
         if (pendentes.delete(pedido)) resolver({ behavior: 'deny', message: 'Pedido cancelado.' })
         enviarRust({ evento: 'permissao_fim', conversa: c.conversa, pedido })
       })
-      enviarRust({ evento: 'permissao', conversa: c.conversa, pedido, ferramenta, entrada: cortarEntrada(entrada) })
+      enviarRust({ evento: 'permissao', conversa: c.conversa, pedido, ferramenta, entrada: cortarEntrada(entrada), ...(guarda ? { categoria: guarda.categoria, rotulo: guarda.rotulo, motivo: guarda.motivo } : {}) })
     }),
   }
   if (c.retomar) opcoes.resume = c.sessao
@@ -188,6 +202,9 @@ async function enviar(c) {
     if (cfg.modelo !== estado.cfg.modelo) await estado.q.setModel(cfg.modelo)
     if (cfg.esforco !== estado.cfg.esforco || cfg.rapido !== estado.cfg.rapido) await estado.q.applyFlagSettings({ effortLevel: cfg.esforco, fastMode: cfg.rapido })
     estado.cfg = cfg
+    // o modo de aprovação e a pasta valem já na próxima ferramenta desta sessão
+    estado.aprovacao = c.aprovacao === 'guarda' ? 'guarda' : 'sempre'
+    if (c.pastaTrabalho) estado.pastaTrabalho = c.pastaTrabalho
   }
   estado.ocupada = true
   // idioma das respostas: a marca curta na mensagem é o que o Claude Code obedece (o append sozinho perde
@@ -227,6 +244,7 @@ async function tratar(cmd) {
     case 'permissao': {
       const p = pendentes.get(cmd.pedido)
       if (!p) break
+      enviarRust({ evento: 'acao', conversa: p.conversa, ferramenta: p.ferramenta, resumo: resumo(p.ferramenta, p.entrada), decisao: cmd.decisao === 'permitir' ? 'permitida no cartão' : 'negada no cartão', categoria: p.guarda && p.guarda.categoria })
       pendentes.delete(cmd.pedido)
       // "lembrar aprovações": devolve a regra que o próprio Claude Code sugeriu, SÓ como regra de permitir
       // desta sessão. Sugestão que troca o modo (setMode: acceptEdits/bypassPermissions), que grava nos

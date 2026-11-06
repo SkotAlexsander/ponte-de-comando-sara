@@ -150,6 +150,8 @@ try {
     conferir('modelo e esforço da aba chegaram ao backend', conv && conv.modelo === 'haiku' && conv.esforco === 'low' && conv.iniciada)
     await main.screenshot({ path: join(fotos, 'main-conversa.png') }).catch(() => {})
 
+    // o padrão (modo guarda) liberaria este Write sozinho; o teste do cartão roda no modo 'sempre'
+    await main.evaluate(() => window.ponte.config.gravar({ aprovacao: 'sempre' }))
     await main.fill('#msg', 'Use a ferramenta Write para criar o arquivo permissao-teste.txt com o texto oi. Não use nenhuma outra ferramenta.')
     await main.press('#msg', 'Enter')
     const cartao = await ate(() => main.evaluate(() => { const c = document.querySelector('[role=alertdialog]'); return c && c.style.display !== 'none' && c.innerText }), 90000, 500)

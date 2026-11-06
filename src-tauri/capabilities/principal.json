@@ -51,6 +51,7 @@
     "allow-conversas-antigas",
     "allow-conta",
     "allow-conexoes-mcp",
-    "allow-retomar-sessao"
+    "allow-retomar-sessao",
+    "allow-registro-ler"
   ]
 }

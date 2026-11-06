@@ -52,8 +52,9 @@ let salvo = null
     const textoConta = await main.evaluate(() => document.getElementById('cfg-painel').innerText)
     conferir('Conta mostra o status de verdade (e-mail mascarado)', !!conta && conta.ok !== false && (conta.email === '—' || /\*\*\*@/.test(conta.email)) && textoConta.includes(conta.email), conta ? `${conta.email} · ${conta.plano}` : 'sem status')
     // aprovação continua sempre ligada
-    const aprov = await main.evaluate(() => window.ponte.config.gravar({ aprovacaoSempre: false }).then(() => 'gravou', (e) => 'recusou: ' + e.message))
-    conferir('aprovacaoSempre não desliga pela tela', /recusou|gravou/.test(aprov) && (await main.evaluate(() => window.ponte.config.ler().then((c) => c.aprovacaoSempre))) === true, aprov)
+    // aprovação: só 'guarda' (padrão) ou 'sempre'; nada tira o cartão de vez
+    const aprov = await main.evaluate(() => window.__TAURI__.core.invoke('config_gravar', { parcial: { aprovacao: 'nenhuma' } }).then(() => 'gravou', (e) => 'recusou: ' + e))
+    conferir('aprovacao só aceita guarda ou sempre (padrão guarda)', /recusou/.test(aprov) && (await main.evaluate(() => window.__TAURI__.core.invoke('config_ler').then((c) => c.aprovacao))) === 'guarda', aprov)
     salvo = readFileSync(join(app.dados, 'config.json'), 'utf8')
   } catch (e) { conferir('roteiro 1 chegou ao fim', false, e.stack) } finally { await app.fechar() }
 }

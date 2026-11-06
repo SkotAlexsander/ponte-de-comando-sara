@@ -17,7 +17,7 @@
     config: { tema: 'metal', fosforo: 'branco', fosforoLetra: 'atual', pastaTrabalho: 'A:\\Claude', pastaTrabalhoPadrao: true, miniAoMinimizar: true, toastWindows: 'auto', mudo: false,
       idioma: 'pt-BR', idiomaRespostas: 'seguir', tamanhoLetra: 100, animacoes: 'sistema', padraoNova: { modelo: 'opus', esforco: 'high', rapido: false },
       lembrarAprovacoes: false, somAviso: true, volumeAviso: 70, cantoMini: 'id', abrirComWindows: false, comecarNaBandeja: false, modoConta: 'assinatura',
-      pastaTrabalhoCaminhoPadrao: 'A:\\Claude', aprovacaoSempre: true },
+      pastaTrabalhoCaminhoPadrao: 'A:\\Claude', aprovacao: 'guarda' },
   }
   const montarItem = (pai, it) => { const caminho = pai ? pai + '\\' + it.nome : it.nome; return { nome: it.nome, caminho, absoluto: falso.raiz + '\\' + caminho, tipo: it.tipo, link: false, tamanho: null } }
   const relFalso = (d) => {
@@ -60,9 +60,8 @@
       case 'mini_canto': return 'inferior-direito'
       case 'config_ler': return Object.assign({}, falso.config)
       case 'config_gravar': {
-        const ok = { tema: ['metal', 'fosforo', 'grade'], fosforo: ['ambar', 'verde', 'branco'], fosforoLetra: ['terminal', 'atual'], toastWindows: ['auto', 'sempre', 'nunca'] }
-        const soLeitura = ['pastaTrabalhoPadrao', 'pastaTrabalhoCaminhoPadrao', 'aprovacaoSempre']
-        if ('aprovacaoSempre' in (a.parcial || {}) && a.parcial.aprovacaoSempre !== true) throw new Error('A aprovação de cada ação fica sempre ligada.')
+        const ok = { tema: ['metal', 'fosforo', 'grade'], fosforo: ['ambar', 'verde', 'branco'], fosforoLetra: ['terminal', 'atual'], toastWindows: ['auto', 'sempre', 'nunca'], aprovacao: ['guarda', 'sempre'] }
+        const soLeitura = ['pastaTrabalhoPadrao', 'pastaTrabalhoCaminhoPadrao']
         for (const k of soLeitura) if (a.parcial && k in a.parcial) { a.parcial = Object.assign({}, a.parcial); delete a.parcial[k] }
         for (const [k, v] of Object.entries(a.parcial || {})) {
           if (!(k in falso.config)) throw new Error('Chave desconhecida: ' + k)
@@ -80,6 +79,7 @@
       case 'conta_testar_chave': return { ok: /^sk-ant-[A-Za-z0-9_-]{20,}$/.test(String(a.chave || '')), status: 0, erro: 'teste fora do programa' }
       case 'conta_apagar_chave': return true
       case 'info_app': return { versao: 'navegador', pastaDeDados: '%APPDATA%\\com.pixelmartins.pontedecomando (fora do programa)' }
+      case 'registro_ler': return [{ em: Date.now(), conversa: 'landing@main', ferramenta: 'PowerShell', resumo: 'PowerShell: Get-ChildItem (exemplo fora do programa)', decisao: 'liberada pela guarda', categoria: '' }]
       case 'tokens_resumo': return { sessoes: [], total: { custo: 0, tokens: 0 }, precosConferidos: false }
       case 'limites': return { disponivel: false }
       default: return null
@@ -150,6 +150,12 @@
       importarConfig: () => erroEmTexto(invocar('sistema_importar_config')),   // → config nova ou null
       restaurarPadrao: (confirmado) => erroEmTexto(invocar('sistema_restaurar_padrao', { confirmado: confirmado === true })),
     },
+
+    // registro das ações do Claude (acoes.log): { em, conversa, ferramenta, resumo, decisao, categoria }, a mais nova primeiro
+    registro: {
+      ler: (n) => invocar('registro_ler', { n: n || 100 }),
+    },
+    aoRegistro: (fn) => ouvir('ponte:registro', fn),
 
     // estado da Sara e avisos
     estado: () => invocar('estado_atual'),

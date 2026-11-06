@@ -162,7 +162,7 @@
       cartao.setAttribute('role', 'alertdialog')
       cartao.setAttribute('aria-label', 'Pedido de permissão')
       cartao.style.cssText = 'position:fixed;left:50%;bottom:120px;transform:translateX(-50%);z-index:9999;width:min(560px,calc(100vw - 32px));box-sizing:border-box;padding:16px 18px;background:linear-gradient(180deg,rgba(14,12,6,.98),rgba(8,8,6,.98));border:1px solid rgba(255,197,110,.6);box-shadow:0 10px 30px rgba(0,0,0,.75);color:#E6F1F3;font-family:"IBM Plex Sans",system-ui,sans-serif'
-      cartao.innerHTML = '<div data-topo style="font:700 11px Rajdhani,sans-serif;letter-spacing:.22em;color:#FFC56E"></div><div data-frase style="margin-top:8px;font-size:15px;line-height:22px;font-weight:600;word-break:break-word"></div><pre data-detalhe style="margin:8px 0 0;max-height:160px;overflow:auto;padding:8px;background:rgba(0,0,0,.4);font:11px/16px \'JetBrains Mono\',monospace;color:#B8D3D8;white-space:pre-wrap;word-break:break-all"></pre><div data-erro style="margin-top:6px;font-size:12px;color:#FF9A8C"></div><div style="display:flex;gap:8px;margin-top:12px"><button data-sim style="height:34px;padding:0 16px;border:1px solid rgba(155,247,214,.55);background:transparent;color:#9BF7D6;font:700 12px Rajdhani,sans-serif;letter-spacing:.16em;cursor:pointer">PERMITIR</button><button data-nao style="height:34px;padding:0 16px;border:1px solid rgba(255,107,90,.55);background:transparent;color:#FF9A8C;font:700 12px Rajdhani,sans-serif;letter-spacing:.16em;cursor:pointer">NEGAR</button></div>'
+      cartao.innerHTML = '<div data-topo style="font:700 11px Rajdhani,sans-serif;letter-spacing:.22em;color:#FFC56E"></div><div data-motivo style="margin-top:6px;font-size:12px;line-height:18px;color:#FFB4A6"></div><div data-frase style="margin-top:8px;font-size:15px;line-height:22px;font-weight:600;word-break:break-word"></div><pre data-detalhe style="margin:8px 0 0;max-height:160px;overflow:auto;padding:8px;background:rgba(0,0,0,.4);font:11px/16px \'JetBrains Mono\',monospace;color:#B8D3D8;white-space:pre-wrap;word-break:break-all"></pre><div data-erro style="margin-top:6px;font-size:12px;color:#FF9A8C"></div><div style="display:flex;gap:8px;margin-top:12px"><button data-sim style="height:34px;padding:0 16px;border:1px solid rgba(155,247,214,.55);background:transparent;color:#9BF7D6;font:700 12px Rajdhani,sans-serif;letter-spacing:.16em;cursor:pointer">PERMITIR</button><button data-nao style="height:34px;padding:0 16px;border:1px solid rgba(255,107,90,.55);background:transparent;color:#FF9A8C;font:700 12px Rajdhani,sans-serif;letter-spacing:.16em;cursor:pointer">NEGAR</button></div>'
       const responder = (permitir) => {
         const atual = fila[0]
         if (!atual) return
@@ -179,6 +179,8 @@
     cartao.style.display = atual ? 'block' : 'none'
     if (!atual) return
     cartao.querySelector('[data-topo]').textContent = 'A SARA PRECISA DA SUA PERMISSÃO' + (fila.length > 1 ? ` · 1 DE ${fila.length}` : '')
+    // modo guarda: por que a guarda pediu o cartão (categoria e motivo); no modo 'sempre' fica vazio
+    cartao.querySelector('[data-motivo]').textContent = atual.motivo ? (atual.rotulo ? atual.rotulo.toUpperCase() + ' · ' : '') + atual.motivo : ''
     cartao.querySelector('[data-frase]').textContent = atual.frase
     cartao.querySelector('[data-detalhe]').textContent = atual.detalhe || ''
     cartao.querySelector('[data-erro]').textContent = ''
@@ -374,7 +376,7 @@
     if (o.padroes && typeof o.padroes === 'object') saida.padraoNova = { modelo: MODELOS[o.padroes.m] || 'opus', esforco: ESFORCOS[o.padroes.e] || 'high', rapido: !!o.padroes.r }
     if (typeof o.chaveFinal === 'string') chaveFinal = o.chaveFinal.replace(/[^A-Za-z0-9]/g, '').slice(-4)
     // e as chaves do próprio programa, se vierem com o nome dele (as só de leitura ficam de fora)
-    for (const k of ['fosforoLetra', 'tamanhoLetra', 'animacoes', 'modoConta', 'padraoNova', 'lembrarAprovacoes', 'somAviso', 'volumeAviso', 'miniAoMinimizar', 'cantoMini', 'toastWindows', 'abrirComWindows', 'comecarNaBandeja', 'mudo'])
+    for (const k of ['fosforoLetra', 'tamanhoLetra', 'animacoes', 'modoConta', 'padraoNova', 'lembrarAprovacoes', 'somAviso', 'volumeAviso', 'miniAoMinimizar', 'cantoMini', 'toastWindows', 'abrirComWindows', 'comecarNaBandeja', 'mudo', 'aprovacao'])
       if (o[k] !== undefined && saida[k] === undefined) saida[k] = o[k]
     return saida
   }

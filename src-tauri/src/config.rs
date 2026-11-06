@@ -53,6 +53,9 @@ pub struct Config {
     pub comecar_na_bandeja: bool,
     /// "assinatura" (login do Claude Code) | "api" (chave guardada no Cofre do Windows).
     pub modo_conta: String,
+    /// "guarda" (Controle total com guarda: a guarda do sidecar libera o que é seguro e pergunta o resto)
+    /// | "sempre" (todo pedido vai para o cartão). Nunca existe modo sem canUseTool.
+    pub aprovacao: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -93,6 +96,7 @@ impl Default for Config {
             abrir_com_windows: false,
             comecar_na_bandeja: false,
             modo_conta: "assinatura".into(),
+            aprovacao: "guarda".into(),
         }
     }
 }
@@ -166,6 +170,7 @@ impl Config {
         if !["sistema", "sempre", "reduzidas"].contains(&c.animacoes.as_str()) { c.animacoes = p.animacoes.clone(); }
         if c.volume_aviso > 100 { c.volume_aviso = 70; }
         if !["assinatura", "api"].contains(&c.modo_conta.as_str()) { c.modo_conta = p.modo_conta.clone(); }
+        if !["guarda", "sempre"].contains(&c.aprovacao.as_str()) { c.aprovacao = p.aprovacao.clone(); }
         if !["opus", "sonnet", "haiku"].contains(&c.padrao_nova.modelo.as_str()) { c.padrao_nova.modelo = "opus".into(); }
         if crate::conversa::normalizar_esforco(&c.padrao_nova.esforco).is_err() { c.padrao_nova.esforco = "high".into(); }
         (c, descartados)
@@ -291,6 +296,35 @@ pub fn registrar(pasta: &Path, msg: &str) {
     }
 }
 
+/// Registro das ações do Claude (`acoes.log`, uma linha JSON por ação; gira em 512 KB para `acoes.log.1`).
+/// Só ferramenta, resumo curto (já sem segredo, ver sidecar/guarda.mjs) e decisão: nunca conteúdo.
+pub fn registrar_acao(pasta: &Path, linha: &serde_json::Value) {
+    let arq = pasta.join("acoes.log");
+    if fs::metadata(&arq).map(|m| m.len() > 512 * 1024).unwrap_or(false) {
+        let _ = fs::rename(&arq, pasta.join("acoes.log.1"));
+    }
+    if let Ok(mut f) = fs::OpenOptions::new().create(true).append(true).open(&arq) {
+        let _ = writeln!(f, "{}", sem_pasta_pessoal(&linha.to_string()));
+    }
+}
+
+/// As últimas `n` ações (a mais nova primeiro), lendo o `acoes.log` e, se faltar, o `acoes.log.1`.
+pub fn ler_acoes(pasta: &Path, n: usize) -> Vec<serde_json::Value> {
+    let mut v = vec![];
+    for nome in ["acoes.log", "acoes.log.1"] {
+        let Ok(t) = fs::read_to_string(pasta.join(nome)) else { continue };
+        for l in t.lines().rev() {
+            if v.len() >= n {
+                return v;
+            }
+            if let Ok(x) = serde_json::from_str(l) {
+                v.push(x);
+            }
+        }
+    }
+    v
+}
+
 pub fn agora_ms() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -328,6 +362,21 @@ mod testes {
             assert!(!t.contains(&u));
             assert!(t.starts_with("abrindo %USERPROFILE%"));
         }
+    }
+
+    #[test]
+    fn registro_de_acoes_gira_e_le_do_fim() {
+        let d = std::env::temp_dir().join(format!("ponte-teste-acoes-{}", aleatorio_hex(4)));
+        fs::create_dir_all(&d).unwrap();
+        for i in 0..5000 {
+            registrar_acao(&d, &serde_json::json!({ "ferramenta": "Bash", "resumo": format!("acao {i} {}", "x".repeat(100)), "decisao": "liberada pela guarda" }));
+        }
+        assert!(fs::metadata(d.join("acoes.log")).unwrap().len() <= 512 * 1024 + 300);
+        assert!(d.join("acoes.log.1").is_file());
+        let ult = ler_acoes(&d, 3);
+        assert_eq!(ult.len(), 3);
+        assert!(ult[0]["resumo"].as_str().unwrap().starts_with("acao 4999 "));
+        fs::remove_dir_all(&d).ok();
     }
 
     #[test]
