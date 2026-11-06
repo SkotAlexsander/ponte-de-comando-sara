@@ -3,14 +3,18 @@
 //! mais os efeitos que a casca precisa aplicar (miniatura, autostart, sidecar…).
 //! As mensagens de erro saem em PT-BR ou em inglês, conforme o `idioma` da config.
 
-use crate::config::{Config, PadraoNova, FOSFOROS, TEMAS};
+use crate::config::{Config, PadraoNova, FOSFOROS, LETRAS_FOSFORO, TEMAS};
 use serde_json::{json, Value};
 
-pub const CHAVES: [&str; 18] = [
-    "tema", "fosforo", "pastaTrabalho", "miniAoMinimizar", "toastWindows", "mudo",
+pub const CHAVES: [&str; 19] = [
+    "tema", "fosforo", "fosforoLetra", "pastaTrabalho", "miniAoMinimizar", "toastWindows", "mudo",
     "idioma", "idiomaRespostas", "tamanhoLetra", "animacoes", "padraoNova", "lembrarAprovacoes",
     "somAviso", "volumeAviso", "cantoMini", "abrirComWindows", "comecarNaBandeja", "modoConta",
 ];
+
+/// Chaves que a tela LÊ mas não grava. Mandar de volta o objeto do `ler()` não dá erro por causa delas:
+/// são ignoradas, menos `aprovacaoSempre`, que só aceita `true`.
+pub const SO_LEITURA: [&str; 3] = ["pastaTrabalhoPadrao", "pastaTrabalhoCaminhoPadrao", "aprovacaoSempre"];
 
 /// Texto na língua da interface.
 pub fn t(idioma: &str, pt: &str, en: &str) -> String {
@@ -42,8 +46,12 @@ pub fn publica(c: &Config) -> Value {
     json!({
         "tema": c.tema,
         "fosforo": c.fosforo,
+        "fosforoLetra": c.fosforo_letra,
         "pastaTrabalho": crate::arquivos::exibir(&pasta),
         "pastaTrabalhoPadrao": padrao,
+        "pastaTrabalhoCaminhoPadrao": crate::arquivos::exibir(&Config::pasta_padrao()),
+        // cada ação do Claude passa pelo cartão do Alex; nenhuma chave desliga isso
+        "aprovacaoSempre": true,
         "miniAoMinimizar": c.mini_visivel,
         "toastWindows": c.toast_windows,
         "mudo": c.mudo,
@@ -66,7 +74,9 @@ pub fn publica(c: &Config) -> Value {
 pub fn exportavel(c: &Config) -> Value {
     let mut v = publica(c);
     if let Some(o) = v.as_object_mut() {
-        o.remove("pastaTrabalhoPadrao");
+        for k in SO_LEITURA {
+            o.remove(k);
+        }
         o.remove("pastaTrabalho"); // a pasta não viaja no arquivo: trocar é só pelo seletor
     }
     json!({ "programa": "Ponte de Comando", "versaoConfig": 1, "config": v })
@@ -119,7 +129,15 @@ pub fn aplicar(atual: &Config, parcial: &Value) -> Result<(Config, Efeitos), Str
     let il = atual.idioma.clone();
     let erro = |pt: &str, en: &str| t(&il, pt, en);
     let o = parcial.as_object().ok_or_else(|| erro("Mande um objeto com as chaves a mudar.", "Send an object with the keys to change."))?;
-    let desconhecidas: Vec<&String> = o.keys().filter(|k| !CHAVES.contains(&k.as_str())).collect();
+    if let Some(v) = o.get("aprovacaoSempre") {
+        if v != &Value::Bool(true) {
+            return Err(erro(
+                "A aprovação de cada ação fica sempre ligada: nenhuma configuração desliga o cartão de permissão.",
+                "Approval of every action is always on: no setting turns the permission card off.",
+            ));
+        }
+    }
+    let desconhecidas: Vec<&String> = o.keys().filter(|k| !CHAVES.contains(&k.as_str()) && !SO_LEITURA.contains(&k.as_str())).collect();
     if !desconhecidas.is_empty() {
         let lista = desconhecidas.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(", ");
         return Err(format!("{} {lista}", erro("Chave desconhecida:", "Unknown key:")));
@@ -156,6 +174,7 @@ pub fn aplicar(atual: &Config, parcial: &Value) -> Result<(Config, Efeitos), Str
 
     if let Some(v) = um_de("tema", &TEMAS)? { c.tema = v; }
     if let Some(v) = um_de("fosforo", &FOSFOROS)? { c.fosforo = v; }
+    if let Some(v) = um_de("fosforoLetra", &LETRAS_FOSFORO)? { c.fosforo_letra = v; }
     if let Some(v) = um_de("toastWindows", &["auto", "sempre", "nunca"])? { c.toast_windows = v; }
     if let Some(v) = um_de("idioma", &["pt-BR", "en"])? { c.idioma = v; }
     if let Some(v) = um_de("idiomaRespostas", &["seguir", "pt-BR", "en"])? { c.idioma_respostas = v; }
@@ -296,6 +315,39 @@ mod testes {
         assert!(ef.reabrir_sidecar);
         let (_, ef) = aplicar(&Config::default(), &json!({ "tema": "grade" })).unwrap();
         assert!(!ef.reabrir_sidecar);
+    }
+
+    #[test]
+    fn tema_fosforo_com_cor_e_letra() {
+        let (c, _) = com(json!({ "tema": "fosforo", "fosforo": "branco", "fosforoLetra": "atual" })).unwrap();
+        assert_eq!((c.tema.as_str(), c.fosforo.as_str(), c.fosforo_letra.as_str()), ("fosforo", "branco", "atual"));
+        let (c, _) = com(json!({ "fosforo": "VERDE", "fosforoLetra": "terminal" })).unwrap();
+        assert_eq!((c.fosforo.as_str(), c.fosforo_letra.as_str()), ("verde", "terminal"));
+        assert!(com(json!({ "fosforo": "azul" })).is_err());
+        assert!(com(json!({ "fosforoLetra": "comic" })).is_err());
+        let p = publica(&Config::default());
+        assert_eq!(p["fosforo"], "branco");
+        assert_eq!(p["fosforoLetra"], "atual");
+    }
+
+    /// "Aprovação sempre ligada": nenhuma chave desliga o cartão, e nenhum modo do Claude Code passa.
+    #[test]
+    fn aprovacao_nao_desliga() {
+        assert_eq!(publica(&Config::default())["aprovacaoSempre"], true);
+        for ruim in [
+            json!({ "aprovacaoSempre": false }), json!({ "aprovacaoSempre": "nao" }), json!({ "aprovacaoSempre": null }),
+            json!({ "permissionMode": "bypassPermissions" }), json!({ "modoPermissao": "acceptEdits" }),
+            json!({ "pularAprovacao": true }), json!({ "dangerouslySkipPermissions": true }),
+            json!({ "padraoNova": { "permissionMode": "bypassPermissions" } }),
+        ] {
+            assert!(com(ruim.clone()).is_err(), "deveria recusar {ruim}");
+        }
+        // devolver o próprio objeto do ler() funciona (as chaves só de leitura são ignoradas)
+        let atual = publica(&Config::default());
+        let mut volta = atual.clone();
+        volta.as_object_mut().unwrap().remove("pastaTrabalho");
+        let (c, _) = com(volta).unwrap();
+        assert_eq!(publica(&c), atual);
     }
 
     #[test]

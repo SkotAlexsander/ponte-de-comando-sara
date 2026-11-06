@@ -26,8 +26,10 @@ pub struct Config {
     pub toast_windows: String,
     /// Tema de display dentro do vidro da conversa: "metal" | "fosforo" | "grade".
     pub tema: String,
-    /// Cor do terminal de fósforo: "ambar" | "verde".
+    /// Cor do terminal de fósforo: "ambar" | "verde" | "branco" (o branco foi o aprovado pelo Alex).
     pub fosforo: String,
+    /// Letra do terminal de fósforo: "terminal" (monoespaçada) | "atual" (a da interface; a aprovada).
+    pub fosforo_letra: String,
     /// "inferior-direito", "inferior-esquerdo", "superior-direito", "superior-esquerdo".
     pub mini_canto: String,
     /// Nome do monitor onde a miniatura ficou. `None` = monitor principal.
@@ -76,7 +78,8 @@ impl Default for Config {
             mini_visivel: true,
             toast_windows: "auto".into(),
             tema: "metal".into(),
-            fosforo: "ambar".into(),
+            fosforo: "branco".into(),
+            fosforo_letra: "atual".into(),
             mini_canto: "inferior-direito".into(),
             mini_monitor: None,
             idioma: "pt-BR".into(),
@@ -95,7 +98,8 @@ impl Default for Config {
 }
 
 pub const TEMAS: [&str; 3] = ["metal", "fosforo", "grade"];
-pub const FOSFOROS: [&str; 2] = ["ambar", "verde"];
+pub const FOSFOROS: [&str; 3] = ["ambar", "verde", "branco"];
+pub const LETRAS_FOSFORO: [&str; 2] = ["terminal", "atual"];
 
 pub fn cantos_validos() -> [&'static str; 4] {
     ["inferior-direito", "inferior-esquerdo", "superior-direito", "superior-esquerdo"]
@@ -146,7 +150,10 @@ impl Config {
             c.tema = "metal".into();
         }
         if !FOSFOROS.contains(&c.fosforo.as_str()) {
-            c.fosforo = "ambar".into();
+            c.fosforo = Config::default().fosforo;
+        }
+        if !LETRAS_FOSFORO.contains(&c.fosforo_letra.as_str()) {
+            c.fosforo_letra = Config::default().fosforo_letra;
         }
         if c.porta < 1024 {
             c.porta = PORTA_PADRAO;
