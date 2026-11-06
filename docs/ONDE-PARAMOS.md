@@ -1,4 +1,26 @@
-# Onde paramos: 06/11/2026, ~02:30
+# Onde paramos: 06/11/2026, ~19:45
+
+## Atualização da noite (06/11)
+- **0.1.1 INSTALADA no PC do Alex** (NSIS currentUser, rodado como administrador a pedido dele) em `%LOCALAPPDATA%\Ponte de Comando`, com atalho na Área de Trabalho e no Menu Iniciar. Abre em ~10 s; o hook chega (HTTP 200).
+  - O Alex ainda não decidiu sobre abrir SEMPRE como administrador; a recomendação é não.
+- **Ramo `pausa/2026-11-06-correcoes-qa`** (até `8154eff`, com push; SEM merge no master):
+  - correções de QA: C1 (3,4 % de CPU escondida, o limite do teste é 2 %), A3 (tokens incremental, 9 MB), A1, A2, M1–M3, M5, M8 parcial, B5 e B7–B11;
+  - a interface nova da Lia (temas + Configuração em 7 seções PT/EN + texto longo/textarea) foi sincronizada e ligada ao backend; a tradução das chaves fica em `ui/ponte-main.js`.
+- **Canvas versão 49** com os temas e a Configuração. As fontes da interface estão no repo `empresa` (commit 3a31fd3).
+- **Hooks do settings.json consertados:** o caminho estava com caracteres de controle e nunca funcionou antes de 06/11 à noite.
+- **Não usar o modelo Fable** (pedido do Alex).
+
+## Próximos passos
+1. O Heitor audita: `cofre.rs`, os comandos `conta_*` em `lib.rs` (o `conta_testar_chave` recebe a chave pela IPC), a camada de conta em `ui/ponte-main.js`, `sidecar/regras.mjs`, `capabilities/*.json`, `build.rs` e a CSP. O `conta_trocar` abre um terminal visível (`claude auth login`): ele decide se pode.
+2. O Otávio roda de novo `ciclo`, `cpu`, `servidor`, `arquivos-config`, `duas-sessoes` e `vazamento`.
+3. A Lia acerta o "restaurar padrão" da tela para os padrões do backend: fósforo branco + letra atual e `lembrar` desligado.
+4. Merge no master → instalador 0.1.2 → convite ao Rogério (rogeriofleming). O Paulo ainda vai passar o usuário do GitHub.
+5. Telas para os dados do backend (mapa de agentes real, limites, relógio do cache, conversas antigas) e do checklist do Rogério (diff, terminal visível, comandos `/`).
+6. Fase 3: a palavra "Sara".
+
+---
+
+## Registro da pausa anterior (06/11, ~02:30)
 
 O Alex pausou o projeto por hoje. Pelo pedido dele, nada foi instalado no PC (o programa) nem enviado a ninguém.
 
