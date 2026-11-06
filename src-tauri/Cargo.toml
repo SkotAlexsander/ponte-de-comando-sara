@@ -1,6 +1,6 @@
 [package]
 name = "ponte-de-comando"
-version = "0.1.0"
+version = "0.1.1"
 description = "Ponte de Comando · Sara — acompanha o Claude Code no PC do Alex"
 authors = ["Alex"]
 edition = "2021"

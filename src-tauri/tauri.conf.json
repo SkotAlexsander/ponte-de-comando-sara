@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Ponte de Comando",
   "mainBinaryName": "ponte-de-comando",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "identifier": "com.pixelmartins.pontedecomando",
   "build": {
     "frontendDist": "../ui"
