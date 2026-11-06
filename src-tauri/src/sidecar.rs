@@ -87,6 +87,14 @@ impl Sidecar {
             .stderr(Stdio::piped())
             .env_remove("CLAUDECODE")
             .env_remove("CLAUDE_CODE_ENTRYPOINT");
+        // QA B7: no release, nenhuma variável de teste chega ao sidecar (PONTE_CLAUDE_EXE trocaria o claude.exe)
+        if !cfg!(debug_assertions) {
+            for (k, _) in std::env::vars_os() {
+                if k.to_string_lossy().to_ascii_uppercase().starts_with("PONTE_") {
+                    cmd.env_remove(&k);
+                }
+            }
+        }
         // modo da conta: com chave, entra só aqui; sem chave (assinatura), tira qualquer uma herdada
         match self.chave.lock().unwrap().as_deref() {
             Some(k) => {

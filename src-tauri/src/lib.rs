@@ -33,6 +33,62 @@ use tauri_plugin_notification::NotificationExt;
 
 const PONTE_JS: &str = include_str!("../../ui/ponte.js");
 const MAIN_JS: &str = include_str!("../../ui/ponte-main.js");
+/// QA C1: com a página escondida (a casca avisa o WebView2 com IsVisible = false), pausa os vídeos e as
+/// animações; volta a tocar só o que ela mesma pausou quando a página aparece de novo.
+const PAUSA_JS: &str = r#"(function () {
+  if (window.__pontePausa) return
+  window.__pontePausa = true
+  // a casca também avisa (window.__ponteVisibilidade): o WebView2 escondido para de desenhar, mas nem
+  // sempre muda o document.visibilityState; com o aviso, a página inteira (template e adaptador) vê "hidden"
+  let escondidoPelaCasca = false
+  const D = Document.prototype
+  const nHidden = Object.getOwnPropertyDescriptor(D, 'hidden')
+  const nVis = Object.getOwnPropertyDescriptor(D, 'visibilityState')
+  const escondido = () => escondidoPelaCasca || (nHidden ? nHidden.get.call(document) : false)
+  try {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => escondido() })
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => (escondido() ? 'hidden' : (nVis ? nVis.get.call(document) : 'visible')) })
+  } catch (e) {}
+  window.__ponteVisibilidade = (visivel) => {
+    const antes = escondido()
+    escondidoPelaCasca = !visivel
+    if (escondido() !== antes) document.dispatchEvent(new Event('visibilitychange'))
+  }
+  const videos = new Set()
+  let anims = []
+  let vigia = null
+  const pausar = () => {
+    document.querySelectorAll('video').forEach((v) => { if (!v.paused) { videos.add(v); try { v.pause() } catch (e) {} } })
+    try { document.getAnimations().forEach((a) => { if (a.playState === 'running') { anims.push(a); a.pause() } }) } catch (e) {}
+  }
+  const voltar = () => {
+    videos.forEach((v) => { if (v.isConnected) { const r = v.play(); if (r && r.catch) r.catch(() => {}) } })
+    videos.clear()
+    anims.forEach((a) => { try { if (a.playState === 'paused') a.play() } catch (e) {} })
+    anims = []
+  }
+  // medido em 06/11: a miniatura escondida (janela transparente) seguia desenhando o quadro parado
+  // (~27 % de um núcleo) até o <html> ficar com visibility: hidden; com isso cai para ~2 %
+  let visAntes = null
+  const soMini = /mini\.html$/i.test(location.pathname)
+  const aplicar = () => {
+    const raiz = document.documentElement
+    if (document.hidden) {
+      // pausa agora e mais duas vezes (vídeo com autoplay que começa atrasado); sem intervalo fixo, porque
+      // document.getAnimations() recalcula o estilo da página inteira e, repetido, custava CPU
+      pausar(); clearTimeout(vigia); vigia = setTimeout(() => { pausar(); vigia = setTimeout(pausar, 4000) }, 1500)
+      // só na miniatura: na principal o SetIsVisible já basta (0 quadros/s) e o texto da página continua legível
+      if (soMini && raiz && visAntes === null) { visAntes = raiz.style.visibility || ''; raiz.style.visibility = 'hidden' }
+    } else {
+      clearTimeout(vigia); vigia = null
+      if (raiz && visAntes !== null) { raiz.style.visibility = visAntes; visAntes = null }
+      voltar()
+    }
+  }
+  document.addEventListener('visibilitychange', aplicar)
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', aplicar)
+  else aplicar()
+})()"#;
 const MINIMO_CARREGAMENTO: Duration = Duration::from_secs(8);
 const MARGEM_MINI: f64 = 16.0;
 
@@ -59,6 +115,10 @@ pub struct Ponte {
     /// idioma das respostas ou modo da conta mudou: reabrir o sidecar quando nenhuma conversa estiver rodando
     reabrir_sidecar: AtomicBool,
     motor_tokens: Arc<tokens::Motor>,
+    /// O que o WebView2 de cada janela sabe sobre estar visível (QA C1).
+    visiveis: Mutex<HashMap<String, bool>>,
+    /// Avisos fixos da abertura (porta dos hooks ocupada…); a pasta que sumiu é conferida a cada vez.
+    alertas_abertura: Mutex<Vec<String>>,
 }
 
 fn ponte(app: &AppHandle) -> tauri::State<'_, Ponte> {
@@ -103,6 +163,23 @@ fn onde_avisar(app: &AppHandle) -> &'static str {
     }
 }
 
+/// Os avisos do programa que a tela mostra numa faixa: os da abertura (porta) + a pasta de trabalho
+/// gravada que sumiu (QA B1/M5), conferida a cada vez (ela pode sumir com o programa aberto).
+fn alertas_atuais(app: &AppHandle) -> Vec<String> {
+    let p = ponte(app);
+    let mut v = p.alertas_abertura.lock().unwrap().clone();
+    let sumiu = p.config.lock().unwrap().pasta_gravada_sumiu();
+    if let Some(pasta) = sumiu {
+        let padrao = arquivos::exibir(&Config::pasta_padrao());
+        v.push(tr(
+            app,
+            &format!("A pasta de trabalho gravada não existe mais ({pasta}); usando {padrao}. Escolha outra pelo botão PASTA."),
+            &format!("The saved work folder no longer exists ({pasta}); using {padrao}. Pick another with the PASTA button."),
+        ));
+    }
+    v
+}
+
 fn receber_evento(app: &AppHandle, ev: Evento) {
     let p = ponte(app);
     let (mudo, toast) = {
@@ -118,6 +195,8 @@ fn receber_evento(app: &AppHandle, ev: Evento) {
         e.onde = onde.to_string();
         (e.clone(), n)
     };
+    let mut copia = copia;
+    copia.alertas = alertas_atuais(app);
     let _ = app.emit("ponte:estado", &copia);
     if let Some(n) = notificar {
         // a miniatura e a Main já são o aviso; o toast é para quando nenhuma das duas está na tela
@@ -142,6 +221,8 @@ fn estado_atual(app: AppHandle) -> Estado {
     let mut e = p.estado.lock().unwrap().clone();
     e.mudo = p.config.lock().unwrap().mudo;
     e.som = false;
+    drop(p);
+    e.alertas = alertas_atuais(&app);
     e
 }
 
@@ -225,6 +306,7 @@ fn criar_janelas(app: &AppHandle) -> tauri::Result<()> {
         .center()
         .initialization_script(PONTE_JS)
         .initialization_script(MAIN_JS)
+        .initialization_script(PAUSA_JS)
         .additional_browser_args(&args)
         .visible(false);
     if fora {
@@ -244,6 +326,7 @@ fn criar_janelas(app: &AppHandle) -> tauri::Result<()> {
         .focused(false)
         .focusable(false)
         .initialization_script(PONTE_JS)
+        .initialization_script(PAUSA_JS)
         .additional_browser_args(&args)
         .visible(false)
         .build()?;
@@ -258,6 +341,7 @@ fn mostrar_principal_interno(app: &AppHandle) {
             let _ = j.set_focus();
         }
     }
+    ajustar_visibilidade(app, false);
     atualizar_mini(app);
 }
 
@@ -339,6 +423,36 @@ fn principal_na_tela(app: &AppHandle) -> bool {
         .unwrap_or(false)
 }
 
+/// QA C1: o `hide()` e o minimizar escondem a JANELA, mas o WebView2 continuava achando que estava na tela
+/// (visibilityState "visible", 145 quadros/s, ~3 núcleos com tudo na bandeja). Aqui a casca avisa o WebView2
+/// (`ICoreWebView2Controller::SetIsVisible`): escondido, ele para de desenhar, a página recebe
+/// `visibilitychange` e o PAUSA_JS para vídeos e animações. Só muda quando o estado muda.
+/// `forcar`: reaplica mesmo sem mudança (o vigia de 3 s; cobre o WebView2 que ainda não existia na 1ª
+/// chamada e a página que recarregou, como ao ir ao FLUXO e voltar).
+fn ajustar_visibilidade(app: &AppHandle, forcar: bool) {
+    for rotulo in ["principal", "mini", "carregamento"] {
+        let Some(j) = app.get_webview_window(rotulo) else { continue };
+        let ver = j.is_visible().unwrap_or(false) && !j.is_minimized().unwrap_or(false);
+        {
+            let p = ponte(app);
+            let mut mapa = p.visiveis.lock().unwrap();
+            if mapa.get(rotulo) == Some(&ver) && !forcar {
+                continue;
+            }
+            mapa.insert(rotulo.to_string(), ver);
+        }
+        let _ = j.eval(&format!("window.__ponteVisibilidade && window.__ponteVisibilidade({ver})"));
+        let _ = j.with_webview(move |w| {
+            #[cfg(windows)]
+            unsafe {
+                let _ = w.controller().SetIsVisible(ver);
+            }
+            #[cfg(not(windows))]
+            let _ = (w, ver);
+        });
+    }
+}
+
 /// A regra da miniatura: aparece quando a principal sai da tela (minimizada, na bandeja ou ainda
 /// não aberta) e "Miniatura ao minimizar" está ligada; some quando a principal volta.
 /// Com debounce de 150 ms, para não piscar ao arrastar ou redimensionar a principal.
@@ -349,6 +463,7 @@ fn atualizar_mini(app: &AppHandle) {
         std::thread::sleep(Duration::from_millis(150));
         if ponte(&app).geracao_mini.load(Ordering::SeqCst) == g {
             aplicar_mini(&app);
+            ajustar_visibilidade(&app, false);
         }
     });
 }
@@ -635,7 +750,10 @@ async fn conta_testar_chave(app: AppHandle) -> Value {
             use std::os::windows::process::CommandExt;
             cmd.creation_flags(0x0800_0000);
         }
-        let saida = cmd.output();
+        let saida = cmd.stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::null()).spawn().and_then(|f| {
+            crate::job::amarrar(f.id()); // fecha junto com a Ponte
+            f.wait_with_output()
+        });
         drop(chave);
         match saida {
             Ok(o) => serde_json::from_slice::<Value>(&o.stdout).unwrap_or_else(|_| json!({ "ok": false, "erro": if en { "unexpected answer from the test" } else { "resposta inesperada do teste" } })),
@@ -873,7 +991,10 @@ fn ao_sidecar(app: &AppHandle, mut v: Value) {
     match evento.as_str() {
         "conversa" => {
             let tipo = v.get("tipo").and_then(|x| x.as_str()).unwrap_or("").to_string();
-            let projeto = p.conversas.info(&conversa).map(|i| PathBuf::from(i.pasta).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default()).unwrap_or_default();
+            let info = p.conversas.info(&conversa);
+            let projeto = info.as_ref().map(|i| PathBuf::from(&i.pasta).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default()).unwrap_or_default();
+            // a sessão do Claude Code desta conversa: o aviso dela não é apagado por outra (QA M3)
+            let sessao = info.map(|i| i.sessao).unwrap_or_default();
             match tipo.as_str() {
                 "inicio" => p.conversas.marcar_iniciada(&conversa),
                 "ferramenta" => {
@@ -884,24 +1005,29 @@ fn ao_sidecar(app: &AppHandle, mut v: Value) {
                     if let Some(o) = v.as_object_mut() {
                         o.remove("entrada"); // a janela não precisa do conteúdo
                     }
-                    receber_evento(app, Evento { tipo: "trabalhando".into(), fase: "ferramenta".into(), projeto, ferramenta: nome, legenda: leg, origem: "programa".into(), ..Default::default() });
+                    receber_evento(app, Evento { tipo: "trabalhando".into(), fase: "ferramenta".into(), sessao, projeto, ferramenta: nome, legenda: leg, origem: "programa".into(), ..Default::default() });
+                }
+                // QA A1: o turno que o Alex PAROU chega como resultado "cancelado": não é erro nem pronto
+                "resultado" if v.get("cancelado").and_then(|x| x.as_bool()).unwrap_or(false) => {
+                    p.conversas.marcar_rodando_sdk(&conversa, false);
+                    p.motor_tokens.cutucar();
                 }
                 "resultado" => {
                     p.conversas.marcar_rodando_sdk(&conversa, false);
                     let erro = v.get("erro").and_then(|x| x.as_bool()).unwrap_or(false);
                     let texto = v.get("texto").and_then(|x| x.as_str()).unwrap_or("").to_string();
                     let titulo = p.pedidos.lock().unwrap().get(&conversa).cloned().unwrap_or_default();
-                    receber_evento(app, Evento { tipo: if erro { "erro".into() } else { "pronto".into() }, projeto, titulo: if erro { String::new() } else { titulo }, texto: if erro { texto.clone() } else { String::new() }, resumo: texto, origem: "programa".into(), ..Default::default() });
+                    receber_evento(app, Evento { tipo: if erro { "erro".into() } else { "pronto".into() }, sessao, projeto, titulo: if erro { String::new() } else { titulo }, texto: if erro { texto.clone() } else { String::new() }, resumo: texto, origem: "programa".into(), ..Default::default() });
                     p.motor_tokens.cutucar();
                 }
                 "erro" => {
                     p.conversas.marcar_rodando_sdk(&conversa, false);
                     let texto = v.get("texto").and_then(|x| x.as_str()).unwrap_or("").to_string();
-                    receber_evento(app, Evento { tipo: "erro".into(), projeto, texto, origem: "programa".into(), ..Default::default() });
+                    receber_evento(app, Evento { tipo: "erro".into(), sessao, projeto, texto, origem: "programa".into(), ..Default::default() });
                 }
                 "cancelado" => {
                     p.conversas.marcar_rodando_sdk(&conversa, false);
-                    receber_evento(app, Evento { tipo: "esperando".into(), origem: "programa".into(), ..Default::default() });
+                    receber_evento(app, Evento { tipo: "esperando".into(), sessao, origem: "programa".into(), ..Default::default() });
                 }
                 "fechada" => p.conversas.marcar_rodando_sdk(&conversa, false),
                 _ => {}
@@ -915,8 +1041,9 @@ fn ao_sidecar(app: &AppHandle, mut v: Value) {
             let frase = sidecar::frase_permissao(&ferramenta, &entrada);
             let detalhe = estado::cortar(&serde_json::to_string_pretty(&entrada).unwrap_or_default(), 1500);
             p.permissoes.lock().unwrap().insert(pedido.clone(), conversa.clone());
+            let sessao = p.conversas.info(&conversa).map(|i| i.sessao).unwrap_or_default();
             let _ = app.emit("ponte:permissao", json!({ "conversa": conversa, "pedido": pedido, "ferramenta": ferramenta, "frase": frase, "detalhe": detalhe }));
-            receber_evento(app, Evento { tipo: "precisa".into(), texto: format!("Pedido de permissão: {frase}"), origem: "programa".into(), ..Default::default() });
+            receber_evento(app, Evento { tipo: "precisa".into(), sessao, texto: format!("Pedido de permissão: {frase}"), origem: "programa".into(), ..Default::default() });
         }
         "permissao_fim" => {
             let pedido = v.get("pedido").and_then(|x| x.as_str()).unwrap_or("").to_string();
@@ -925,12 +1052,20 @@ fn ao_sidecar(app: &AppHandle, mut v: Value) {
         }
         "sidecar_caiu" => {
             registrar(&p.pasta_dados, "o sidecar saiu");
-            for c in p.conversas.limpar_rodando_sdk() {
-                emitir_conversa(app, &json!({ "evento": "conversa", "conversa": c, "tipo": "erro", "texto": "O processo da conversa fechou. A próxima mensagem retoma a mesma conversa." }));
+            let texto = tr(app, "O processo da conversa fechou. A próxima mensagem retoma a mesma conversa.", "The conversation process closed. The next message resumes the same conversation.");
+            let rodando = p.conversas.limpar_rodando_sdk();
+            for c in &rodando {
+                emitir_conversa(app, &json!({ "evento": "conversa", "conversa": c, "tipo": "erro", "texto": texto }));
             }
             let pend: Vec<(String, String)> = p.permissoes.lock().unwrap().drain().collect();
+            let tinha_cartao = !pend.is_empty();
             for (pedido, c) in pend {
                 let _ = app.emit("ponte:permissao-fim", json!({ "conversa": c, "pedido": pedido }));
+            }
+            // QA M1: a Sara não pode ficar presa em "preciso de você" (ou "trabalhando") com a conversa morta
+            if !rodando.is_empty() || tinha_cartao {
+                let sessao = rodando.first().and_then(|c| p.conversas.info(c)).map(|i| i.sessao).unwrap_or_default();
+                receber_evento(app, Evento { tipo: "erro".into(), sessao, texto, origem: "programa".into(), ..Default::default() });
             }
         }
         "pronto_para_ouvir" => registrar(&p.pasta_dados, &format!("sidecar pronto: {v}")),
@@ -1006,7 +1141,7 @@ fn enviar(app: AppHandle, pedido: Pedido) -> Result<Resposta, String> {
     }
     p.conversas.marcar_rodando_sdk(&pedido.conversa, true);
     let projeto = PathBuf::from(&info.pasta).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
-    receber_evento(&app, Evento { tipo: "trabalhando".into(), fase: "pedido".into(), projeto, titulo: estado::cortar(&texto, 140), origem: "programa".into(), ..Default::default() });
+    receber_evento(&app, Evento { tipo: "trabalhando".into(), fase: "pedido".into(), sessao: info.sessao.clone(), projeto, titulo: estado::cortar(&texto, 140), origem: "programa".into(), ..Default::default() });
     let cmd = json!({
         "cmd": "enviar", "conversa": pedido.conversa, "texto": texto,
         "modelo": info.modelo, "esforco": info.esforco, "rapido": info.rapido,
@@ -1049,9 +1184,14 @@ fn parar_agente(app: AppHandle, conversa: String, tarefa: String) -> bool {
     ponte(&app).sidecar.mandar_se_vivo(&json!({ "cmd": "parar_agente", "conversa": conversa, "tarefa": tarefa }))
 }
 
+/// A conversa e se ela está trabalhando agora (a Main, ao recarregar, volta a mostrar o PARAR).
 #[tauri::command]
-fn conversa_info(app: AppHandle, conversa: String) -> Option<InfoConversa> {
-    ponte(&app).conversas.info(&conversa)
+fn conversa_info(app: AppHandle, conversa: String) -> Option<Value> {
+    let p = ponte(&app);
+    let info = p.conversas.info(&conversa)?;
+    let mut v = serde_json::to_value(info).ok()?;
+    v["rodando"] = json!(p.conversas.rodando(&conversa));
+    Some(v)
 }
 
 #[tauri::command]
@@ -1190,7 +1330,26 @@ fn script_do_sidecar(app: &AppHandle) -> Option<PathBuf> {
     candidatos.into_iter().flatten().find(|p| p.is_file()).map(|p| PathBuf::from(arquivos::exibir(&p)))
 }
 
+/// QA B11: a instância única usa o `identifier`. Nos testes (build de desenvolvimento com
+/// PONTE_PASTA_DE_DADOS), cada pasta de dados vira um identificador próprio: o teste nunca "acha" a Ponte
+/// instalada do Alex (nem põe a janela dele na frente), e duas aberturas com a MESMA pasta continuam sendo
+/// uma instância só.
+fn identificador_de_teste(base: &str) -> Option<String> {
+    let pasta = config::env_teste("PONTE_PASTA_DE_DADOS")?;
+    // FNV-1a de 32 bits do caminho (sem caixa): curto, estável e sem dependência nova
+    let mut h: u32 = 0x811c_9dc5;
+    for b in pasta.to_lowercase().bytes() {
+        h ^= b as u32;
+        h = h.wrapping_mul(0x0100_0193);
+    }
+    Some(format!("{base}.teste{h:08x}"))
+}
+
 pub fn rodar() {
+    let mut contexto = tauri::generate_context!();
+    if let Some(id) = identificador_de_teste(&contexto.config().identifier) {
+        contexto.config_mut().identifier = id;
+    }
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             mostrar_principal(app.clone());
@@ -1227,6 +1386,8 @@ pub fn rodar() {
                 geracao_mini: AtomicU64::new(0),
                 reabrir_sidecar: AtomicBool::new(false),
                 motor_tokens: motor.clone(),
+                visiveis: Mutex::new(HashMap::new()),
+                alertas_abertura: Mutex::new(vec![]),
             });
 
             // servidor dos hooks (só 127.0.0.1)
@@ -1238,6 +1399,8 @@ pub fn rodar() {
             for (p, e) in &falhas {
                 registrar(&dados, &format!("servidor dos hooks NÃO abriu na porta {p}: {e}"));
             }
+            let il = config.idioma.clone();
+            let tx = |pt: String, en: String| preferencias::t(&il, &pt, &en);
             let mut alertas = vec![];
             match aberta {
                 Some(porta) => {
@@ -1245,18 +1408,23 @@ pub fn rodar() {
                     let _ = config::gravar_atomico(&dados.join("porta"), format!("{porta} {id_servidor}").as_bytes());
                     registrar(&dados, &format!("servidor dos hooks em 127.0.0.1:{porta}"));
                     if porta != pedida {
-                        alertas.push(format!("A porta {pedida} dos hooks estava ocupada; o servidor dos hooks abriu na porta {porta} (o hook acompanha sozinho)."));
+                        alertas.push(tx(
+                            format!("A porta {pedida} dos hooks estava ocupada; o servidor dos hooks abriu na porta {porta} (o hook acompanha sozinho)."),
+                            format!("Hook port {pedida} was busy; the hook server opened on port {porta} (the hook follows it)."),
+                        ));
                     }
                 }
                 None => {
                     let _ = std::fs::remove_file(dados.join("porta"));
-                    alertas.push(format!("O servidor dos hooks não abriu (portas {pedida} a {} ocupadas): os avisos de conversas de fora não vão chegar.", pedida.saturating_add(10)));
+                    alertas.push(tx(
+                        format!("O servidor dos hooks não abriu (portas {pedida} a {} ocupadas): os avisos de conversas de fora não vão chegar.", pedida.saturating_add(10)),
+                        format!("The hook server did not open (ports {pedida} to {} busy): notices from outside conversations will not arrive.", pedida.saturating_add(10)),
+                    ));
                 }
             }
-            if let Some(p) = config.pasta_gravada_sumiu() {
-                alertas.push(format!("A pasta de trabalho gravada não existe mais ({p}); usando a padrão."));
-            }
-            ponte(&handle).estado.lock().unwrap().alertas = alertas;
+            *ponte(&handle).alertas_abertura.lock().unwrap() = alertas;
+            let al = alertas_atuais(&handle);
+            ponte(&handle).estado.lock().unwrap().alertas = al;
 
             criar_janelas(&handle)?;
             montar_bandeja(&handle)?;
@@ -1270,7 +1438,10 @@ pub fn rodar() {
             // motor de tokens: lê os transcripts em segundo plano e avisa as janelas
             let h3 = handle.clone();
             motor.iniciar(Arc::new(move |resumo| {
-                let _ = h3.emit("ponte:tokens", resumo);
+                // só a Main mostra o consumo: escondida, ela não trabalha (relê tokens() quando volta)
+                if principal_na_tela(&h3) {
+                    let _ = h3.emit_to("principal", "ponte:tokens", resumo);
+                }
             }), Arc::new({
                 let h4 = handle.clone();
                 move |ev: Evento| {
@@ -1292,8 +1463,13 @@ pub fn rodar() {
 
             // vigia da miniatura: reafirma "por cima" e devolve para o canto se o monitor ou a barra mudar
             let h6 = handle.clone();
+            let mut voltas: u64 = 0;
             std::thread::spawn(move || loop {
                 std::thread::sleep(Duration::from_secs(3));
+                // reaplica à força nos primeiros 30 s (o WebView2 pode nem existir na 1ª chamada) e depois a
+                // cada 30 s; no resto, só quando muda (acordar as páginas a cada 3 s custava CPU)
+                voltas += 1;
+                ajustar_visibilidade(&h6, voltas <= 10 || voltas % 10 == 0);
                 let p = ponte(&h6);
                 if !p.concluido.load(Ordering::SeqCst) || p.arrastando.load(Ordering::SeqCst) {
                     continue;
@@ -1321,8 +1497,14 @@ pub fn rodar() {
                 let _ = janela.hide();
                 atualizar_mini(janela.app_handle());
             }
-            ("principal", WindowEvent::Resized(_)) | ("principal", WindowEvent::Moved(_)) => atualizar_mini(janela.app_handle()),
+            ("principal", WindowEvent::Resized(_)) => {
+                // minimizar e restaurar chegam aqui: a página sabe na hora (sem esperar o debounce)
+                ajustar_visibilidade(janela.app_handle(), false);
+                atualizar_mini(janela.app_handle());
+            }
+            ("principal", WindowEvent::Moved(_)) => atualizar_mini(janela.app_handle()),
             ("principal", WindowEvent::Focused(foco)) => {
+                ajustar_visibilidade(janela.app_handle(), false);
                 atualizar_mini(janela.app_handle());
                 // voltou para a Main: o aviso de pronto que esperava já foi visto
                 if *foco {
@@ -1386,7 +1568,7 @@ pub fn rodar() {
             conexoes_mcp,
             retomar_sessao
         ])
-        .build(tauri::generate_context!())
+        .build(contexto)
         .expect("erro ao montar a Ponte de Comando");
 
     app.run(|app, ev| {

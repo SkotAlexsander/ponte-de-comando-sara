@@ -36,6 +36,9 @@ pub struct Aviso {
     pub texto: String,
     pub acao: String,
     pub em: u64,
+    /// De que sessão do Claude Code veio o aviso ("" = não se sabe). Uma sessão trabalhando não
+    /// apaga o aviso de OUTRA (QA M3).
+    pub sessao: String,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -145,7 +148,9 @@ pub fn aplicar(atual: &mut Estado, mem: &mut Memoria, ev: &Evento) -> Option<Not
             if !projeto.is_empty() {
                 atual.projeto = projeto;
             }
-            atual.aviso = None;
+            if da_mesma_sessao(atual, ev) {
+                atual.aviso = None;
+            }
             None
         }
         "precisa" => {
@@ -155,7 +160,7 @@ pub fn aplicar(atual: &mut Estado, mem: &mut Memoria, ev: &Evento) -> Option<Not
                 t.contains("waiting for your input") || t.contains("aguardando")
             };
             // o "esperando você responder" depois de um pronto não apaga o aviso de pronto
-            if ocioso && atual.estado == "pronto" {
+            if ocioso && atual.aviso.as_ref().map(|a| a.tipo == "pronto").unwrap_or(false) {
                 return None;
             }
             atual.estado = "precisa".into();
@@ -167,13 +172,14 @@ pub fn aplicar(atual: &mut Estado, mem: &mut Memoria, ev: &Evento) -> Option<Not
                 texto: juntar_projeto(&projeto, if texto.is_empty() { "O Claude Code está esperando uma resposta sua." } else { &texto }),
                 acao: "VER AGORA".into(),
                 em: agora,
+                sessao: ev.sessao.clone(),
             });
             atual.som = true;
             Some(Notificar { titulo: "Alex, preciso de você".into(), corpo: atual.aviso.as_ref().unwrap().texto.clone() })
         }
         "pronto" => {
             // pronto repetido em menos de 10 s (hook + conversa do programa): não avisa duas vezes
-            if atual.estado == "pronto" && atual.aviso.as_ref().map(|a| agora.saturating_sub(a.em) < 10_000).unwrap_or(false) {
+            if atual.aviso.as_ref().map(|a| a.tipo == "pronto" && agora.saturating_sub(a.em) < 10_000).unwrap_or(false) {
                 return None;
             }
             let lembrado = mem.pedido(&ev.sessao).cloned();
@@ -205,6 +211,7 @@ pub fn aplicar(atual: &mut Estado, mem: &mut Memoria, ev: &Evento) -> Option<Not
                 texto: juntar_projeto(&projeto, &texto),
                 acao: "VER AGORA".into(),
                 em: agora,
+                sessao: ev.sessao.clone(),
             });
             atual.som = true;
             Some(Notificar { titulo: "Alex, seu trabalho está pronto".into(), corpo: atual.aviso.as_ref().unwrap().texto.clone() })
@@ -220,6 +227,7 @@ pub fn aplicar(atual: &mut Estado, mem: &mut Memoria, ev: &Evento) -> Option<Not
                 texto: juntar_projeto(&projeto, if texto.is_empty() { "Algo deu errado." } else { &texto }),
                 acao: "VER O ERRO".into(),
                 em: agora,
+                sessao: ev.sessao.clone(),
             });
             atual.som = true;
             Some(Notificar { titulo: "Alex, travei numa parte".into(), corpo: atual.aviso.as_ref().unwrap().texto.clone() })
@@ -227,10 +235,17 @@ pub fn aplicar(atual: &mut Estado, mem: &mut Memoria, ev: &Evento) -> Option<Not
         _ => {
             atual.estado = "esperando".into();
             atual.legenda = "Por aqui".into();
-            atual.aviso = None;
+            if da_mesma_sessao(atual, ev) {
+                atual.aviso = None;
+            }
             None
         }
     }
+}
+
+/// O aviso na tela é da mesma sessão do evento? (Sem sessão dos dois lados conta como a mesma.)
+fn da_mesma_sessao(atual: &Estado, ev: &Evento) -> bool {
+    atual.aviso.as_ref().map(|a| a.sessao == ev.sessao).unwrap_or(true)
 }
 
 pub fn dispensar(atual: &mut Estado) {
@@ -305,6 +320,33 @@ mod testes {
         dispensar(&mut e);
         assert!(e.aviso.is_none());
         assert_eq!(e.estado, "esperando");
+    }
+
+    /// QA M3: o "pronto" da conversa A continua quando a conversa B usa uma ferramenta.
+    #[test]
+    fn outra_sessao_nao_apaga_o_pronto() {
+        let mut e = Estado::default();
+        let mut m = Memoria::default();
+        let mut a = ev("pronto");
+        a.sessao = "A".into();
+        aplicar(&mut e, &mut m, &a);
+        let mut b = ev("trabalhando");
+        b.sessao = "B".into();
+        b.fase = "ferramenta".into();
+        b.legenda = "Lendo LEIA-ME.md".into();
+        aplicar(&mut e, &mut m, &b);
+        assert_eq!(e.aviso.as_ref().map(|x| x.tipo.as_str()), Some("pronto"));
+        assert_eq!(e.legenda, "Lendo LEIA-ME.md");
+        // um "esperando" de B também não apaga
+        let mut b2 = ev("esperando");
+        b2.sessao = "B".into();
+        aplicar(&mut e, &mut m, &b2);
+        assert!(e.aviso.is_some());
+        // a própria A voltando a trabalhar apaga (o Alex já mandou outra coisa nela)
+        let mut a2 = ev("trabalhando");
+        a2.sessao = "A".into();
+        aplicar(&mut e, &mut m, &a2);
+        assert!(e.aviso.is_none());
     }
 
     #[test]

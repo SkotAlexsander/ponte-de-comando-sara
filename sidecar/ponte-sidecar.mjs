@@ -21,6 +21,7 @@
 // stdout só leva JSON (todo log vai para stderr).
 import { createInterface } from 'node:readline'
 import { query } from '@anthropic-ai/claude-agent-sdk'
+import { sugestoesSeguras } from './regras.mjs'
 import { existsSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -144,6 +145,12 @@ async function abrir(c) {
     try {
       for await (const msg of estado.q) {
         for (const ev of traduzir(c.conversa, msg, estado)) {
+          // QA A1: o turno que o Alex PAROU termina com um "result" de erro (interrompido). Isso não é erro:
+          // o "cancelado" já saiu; o texto pela metade já apareceu ao vivo; o resultado vai marcado como cancelado.
+          if (estado.parado) {
+            if (ev.tipo === 'delta' || ev.tipo === 'texto') continue
+            if (ev.tipo === 'resultado') { estado.parado = false; estado.ocupada = false; enviarRust({ ...ev, erro: false, cancelado: true }); continue }
+          }
           if (ev.tipo === 'resultado') estado.ocupada = false
           enviarRust(ev)
         }
@@ -200,6 +207,8 @@ async function tratar(cmd) {
       const e = conversas.get(cmd.conversa)
       if (!e) break
       for (const [id, p] of pendentes) if (p.conversa === cmd.conversa) { pendentes.delete(id); p.resolver({ behavior: 'deny', message: 'O Alex parou.' }) }
+      // só um turno em andamento termina com o "result" interrompido; sem turno, nada a esconder
+      if (e.ocupada) e.parado = true
       try { await e.q.interrupt() } catch (err) { log('interrupt: ' + err) }
       e.ocupada = false
       enviarRust({ evento: 'conversa', conversa: cmd.conversa, tipo: 'cancelado' })
@@ -219,8 +228,13 @@ async function tratar(cmd) {
       const p = pendentes.get(cmd.pedido)
       if (!p) break
       pendentes.delete(cmd.pedido)
-      // "lembrar aprovações": devolve a regra que o próprio Claude Code sugeriu (vale até o fim da sessão)
-      if (cmd.decisao === 'permitir') p.resolver(cmd.lembrar && Array.isArray(p.sugestoes) && p.sugestoes.length ? { behavior: 'allow', updatedInput: p.entrada, updatedPermissions: p.sugestoes } : { behavior: 'allow', updatedInput: p.entrada })
+      // "lembrar aprovações": devolve a regra que o próprio Claude Code sugeriu, SÓ como regra de permitir
+      // desta sessão. Sugestão que troca o modo (setMode: acceptEdits/bypassPermissions), que grava nos
+      // settings do usuário/projeto ou que acrescenta pasta é descartada: a aprovação continua sempre ligada.
+      if (cmd.decisao === 'permitir') {
+        const regras = cmd.lembrar ? sugestoesSeguras(p.sugestoes) : []
+        p.resolver(regras.length ? { behavior: 'allow', updatedInput: p.entrada, updatedPermissions: regras } : { behavior: 'allow', updatedInput: p.entrada })
+      }
       else p.resolver({ behavior: 'deny', message: cmd.motivo || 'O Alex negou este pedido.' })
       break
     }

@@ -11,7 +11,9 @@
 // Quando o template passar a chamar a ponte sozinho, cada parte se desliga (ver docs/ponte.md).
 (function () {
   if (!/Main\.dc\.html$/i.test(location.pathname)) return
-  const CARGA = Math.random().toString(36).slice(2, 8)
+  // QA A2: o id da conversa é ESTÁVEL ("landing@main"): ir ao FLUXO e voltar, ou fechar e abrir o programa,
+  // continua a mesma sessão do Claude (antes era aleatório a cada carga da página e virava conversa nova)
+  const CARGA = 'main'
   const p = () => window.ponte
   const hora = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') }
   const OK = '#9BF7D6', TR = '#FFA53A'
@@ -49,23 +51,38 @@
   }
   const msgs = (id) => ((st().extra || {})[id] || []).slice()
   const gravarMsgs = (id, lista, extra) => set(Object.assign({ extra: Object.assign({}, st().extra || {}, { [id]: lista }) }, extra || {}))
+  // QA M2: cada aba tem o seu "trabalhando". O template só tem um `rodandoEm`; ele aponta para a aba
+  // aberta se ela estiver rodando (senão para outra que esteja), e o PARAR usa a aba aberta.
+  const rodando = new Set()
+  const abaAberta = () => st().sessao || 'landing'
+  const alvoRodando = () => (rodando.has(abaAberta()) ? abaAberta() : (rodando.size ? [...rodando][0] : null))
+  const sincronizarRodando = () => { if (L && (st().rodandoEm || null) !== alvoRodando()) set({ rodandoEm: alvoRodando() }) }
+  const conferidas = new Set()
+  async function conferirSeRoda(id) {
+    // depois de recarregar a página (FLUXO e volta), a conversa pode continuar trabalhando no programa
+    if (conferidas.has(id)) return
+    conferidas.add(id)
+    try { const c = await p().conversa(chave(id)); if (c && c.rodando) { rodando.add(id); sincronizarRodando() } } catch (e) {}
+  }
 
   async function enviarReal() {
     const s = st()
     const texto = String(s.texto || (document.getElementById('msg') || {}).value || '').trim()
     if (!texto) return
     const id = s.sessao || 'landing'
-    if (s.rodandoEm === id) return
+    if (rodando.has(id)) return
     const cfg = lerConfigDaAba()
     const lista = msgs(id).concat([{ t: 'alex', texto, hora: 'ALEX · ' + hora() }])
     const titulos = Object.assign({}, s.titulos || {})
     if (/^nova-/.test(id) && !titulos[id]) titulos[id] = texto.length > 42 ? texto.slice(0, 40) + '…' : texto
     conversas[id] = { vivo: null, itens: null, viuTexto: false }
+    rodando.add(id)
     gravarMsgs(id, lista, { titulos, texto: '', estado: 'pensando', rodandoEm: id, mic: false })
     try {
       await p().enviar({ conversa: chave(id), texto, modelo: cfg.modelo, esforco: cfg.esforco, velocidade: cfg.velocidade })
     } catch (e) {
-      gravarMsgs(id, msgs(id).concat([{ t: 'sara', texto: 'Não consegui começar: ' + e.message, hora: 'SARA · ' + hora() }]), { estado: 'erro', rodandoEm: null })
+      rodando.delete(id)
+      gravarMsgs(id, msgs(id).concat([{ t: 'sara', texto: 'Não consegui começar: ' + e.message, hora: 'SARA · ' + hora() }]), { estado: 'erro', rodandoEm: alvoRodando() })
     }
   }
 
@@ -74,18 +91,22 @@
     if (!id) return
     const c = conversas[id] || (conversas[id] = { vivo: null, itens: null, viuTexto: false })
     let lista = msgs(id)
+    const aqui = id === abaAberta() // a placa e o estado seguem a aba aberta; as outras só guardam as mensagens
+    const estado = (k) => (aqui ? { estado: k } : {})
     const fecharVivo = () => { c.vivo = null }
     const marcarFeitos = () => {
       if (c.itens == null || !lista[c.itens]) return
       lista[c.itens] = Object.assign({}, lista[c.itens], { itens: lista[c.itens].itens.map((x) => Object.assign({}, x, { marca: '✓', cor: OK })) })
     }
+    // o turno acabou nesta aba: sai do conjunto e o rodandoEm passa para a aba certa
+    const terminou = () => { rodando.delete(id); return { rodandoEm: alvoRodando() } }
     switch (ev.tipo) {
-      case 'inicio': set({ estado: 'pensando' }); return
+      case 'inicio': rodando.add(id); if (aqui) set({ estado: 'pensando' }); return
       case 'delta': {
         if (c.vivo == null || !lista[c.vivo]) { lista.push({ t: 'sara', texto: ev.texto || '', hora: 'SARA · ' + hora() }); c.vivo = lista.length - 1; c.itens = null }
         else lista[c.vivo] = Object.assign({}, lista[c.vivo], { texto: (lista[c.vivo].texto || '') + (ev.texto || '') })
         c.viuTexto = true
-        gravarMsgs(id, lista, { estado: 'pensando' })
+        gravarMsgs(id, lista, estado('pensando'))
         return
       }
       case 'texto': {
@@ -102,28 +123,30 @@
         if (c.itens == null || !lista[c.itens] || lista[c.itens].t !== 'ativ') { lista.push({ t: 'ativ', itens: [] }); c.itens = lista.length - 1 }
         const anteriores = lista[c.itens].itens.map((x) => Object.assign({}, x, { marca: '✓', cor: OK }))
         lista[c.itens] = { t: 'ativ', itens: anteriores.concat([item]).slice(-12) }
-        gravarMsgs(id, lista, { estado: /^(Read|Grep|Glob|WebFetch|NotebookRead)$/.test(ev.nome) ? 'lendo' : 'trabalhando' })
+        gravarMsgs(id, lista, estado(/^(Read|Grep|Glob|WebFetch|NotebookRead)$/.test(ev.nome) ? 'lendo' : 'trabalhando'))
         return
       }
       case 'resultado': {
+        // QA A1: o turno PARADO pelo Alex chega como resultado "cancelado"; o "Parei aqui" já foi escrito
+        if (ev.cancelado) { c.itens = null; c.viuTexto = false; set(terminou()); return }
         marcarFeitos(); fecharVivo()
         if (ev.erro) lista.push({ t: 'sara', texto: 'Parei com erro: ' + (ev.texto || ev.subtipo || 'sem detalhe'), hora: 'SARA · ' + hora() })
         else if (!c.viuTexto && ev.texto) lista.push({ t: 'sara', texto: ev.texto, hora: 'SARA · ' + hora() })
         c.itens = null; c.viuTexto = false
-        gravarMsgs(id, lista, { estado: ev.erro ? 'erro' : 'pronto', rodandoEm: null })
-        setTimeout(() => { if (!st().rodandoEm) set({ estado: 'esperando' }) }, 6000)
+        gravarMsgs(id, lista, Object.assign(terminou(), estado(ev.erro ? 'erro' : 'pronto')))
+        if (aqui) setTimeout(() => { if (!rodando.has(abaAberta())) set({ estado: 'esperando' }) }, 6000)
         return
       }
       case 'erro': {
         marcarFeitos(); fecharVivo()
         lista.push({ t: 'sara', texto: 'Deu erro: ' + (ev.texto || ''), hora: 'SARA · ' + hora() })
-        gravarMsgs(id, lista, { estado: 'erro', rodandoEm: null })
+        gravarMsgs(id, lista, Object.assign(terminou(), estado('erro')))
         return
       }
       case 'cancelado': {
         marcarFeitos(); fecharVivo()
         lista.push({ t: 'sara', texto: 'Parei aqui. A conversa continua de onde ficou.', hora: 'SARA · ' + hora() })
-        gravarMsgs(id, lista, { estado: 'esperando', rodandoEm: null })
+        gravarMsgs(id, lista, Object.assign(terminou(), estado('esperando')))
         return
       }
     }
@@ -200,8 +223,11 @@
     await carregar('raiz')
   }
   let ultimoAberto = null
+  let abaAntes = null
   async function depoisDeMudar() {
     const s = st()
+    // trocou de aba: o rodandoEm do template passa a apontar para a aba certa (QA M2)
+    if (abaAberta() !== abaAntes) { abaAntes = abaAberta(); sincronizarRodando(); conferirSeRoda(abaAntes) }
     if (usaArvoreReal() && s.nosReais) {
       const abertas = s.abertas || {}
       Object.keys(abertas).filter((k) => abertas[k] && nos[k] && !nos[k].carregado).forEach(carregar)
@@ -247,7 +273,8 @@
   }
   function aoEstado(e) {
     if (e.som && !e.mudo && e.aviso && e.onde === 'principal') tocar(e.aviso.tipo)
-    if (st().rodandoEm) return // a conversa daqui manda na placa enquanto roda
+    mostrarAlertas(e.alertas)
+    if (rodando.has(abaAberta())) return // a conversa daqui manda na placa enquanto roda
     const k = mapear(e.estado)
     if (k && st().estado !== k) set({ estado: k })
   }
@@ -324,7 +351,12 @@
         const b = ev.target && ev.target.closest && ev.target.closest('button')
         if (!b) return
         if (b.classList.contains('ambar') && /ENVIAR/i.test(b.textContent)) { ev.preventDefault(); ev.stopImmediatePropagation(); enviarReal() }
-        else if (b.classList.contains('parar')) { ev.preventDefault(); ev.stopImmediatePropagation(); const id = st().rodandoEm; if (id) p().parar(chave(id)) }
+        else if (b.classList.contains('parar')) {
+          ev.preventDefault(); ev.stopImmediatePropagation()
+          // PARAR vale para a aba aberta (se ela estiver rodando); senão, para a que o template mostra
+          const id = rodando.has(abaAberta()) ? abaAberta() : st().rodandoEm
+          if (id) p().parar(chave(id))
+        }
       }, true)
       p().aoConversa(aoConversa)
     }
@@ -335,12 +367,23 @@
     if (usaArvoreReal()) await montarRaiz()
     else { const i = await p().pastaDeTrabalho(); set({ pastaTrabalho: i.caminho }) }
     // tema de display: a Main da Sara põe o data-tema na área da conversa; aqui fica também no <html>
-    const aplicarTema = (c) => { if (c) { somCfg = { somAviso: c.somAviso !== false, volumeAviso: typeof c.volumeAviso === 'number' ? c.volumeAviso : 70 }; document.documentElement.dataset.tema = c.tema || 'metal'; document.documentElement.dataset.fosforo = c.fosforo || 'ambar' } }
+    const aplicarTema = (c) => {
+      if (!c) return
+      somCfg = { somAviso: c.somAviso !== false, volumeAviso: typeof c.volumeAviso === 'number' ? c.volumeAviso : 70 }
+      const d = document.documentElement.dataset
+      d.tema = c.tema || 'metal'; d.fosforo = c.fosforo || 'branco'; d.fosforoLetra = c.fosforoLetra || 'atual'
+      d.idioma = c.idioma || 'pt-BR'; d.letra = String(c.tamanhoLetra || 100); d.animacoes = c.animacoes || 'sistema'
+    }
     p().config.ler().then(aplicarTema).catch(() => {})
     p().aoConfig(aplicarTema)
     p().aoTokens(atualizarConsumo)
     p().tokens().then(atualizarConsumo)
-    setInterval(() => p().tokens().then(atualizarConsumo), 15000)
-    window.__ponteMain = { ok: true, assumirConversa, arvoreReal: usaArvoreReal(), carga: CARGA, logica: () => L }
+    // QA C1: escondida (bandeja ou minimizada), a Main não trabalha; ao voltar, relê o consumo
+    setInterval(() => { if (!document.hidden) p().tokens().then(atualizarConsumo) }, 15000)
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) p().tokens().then(atualizarConsumo).catch(() => {}) })
+    // avisos do programa (porta dos hooks ocupada, pasta de trabalho que sumiu)
+    p().estado().then((e) => e && mostrarAlertas(e.alertas)).catch(() => {})
+    abaAntes = abaAberta(); conferirSeRoda(abaAntes)
+    window.__ponteMain = { ok: true, assumirConversa, arvoreReal: usaArvoreReal(), carga: CARGA, chave, rodando: () => [...rodando], logica: () => L }
   })
 })()

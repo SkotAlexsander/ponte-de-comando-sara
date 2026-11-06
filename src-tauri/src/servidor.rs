@@ -83,6 +83,19 @@ fn responder(s: &mut TcpStream, codigo: u16, texto: &str, corpo: &str) -> std::i
     )?;
     s.flush()?;
     let _ = s.shutdown(Shutdown::Write);
+    // fecha com calma (QA B5): o que o cliente ainda manda depois da resposta (corpo que não foi lido,
+    // cabeçalho gigante) é lido e jogado fora por até 250 ms. Fechar com bytes não lidos faz o Windows
+    // mandar RST, e o RST pode apagar a resposta antes de o cliente ler.
+    let _ = s.set_read_timeout(Some(Duration::from_millis(250)));
+    let fim = Instant::now() + Duration::from_millis(250);
+    let mut lixo = [0u8; 16 * 1024];
+    let mut total = 0usize;
+    while Instant::now() < fim && total < 4 * 1024 * 1024 {
+        match s.read(&mut lixo) {
+            Ok(0) | Err(_) => break,
+            Ok(n) => total += n,
+        }
+    }
     Ok(())
 }
 

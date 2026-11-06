@@ -6,7 +6,8 @@ pub const ALVO_PADRAO: &str = "PonteDeComando/anthropic-api-key";
 
 /// O nome da credencial. Testes podem trocar por `PONTE_COFRE_ALVO`, mas só para nomes de teste.
 pub fn alvo() -> String {
-    match std::env::var("PONTE_COFRE_ALVO") {
+    // só no build de desenvolvimento (QA B7) e só para nomes de teste
+    match crate::config::env_teste("PONTE_COFRE_ALVO").ok_or(()) {
         Ok(a) if a.starts_with("PonteDeComando-teste") => a,
         _ => ALVO_PADRAO.to_string(),
     }
